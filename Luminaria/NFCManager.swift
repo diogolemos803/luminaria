@@ -40,16 +40,15 @@ final class NFCManager: NSObject, ObservableObject {
     }
 
     private func identifier(for tag: NFCNDEFTag) -> String {
-        switch tag {
-        case .miFare(let mifareTag):
+        if let mifareTag = tag as? NFCMiFareTag {
             return mifareTag.identifier.map { String(format: "%02X", $0) }.joined()
-        case .iso15693(let iso15693Tag):
+        } else if let iso15693Tag = tag as? NFCISO15693Tag {
             return iso15693Tag.identifier.map { String(format: "%02X", $0) }.joined()
-        case .iso7816Compatible(let iso7816Tag):
+        } else if let iso7816Tag = tag as? NFCISO7816Tag {
             return iso7816Tag.identifier.map { String(format: "%02X", $0) }.joined()
-        case .feliCa(let felicaTag):
+        } else if let felicaTag = tag as? NFCFeliCaTag {
             return felicaTag.currentIDm.map { String(format: "%02X", $0) }.joined()
-        @unknown default:
+        } else {
             return UUID().uuidString
         }
     }
