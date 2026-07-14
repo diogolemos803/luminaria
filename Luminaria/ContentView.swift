@@ -10,6 +10,12 @@ struct ContentView: View {
     private let sleepBackground = Color(red: 0.129, green: 0.141, blue: 0.165)
     private let buttonAwakeFill = Color.white
     private let buttonSleepFill = Color(red: 0.2, green: 0.216, blue: 0.243)
+    private let inkAwake = Color(red: 0.42, green: 0.416, blue: 0.4)
+    private let inkSleep = Color(red: 0.545, green: 0.557, blue: 0.58)
+
+    private var modeName: String {
+        isNightModeArmed ? "Zleepy mode" : "Living mode"
+    }
 
     var body: some View {
         NavigationStack {
@@ -29,6 +35,14 @@ struct ContentView: View {
                 }
                 .buttonStyle(.plain)
                 .scaleEffect(isPressed ? 0.88 : 1.0)
+                .accessibilityLabel(modeName)
+
+                Text(modeName)
+                    .font(.footnote)
+                    .tracking(0.4)
+                    .foregroundStyle(isNightModeArmed ? inkSleep : inkAwake)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+                    .padding(.bottom, 40)
             }
             .animation(.easeInOut(duration: 0.5), value: isNightModeArmed)
             .animation(.spring(response: 0.25, dampingFraction: 0.55), value: isPressed)

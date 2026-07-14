@@ -75,7 +75,7 @@
     <button class="btn" id="btn" aria-label="Alternar modo noite">
       <img id="icon" src="" alt="" />
     </button>
-    <p class="label" id="label">modo acordado</p>
+    <p class="label" id="label">Living mode</p>
   </div>
   <p class="hint">toque no botão para alternar</p>
 </div>
@@ -100,7 +100,7 @@
     setTimeout(() => {
       stage.classList.toggle('sleep', sleeping);
       icon.src = sleeping ? SLEEP_SRC : AWAKE_SRC;
-      label.textContent = sleeping ? 'modo sono' : 'modo acordado';
+      label.textContent = sleeping ? 'Zleepy mode' : 'Living mode';
     }, 70);
   });
 </script>
