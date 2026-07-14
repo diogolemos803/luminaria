@@ -51,6 +51,24 @@ vínculo para disparar um Atalho de Foco ("Dormir sem celular") na hora de dormi
 - **Sem `gh` CLI instalado** — o push pro GitHub usa `git` puro por HTTPS; o Git Credential
   Manager do Windows já cuida da autenticação (abre navegador se precisar).
 
+## ⚠️ Pendência arquitetural importante (não esquecer)
+
+O reconhecimento de NFC hoje (`NFCManager.beginScanning()`, disparado quando o botão
+redondo arma o modo noite) é uma **sessão em primeiro plano, com o app aberto, que expira
+sozinha em ~60s** (limite da própria Apple pra `NFCNDEFReaderSession`). Isso foi uma escolha
+deliberada pro estágio atual (sem custo, sem infraestrutura, testável assim que houver um
+device), **mas o usuário foi explícito: essa NÃO é a versão final** — pro produto de
+verdade funcionar, a leitura NFC precisa acontecer **em segundo plano, sempre, com o app em
+modo noite**, independente de o app ter sido aberto recentemente ("se não a proposta
+quebra", palavras do usuário em 2026-07-14).
+
+A versão final exige migrar pra Universal Links / Associated Domains (tag NFC com uma URL
+`https://` de um domínio do usuário, `apple-app-site-association` hospedado, entitlement
+`applinks:`, e tratar o deep link via `onOpenURL`) — e também persistir `isNightModeArmed`
+em `UserDefaults`, já que hoje é um `@State` transiente que se perde ao fechar o app (e o
+disparo por Universal Link pode acontecer com o app frio). Levantar esse assunto de novo
+quando o usuário tiver testado o MVP num device físico e/ou tiver um domínio disponível.
+
 ## Status atual
 
 - Build compila com sucesso no CI (`build.yml` verde no commit mais recente).
