@@ -12,6 +12,7 @@
 		AAAAAAAAAAAAAAAAAAAAAA15 /* NFCManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA0E /* NFCManager.swift */; };
 		AAAAAAAAAAAAAAAAAAAAAA16 /* ShortcutManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA0F /* ShortcutManager.swift */; };
 		AAAAAAAAAAAAAAAAAAAAAA1B /* CoreNFC.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA1A /* CoreNFC.framework */; };
+		AAAAAAAAAAAAAAAAAAAAAA1E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA1D /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -23,6 +24,7 @@
 		AAAAAAAAAAAAAAAAAAAAAA11 /* Luminaria.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Luminaria.entitlements; sourceTree = "<group>"; };
 		AAAAAAAAAAAAAAAAAAAAAA12 /* Luminaria.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Luminaria.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AAAAAAAAAAAAAAAAAAAAAA1A /* CoreNFC.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreNFC.framework; path = System/Library/Frameworks/CoreNFC.framework; sourceTree = SDKROOT; };
+		AAAAAAAAAAAAAAAAAAAAAA1D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -61,6 +63,7 @@
 				AAAAAAAAAAAAAAAAAAAAAA0D /* ContentView.swift */,
 				AAAAAAAAAAAAAAAAAAAAAA0E /* NFCManager.swift */,
 				AAAAAAAAAAAAAAAAAAAAAA0F /* ShortcutManager.swift */,
+				AAAAAAAAAAAAAAAAAAAAAA1D /* Assets.xcassets */,
 				AAAAAAAAAAAAAAAAAAAAAA10 /* Info.plist */,
 				AAAAAAAAAAAAAAAAAAAAAA11 /* Luminaria.entitlements */,
 			);
@@ -133,6 +136,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AAAAAAAAAAAAAAAAAAAAAA1E /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

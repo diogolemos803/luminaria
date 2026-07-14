@@ -2,91 +2,130 @@ import SwiftUI
 
 struct ContentView: View {
     @StateObject private var nfcManager = NFCManager()
-    @State private var showSetupInstructions = false
+    @State private var isNightModeArmed = false
+    @State private var isPressed = false
+    @State private var showSettings = false
+
+    private let awakeBackground = Color(red: 0.957, green: 0.953, blue: 0.941)
+    private let sleepBackground = Color(red: 0.129, green: 0.141, blue: 0.165)
+    private let buttonAwakeFill = Color.white
+    private let buttonSleepFill = Color(red: 0.2, green: 0.216, blue: 0.243)
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 24) {
-                Image(systemName: nfcManager.isLinked ? "lamp.desk.fill" : "lamp.desk")
-                    .font(.system(size: 64))
-                    .foregroundStyle(nfcManager.isLinked ? .yellow : .secondary)
-                    .padding(.top, 40)
+            ZStack {
+                (isNightModeArmed ? sleepBackground : awakeBackground)
+                    .ignoresSafeArea()
 
-                Text(nfcManager.isLinked ? "Luminária vinculada" : "Nenhuma luminária vinculada")
-                    .font(.title2)
-                    .fontWeight(.semibold)
-
-                if let tagID = nfcManager.linkedTagID {
-                    Text("Tag: \(tagID)")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                Button(action: toggleNightMode) {
+                    Image(isNightModeArmed ? "LogoSono" : "LogoAcordado")
+                        .resizable()
+                        .scaledToFit()
+                        .padding(9)
+                        .frame(width: 220, height: 220)
+                        .background(isNightModeArmed ? buttonSleepFill : buttonAwakeFill)
+                        .clipShape(Circle())
+                        .shadow(color: .black.opacity(0.25), radius: 24, x: 0, y: 12)
                 }
-
-                if !nfcManager.statusMessage.isEmpty {
-                    Text(nfcManager.statusMessage)
-                        .font(.subheadline)
-                        .foregroundStyle(.green)
+                .buttonStyle(.plain)
+                .scaleEffect(isPressed ? 0.88 : 1.0)
+            }
+            .animation(.easeInOut(duration: 0.5), value: isNightModeArmed)
+            .animation(.spring(response: 0.25, dampingFraction: 0.55), value: isPressed)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        showSettings = true
+                    } label: {
+                        Image(systemName: "line.3.horizontal")
+                            .foregroundStyle(isNightModeArmed ? .white : .primary)
+                    }
                 }
-
-                if let error = nfcManager.errorMessage {
-                    Text(error)
-                        .font(.subheadline)
-                        .foregroundStyle(.red)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal)
+            }
+            .onAppear {
+                nfcManager.onRecognizedTap = {
+                    guard isNightModeArmed else { return }
+                    ShortcutManager.shared.runSleepShortcut()
                 }
+            }
+            .sheet(isPresented: $showSettings) {
+                SettingsView(nfcManager: nfcManager)
+            }
+        }
+    }
 
-                Spacer()
+    private func toggleNightMode() {
+        isPressed = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+            isPressed = false
+        }
+        isNightModeArmed.toggle()
+        if isNightModeArmed {
+            ShortcutManager.shared.runSleepShortcut()
+        }
+    }
+}
 
-                VStack(spacing: 12) {
-                    if !nfcManager.isLinked {
+struct SettingsView: View {
+    @ObservedObject var nfcManager: NFCManager
+    @Environment(\.dismiss) private var dismiss
+    @State private var showShortcutSetup = false
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section("Luminária") {
+                    if nfcManager.isLinked {
+                        Label("Vinculada", systemImage: "checkmark.circle.fill")
+                            .foregroundStyle(.green)
                         Button {
                             nfcManager.beginScanning()
                         } label: {
-                            Label("Vincular luminária", systemImage: "wave.3.right")
-                                .frame(maxWidth: .infinity)
+                            Label("Testar leitura da tag", systemImage: "wave.3.right")
                         }
-                        .buttonStyle(.borderedProminent)
-                        .controlSize(.large)
-                    } else {
-                        Button {
-                            nfcManager.beginScanning()
-                        } label: {
-                            Label("Encostar na luminária", systemImage: "wave.3.right")
-                                .frame(maxWidth: .infinity)
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .controlSize(.large)
-
-                        Button {
-                            showSetupInstructions = true
-                        } label: {
-                            Label("Configurar Atalho de Foco", systemImage: "moon.zzz")
-                                .frame(maxWidth: .infinity)
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.large)
-
                         Button(role: .destructive) {
                             nfcManager.unlink()
                         } label: {
                             Label("Desvincular luminária", systemImage: "xmark.circle")
-                                .frame(maxWidth: .infinity)
                         }
-                        .buttonStyle(.bordered)
-                        .controlSize(.large)
+                    } else {
+                        Button {
+                            nfcManager.beginScanning()
+                        } label: {
+                            Label("Vincular luminária", systemImage: "wave.3.right")
+                        }
                     }
                 }
-                .padding(.horizontal)
-                .padding(.bottom, 32)
-            }
-            .navigationTitle("Luminária")
-            .onAppear {
-                nfcManager.onRecognizedTap = {
-                    ShortcutManager.shared.runSleepShortcut()
+
+                Section("Atalho de Foco") {
+                    Button {
+                        showShortcutSetup = true
+                    } label: {
+                        Label("Configurar Atalho de Foco", systemImage: "moon.zzz")
+                    }
+                }
+
+                if !nfcManager.statusMessage.isEmpty {
+                    Section {
+                        Text(nfcManager.statusMessage)
+                            .foregroundStyle(.green)
+                    }
+                }
+
+                if let error = nfcManager.errorMessage {
+                    Section {
+                        Text(error)
+                            .foregroundStyle(.red)
+                    }
                 }
             }
-            .sheet(isPresented: $showSetupInstructions) {
+            .navigationTitle("Configurações")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Fechar") { dismiss() }
+                }
+            }
+            .sheet(isPresented: $showShortcutSetup) {
                 ShortcutSetupView()
             }
         }
@@ -104,7 +143,7 @@ struct ShortcutSetupView: View {
                 Text("Configuração única")
                     .font(.title2.bold())
 
-                Text("Crie um Atalho chamado \"\(ShortcutManager.shortcutName)\" no app Atalhos com a ação \"Definir Foco\" (ligado). Depois disso, toda vez que você encostar o iPhone na luminária, este atalho será executado automaticamente.")
+                Text("Crie um Atalho chamado \"\(ShortcutManager.shortcutName)\" no app Atalhos com a ação \"Definir Foco\" (ligado). Depois disso, sempre que o modo noite estiver ativado no app — seja pelo botão ou pela luminária via NFC — este atalho será executado automaticamente.")
                     .font(.body)
 
                 VStack(alignment: .leading, spacing: 8) {

@@ -12,3 +12,6 @@ xcuserdata/
 
 # macOS
 .DS_Store
+
+# Staging copies of assets (already integrated into Luminaria/Assets.xcassets)
+/Assets/
