@@ -55,25 +55,38 @@ vínculo para disparar um Atalho de Foco ("Dormir sem celular") na hora de dormi
 
 O reconhecimento de NFC hoje (`NFCManager.beginScanning()`, disparado quando o botão
 redondo arma o modo noite) é uma **sessão em primeiro plano, com o app aberto, que expira
-sozinha em ~60s** (limite da própria Apple pra `NFCNDEFReaderSession`). Isso foi uma escolha
-deliberada pro estágio atual (sem custo, sem infraestrutura, testável assim que houver um
-device), **mas o usuário foi explícito: essa NÃO é a versão final** — pro produto de
-verdade funcionar, a leitura NFC precisa acontecer **em segundo plano, sempre, com o app em
-modo noite**, independente de o app ter sido aberto recentemente ("se não a proposta
-quebra", palavras do usuário em 2026-07-14).
+sozinha em ~60s**. Isso foi uma escolha deliberada pro estágio atual (sem custo, sem
+infraestrutura, testável assim que houver um device), **mas o usuário foi explícito: essa
+NÃO é a versão final** — pro produto de verdade funcionar, a leitura NFC precisa acontecer
+**em segundo plano, sempre, com o app em modo noite**, independente de o app ter sido
+aberto recentemente ("se não a proposta quebra", palavras do usuário em 2026-07-14).
+
+**Por que o limite de ~60s existe**: não é ajustável, não é bug nosso. `NFCNDEFReaderSession`
+foi projetada pela Apple pra interações curtas e deliberadas (tipo escanear um pôster), não
+pra escuta contínua — por isso o iOS invalida a sessão sozinho após um período de
+inatividade, e não existe API pública pra estender ou desligar esse timeout.
 
 A versão final exige migrar pra Universal Links / Associated Domains (tag NFC com uma URL
 `https://` de um domínio do usuário, `apple-app-site-association` hospedado, entitlement
-`applinks:`, e tratar o deep link via `onOpenURL`) — e também persistir `isNightModeArmed`
-em `UserDefaults`, já que hoje é um `@State` transiente que se perde ao fechar o app (e o
-disparo por Universal Link pode acontecer com o app frio). Levantar esse assunto de novo
-quando o usuário tiver testado o MVP num device físico e/ou tiver um domínio disponível.
+`applinks:`, e tratar o deep link via `onOpenURL`) — é um mecanismo de sistema totalmente
+diferente do CoreNFC reader-session, sem limite de tempo e que funciona com o app fechado.
+Também exige persistir `isNightModeArmed` em `UserDefaults`, já que hoje é um `@State`
+transiente que se perde ao fechar o app (e o disparo por Universal Link pode acontecer com
+o app frio).
+
+Confirmado de novo com o usuário em 2026-07-14: **ainda fica pra depois**, exige domínio
+próprio com hospedagem que ele ainda não tem. Levantar esse assunto de novo quando o
+usuário tiver testado o MVP num device físico e/ou tiver um domínio disponível.
 
 ## Status atual
 
-- Build compila com sucesso no CI (`build.yml` verde no commit mais recente).
+- Build compila com sucesso no CI (`build.yml` verde no commit mais recente, `7ac5451`).
 - UI do botão principal aprovada pelo usuário (checkpoint em `b76aa35`, cores/ícones
   ajustados em `e5f028c`).
+- Corrigido em `7ac5451`: o botão redondo disparava o Atalho imediatamente (via
+  `shortcuts://`), o que tira o app de primeiro plano e mata a sessão NFC recém-iniciada
+  antes dela ter chance de reconhecer o toque físico. Agora o botão só arma o modo noite e
+  inicia a escuta; o Atalho só dispara quando a tag é de fato reconhecida.
 - Ainda faltam: testar em iPhone físico, criar conta Apple Developer, configurar os
   secrets do `release.yml`, e criar de fato o Atalho "Dormir sem celular" no app Atalhos.
 
