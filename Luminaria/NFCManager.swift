@@ -26,11 +26,16 @@ final class NFCManager: NSObject, ObservableObject {
             errorMessage = "Este iPhone não tem suporte a leitura NFC."
             return
         }
+        session?.invalidate()
         session = NFCNDEFReaderSession(delegate: self, queue: nil, invalidateAfterFirstRead: false)
         session?.alertMessage = isLinked
             ? "Aproxime o iPhone da luminária"
             : "Aproxime o iPhone da luminária para vincular"
         session?.begin()
+    }
+
+    func stopScanning() {
+        session?.invalidate()
     }
 
     func unlink() {

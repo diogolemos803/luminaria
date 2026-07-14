@@ -62,6 +62,9 @@ struct ContentView: View {
         isNightModeArmed.toggle()
         if isNightModeArmed {
             ShortcutManager.shared.runSleepShortcut()
+            nfcManager.beginScanning()
+        } else {
+            nfcManager.stopScanning()
         }
     }
 }
