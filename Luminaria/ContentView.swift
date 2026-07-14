@@ -61,7 +61,6 @@ struct ContentView: View {
         }
         isNightModeArmed.toggle()
         if isNightModeArmed {
-            ShortcutManager.shared.runSleepShortcut()
             nfcManager.beginScanning()
         } else {
             nfcManager.stopScanning()
@@ -146,7 +145,7 @@ struct ShortcutSetupView: View {
                 Text("Configuração única")
                     .font(.title2.bold())
 
-                Text("Crie um Atalho chamado \"\(ShortcutManager.shortcutName)\" no app Atalhos com a ação \"Definir Foco\" (ligado). Depois disso, sempre que o modo noite estiver ativado no app — seja pelo botão ou pela luminária via NFC — este atalho será executado automaticamente.")
+                Text("Crie um Atalho chamado \"\(ShortcutManager.shortcutName)\" no app Atalhos com a ação \"Definir Foco\" (ligado). Depois disso, toque no botão pra armar o modo noite e, em seguida, encoste o iPhone na luminária — este atalho será executado automaticamente.")
                     .font(.body)
 
                 VStack(alignment: .leading, spacing: 8) {
