@@ -17,11 +17,15 @@ final class ShortcutManager {
         return UIApplication.shared.canOpenURL(url)
     }
 
-    /// Executa o atalho já configurado pelo usuário.
+    /// Executa o atalho já configurado pelo usuário via x-callback-url: evita abrir o app
+    /// Atalhos por completo (mostra só um aviso rápido e volta pro Luminária sozinho).
     func runSleepShortcut(completion: ((Bool) -> Void)? = nil) {
         let encodedName = Self.shortcutName.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)
             ?? Self.shortcutName
-        guard let url = URL(string: "shortcuts://run-shortcut?name=\(encodedName)") else {
+        let successURL = "luminaria://shortcut-done".addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+        let errorURL = "luminaria://shortcut-error".addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+        let urlString = "shortcuts://x-callback-url/run-shortcut?name=\(encodedName)&x-success=\(successURL)&x-error=\(errorURL)"
+        guard let url = URL(string: urlString) else {
             completion?(false)
             return
         }
