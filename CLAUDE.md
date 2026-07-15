@@ -11,7 +11,9 @@ vínculo para disparar um Atalho de Foco ("Dormir sem celular") na hora de dormi
   configurar o Atalho (`ShortcutSetupView`).
 - `Luminaria/NFCManager.swift` — leitura NDEF via `CoreNFC`. Salva o UID da primeira tag
   lida (vínculo) e reconhece a mesma tag depois.
-- `Luminaria/ShortcutManager.swift` — dispara o Atalho via `shortcuts://run-shortcut`.
+- `Luminaria/ShortcutManager.swift` — dispara o Atalho via `shortcuts://x-callback-url/run-shortcut`
+  (com `x-success`/`x-error` apontando pro esquema custom `luminaria://`, registrado no
+  `Info.plist`), pra evitar abrir o app Atalhos por completo.
 - `Luminaria/Assets.xcassets` — `LogoAcordado`/`LogoSono`, PNGs com transparência real,
   recolorido (cinza escuro/cinza claro em vez de preto/branco puro) e recortado rente ao
   desenho. Os originais brutos ficam em `Assets/` na raiz (fora do git, só staging local).
@@ -22,6 +24,32 @@ vínculo para disparar um Atalho de Foco ("Dormir sem celular") na hora de dormi
 - `.github/workflows/release.yml` — disparo manual, archive + upload TestFlight. Só
   funciona depois de configurar secrets (certificado, provisioning profile, API key da
   App Store Connect) e trocar o Team ID em `ExportOptions.plist`.
+
+## Branch `teste-gratis-sem-nfc`
+
+Branch separada do `main`, criada porque o usuário não quer pagar a Apple Developer
+Program (~$99/ano, R$550) antes de validar se o conceito vale a pena — e ele também não
+tem acesso a Mac. Existe em paralelo ao `main`, sem afetar o que já funciona lá.
+
+Diferenças em relação ao `main`:
+- `Luminaria.entitlements` fica **vazio** (sem a capability de NFC), porque essa capability
+  só é liberada com conta paga — um Apple ID grátis (Personal Team, ou o certificado que o
+  AltServer gera) não consegue assiná-la.
+- `SettingsView` tem uma seção extra **"Teste sem NFC"** com o botão "Testar disparo do
+  Atalho", que chama `ShortcutManager.shared.runSleepShortcut()` direto, sem depender do
+  NFC — serve pra validar só a parte "app → Atalho → Foco" sem precisar de tag NFC nem da
+  luminária física.
+- `.github/workflows/sideload-ipa.yml` — só existe nesta branch. Compila pra dispositivo
+  real (`-sdk iphoneos`, `-destination 'generic/platform=iOS'`) **sem assinatura**
+  (`CODE_SIGNING_ALLOWED=NO`) e empacota num `.ipa`, disponível como artifact do Actions.
+  Esse `.ipa` é pensado pra ser assinado localmente por **AltServer/AltStore** (com Apple ID
+  grátis) e instalado no iPhone **sem precisar de Mac** — só Windows. Rodou com sucesso e
+  já foi validado num iPhone físico de verdade (primeira vez que o app rodou fora do CI).
+
+**Já validado no device físico via esse caminho** (2026-07-15): app instala, o botão
+redondo funciona, o menu abre, e o disparo do Atalho ativa o Foco de verdade. Dois bugs
+reais só apareceram nesse teste (ver "Decisões não óbvias" abaixo) — reforça o valor de
+testar em device assim que possível, mesmo sem NFC/conta paga ainda.
 
 ## Decisões não óbvias (o "porquê")
 
@@ -50,6 +78,20 @@ vínculo para disparar um Atalho de Foco ("Dormir sem celular") na hora de dormi
   precisar reprocessar algum asset.
 - **Sem `gh` CLI instalado** — o push pro GitHub usa `git` puro por HTTPS; o Git Credential
   Manager do Windows já cuida da autenticação (abre navegador se precisar).
+- **Bug real já corrigido (achado testando no device físico)**: o ícone do menu usava
+  `.foregroundStyle(.primary)`, que o iOS ajusta pelo modo claro/escuro **do sistema**, não
+  pelo `isNightModeArmed` do app. Com o iPhone em modo escuro do sistema, `.primary` virava
+  branco e sumia no fundo claro do Living mode. Fix: cores fixas (`menuIconAwake`/
+  `menuIconSleep`), sempre com contraste correto nos dois fundos do app, independente do
+  tema do iOS. Corrigido tanto no `main` quanto na `teste-gratis-sem-nfc`.
+- **`shortcuts://run-shortcut` abre o app Atalhos por completo** (achado testando no
+  device) — visualmente incômodo, o usuário não queria isso. Trocado por
+  `shortcuts://x-callback-url/run-shortcut` com `x-success`/`x-error` apontando pro esquema
+  custom `luminaria://` (registrado via `CFBundleURLTypes` no `Info.plist`, tratado num
+  `.onOpenURL` vazio no `ContentView`). A Apple documenta esse modo como uma execução com
+  só um aviso rápido (HUD), que volta sozinha pro app de origem — não abre mais o Atalhos
+  por completo. Não dá pra deixar 100% silencioso (Apple exige algum indicativo visual de
+  que o Foco está sendo alterado, por transparência/segurança).
 
 ## ⚠️ Pendência arquitetural importante (não esquecer)
 
@@ -80,15 +122,22 @@ usuário tiver testado o MVP num device físico e/ou tiver um domínio disponív
 
 ## Status atual
 
-- Build compila com sucesso no CI (`build.yml` verde no commit mais recente, `7ac5451`).
+- Build compila com sucesso no CI em ambas as branches (`main` e `teste-gratis-sem-nfc`).
 - UI do botão principal aprovada pelo usuário (checkpoint em `b76aa35`, cores/ícones
   ajustados em `e5f028c`).
-- Corrigido em `7ac5451`: o botão redondo disparava o Atalho imediatamente (via
+- Corrigido em `7ac5451` (main): o botão redondo disparava o Atalho imediatamente (via
   `shortcuts://`), o que tira o app de primeiro plano e mata a sessão NFC recém-iniciada
   antes dela ter chance de reconhecer o toque físico. Agora o botão só arma o modo noite e
   inicia a escuta; o Atalho só dispara quando a tag é de fato reconhecida.
-- Ainda faltam: testar em iPhone físico, criar conta Apple Developer, configurar os
-  secrets do `release.yml`, e criar de fato o Atalho "Dormir sem celular" no app Atalhos.
+- **App testado com sucesso num iPhone físico de verdade** (2026-07-15), via sideload
+  AltStore/AltServer na branch `teste-gratis-sem-nfc` — sem Mac, sem conta Apple Developer
+  paga. Fluxo completo validado: botão → Atalho → Foco ativa de verdade. Dois bugs reais
+  encontrados e corrigidos nesse teste (ícone do menu sumindo, Atalhos abrindo por
+  completo — ver "Decisões não óbvias").
+- Ainda faltam: conseguir acesso a conta Apple Developer paga (usuário decidiu adiar por
+  causa do custo) pra testar o NFC de verdade (não dá pra testar com Apple ID grátis, é
+  bloqueio da própria Apple) e configurar os secrets do `release.yml`. O Atalho "Dormir sem
+  celular" já foi criado pelo usuário e testado com sucesso.
 
 ## Convenções
 
