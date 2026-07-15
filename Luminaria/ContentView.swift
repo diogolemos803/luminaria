@@ -121,6 +121,16 @@ struct SettingsView: View {
                     }
                 }
 
+                // Branch de teste sem conta Apple Developer: dispara o Atalho direto,
+                // sem depender do NFC (que exige a entitlement paga).
+                Section("Teste sem NFC") {
+                    Button {
+                        ShortcutManager.shared.runSleepShortcut()
+                    } label: {
+                        Label("Testar disparo do Atalho", systemImage: "bolt")
+                    }
+                }
+
                 if !nfcManager.statusMessage.isEmpty {
                     Section {
                         Text(nfcManager.statusMessage)
