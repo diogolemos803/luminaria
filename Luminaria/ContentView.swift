@@ -12,6 +12,8 @@ struct ContentView: View {
     private let buttonSleepFill = Color(red: 0.2, green: 0.216, blue: 0.243)
     private let inkAwake = Color(red: 0.42, green: 0.416, blue: 0.4)
     private let inkSleep = Color(red: 0.545, green: 0.557, blue: 0.58)
+    private let menuIconAwake = Color(red: 0.27, green: 0.267, blue: 0.247)
+    private let menuIconSleep = Color(red: 0.929, green: 0.937, blue: 0.949)
 
     private var modeName: String {
         isNightModeArmed ? "Zleepy mode" : "Living mode"
@@ -52,7 +54,7 @@ struct ContentView: View {
                         showSettings = true
                     } label: {
                         Image(systemName: "line.3.horizontal")
-                            .foregroundStyle(isNightModeArmed ? .white : .primary)
+                            .foregroundStyle(isNightModeArmed ? menuIconSleep : menuIconAwake)
                     }
                 }
             }
