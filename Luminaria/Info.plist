@@ -32,5 +32,16 @@
     <array>
         <string>shortcuts</string>
     </array>
+    <key>CFBundleURLTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleURLName</key>
+            <string>com.luminaria.app.shortcuts-callback</string>
+            <key>CFBundleURLSchemes</key>
+            <array>
+                <string>luminaria</string>
+            </array>
+        </dict>
+    </array>
 </dict>
 </plist>

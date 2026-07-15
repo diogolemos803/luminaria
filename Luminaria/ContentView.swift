@@ -64,6 +64,11 @@ struct ContentView: View {
                     ShortcutManager.shared.runSleepShortcut()
                 }
             }
+            .onOpenURL { _ in
+                // Callback do x-callback-url do Atalhos (luminaria://shortcut-done|shortcut-error).
+                // Nada a fazer além de aceitar a volta ao app; existe só pra não abrir o app
+                // Atalhos por completo ao disparar o Atalho.
+            }
             .sheet(isPresented: $showSettings) {
                 SettingsView(nfcManager: nfcManager)
             }
