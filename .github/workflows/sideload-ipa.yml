@@ -1,0 +1,51 @@
+name: Sideload IPA (sem assinatura)
+
+# So existe nesta branch (teste-gratis-sem-nfc). Nao mexe em build.yml nem release.yml.
+#
+# Gera um .ipa SEM assinatura (sem conta Apple Developer paga), pronto pra ser assinado
+# localmente pelo AltServer/AltStore com um Apple ID gratis e instalado no iPhone via
+# Windows, sem precisar de Mac.
+
+on:
+  push:
+    branches: [ teste-gratis-sem-nfc ]
+  workflow_dispatch:
+
+jobs:
+  build-unsigned-ipa:
+    name: Build unsigned (device, Release)
+    runs-on: macos-15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      - name: Build for iOS device (sem assinatura)
+        run: |
+          xcodebuild build \
+            -project Luminaria.xcodeproj \
+            -scheme Luminaria \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY=""
+
+      - name: Empacotar em .ipa
+        run: |
+          APP_PATH="build/Build/Products/Release-iphoneos/Luminaria.app"
+          mkdir -p Payload
+          cp -r "$APP_PATH" Payload/
+          zip -r Luminaria-unsigned.ipa Payload
+
+      - name: Upload do .ipa como artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Luminaria-unsigned-ipa
+          path: Luminaria-unsigned.ipa
+          retention-days: 30
