@@ -209,7 +209,7 @@ struct SettingsView: View {
 }
 
 /// Passo único e manual: a Apple não permite que apps terceiros criem
-/// automaticamente um Atalho com a ação "Definir Foco", "Definir Despertador" ou
+/// automaticamente um Atalho com a ação "Definir Foco", "Adicionar Alarme" ou
 /// "Definir Modo Noturno".
 struct ShortcutSetupView: View {
     @Environment(\.dismiss) private var dismiss
@@ -229,7 +229,7 @@ struct ShortcutSetupView: View {
                         stepRow(number: 2, text: "Toque em + para criar um novo atalho")
                         stepRow(number: 3, text: "Nomeie como \"\(ShortcutManager.shortcutName)\"")
                         stepRow(number: 4, text: "Adicione \"Obter Datas da Entrada\" (usa o texto que o Luminária envia como entrada)")
-                        stepRow(number: 5, text: "Adicione \"Definir Despertador\", usando a data do passo anterior como horário")
+                        stepRow(number: 5, text: "Adicione \"Adicionar Alarme\", usando a data do passo anterior como horário")
                         stepRow(number: 6, text: "Adicione \"Definir Foco\" e escolha o modo desejado, ligado")
                         stepRow(number: 7, text: "Adicione \"Definir Modo Noturno\" como ligado")
                         stepRow(number: 8, text: "Salve o atalho")
