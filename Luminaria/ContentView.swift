@@ -67,6 +67,7 @@ struct ContentView: View {
                 nfcManager.onRecognizedTap = {
                     guard isNightModeArmed else { return }
                     ShortcutManager.shared.runSleepShortcut()
+                    alarmManager.armAlarm(hour: alarmHour, minute: alarmMinute)
                 }
             }
             .onOpenURL { _ in
@@ -75,7 +76,7 @@ struct ContentView: View {
                 // Atalhos por completo ao disparar o Atalho.
             }
             .sheet(isPresented: $showSettings) {
-                SettingsView(nfcManager: nfcManager)
+                SettingsView(nfcManager: nfcManager, alarmManager: alarmManager)
             }
             .fullScreenCover(isPresented: $alarmManager.isAlarmRinging) {
                 AlarmRingingView(alarmManager: alarmManager)
@@ -91,7 +92,6 @@ struct ContentView: View {
         isNightModeArmed.toggle()
         if isNightModeArmed {
             nfcManager.beginScanning()
-            alarmManager.armAlarm(hour: alarmHour, minute: alarmMinute)
         } else {
             nfcManager.stopScanning()
             alarmManager.disarmAlarm()
@@ -130,6 +130,7 @@ struct AlarmRingingView: View {
 
 struct SettingsView: View {
     @ObservedObject var nfcManager: NFCManager
+    @ObservedObject var alarmManager: AlarmManager
     @Environment(\.dismiss) private var dismiss
     @State private var showShortcutSetup = false
 
@@ -207,16 +208,21 @@ struct SettingsView: View {
                 } header: {
                     Text("Rotina de sono")
                 } footer: {
-                    Text("O despertador é enviado ao Atalho automaticamente. Já o horário de desligar o Modo Noturno precisa ser configurado manualmente numa automação por horário no app Atalhos — a Apple não permite que o Luminária crie isso sozinho.")
+                    Text("O despertador é do próprio Luminária (não passa pelo Atalho) e só arma quando a luminária é reconhecida via NFC com o modo noite ativo. Já o horário de desligar o Modo Noturno precisa ser configurado manualmente numa automação por horário no app Atalhos — a Apple não permite que o Luminária crie isso sozinho.")
                 }
 
-                // Branch de teste sem conta Apple Developer: dispara o Atalho direto,
-                // sem depender do NFC (que exige a entitlement paga).
+                // Branch de teste sem conta Apple Developer: dispara o Atalho e o despertador
+                // direto, sem depender do NFC (que exige a entitlement paga).
                 Section("Teste sem NFC") {
                     Button {
                         ShortcutManager.shared.runSleepShortcut()
                     } label: {
                         Label("Testar disparo do Atalho", systemImage: "bolt")
+                    }
+                    Button {
+                        alarmManager.triggerTestAlarm()
+                    } label: {
+                        Label("Testar tela do despertador", systemImage: "alarm")
                     }
                 }
 
@@ -248,8 +254,8 @@ struct SettingsView: View {
 }
 
 /// Passo único e manual: a Apple não permite que apps terceiros criem
-/// automaticamente um Atalho com a ação "Definir Foco", "Adicionar Alarme" ou
-/// "Definir Modo Noturno".
+/// automaticamente um Atalho com a ação "Definir Foco" ou "Definir Modo Noturno".
+/// O despertador NÃO passa por aqui — é nativo do Luminária.
 struct ShortcutSetupView: View {
     @Environment(\.dismiss) private var dismiss
 
@@ -267,11 +273,9 @@ struct ShortcutSetupView: View {
                         stepRow(number: 1, text: "Abra o app Atalhos")
                         stepRow(number: 2, text: "Toque em + para criar um novo atalho")
                         stepRow(number: 3, text: "Nomeie como \"\(ShortcutManager.shortcutName)\"")
-                        stepRow(number: 4, text: "Adicione \"Obter Datas da Entrada\" (usa o texto que o Luminária envia como entrada)")
-                        stepRow(number: 5, text: "Adicione \"Adicionar Alarme\", usando a data do passo anterior como horário")
-                        stepRow(number: 6, text: "Adicione \"Definir Foco\" e escolha o modo desejado, ligado")
-                        stepRow(number: 7, text: "Adicione \"Definir Modo Noturno\" como ligado")
-                        stepRow(number: 8, text: "Salve o atalho")
+                        stepRow(number: 4, text: "Adicione \"Definir Foco\" e escolha o modo desejado, ligado")
+                        stepRow(number: 5, text: "Adicione \"Definir Modo Noturno\" como ligado")
+                        stepRow(number: 6, text: "Salve o atalho")
                     }
                     .padding(.top, 8)
 
