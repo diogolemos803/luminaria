@@ -49,6 +49,13 @@ final class AlarmManager: NSObject, ObservableObject {
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
     }
 
+    /// Dispara a tela do alarme na hora, ignorando o horário configurado — só pra testar
+    /// como fica sem precisar esperar o horário de verdade chegar.
+    func triggerTestAlarm() {
+        configureAudioSession()
+        triggerAlarm()
+    }
+
     /// Chamado quando a pessoa toca "Parar" na tela do alarme tocando.
     func stopRingingAlarm() {
         stopAlarmSound()
