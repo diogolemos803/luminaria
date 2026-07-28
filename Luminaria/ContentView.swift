@@ -2,9 +2,13 @@ import SwiftUI
 
 struct ContentView: View {
     @StateObject private var nfcManager = NFCManager()
+    @StateObject private var alarmManager = AlarmManager()
     @State private var isNightModeArmed = false
     @State private var isPressed = false
     @State private var showSettings = false
+
+    @AppStorage("alarmHour") private var alarmHour: Int = 7
+    @AppStorage("alarmMinute") private var alarmMinute: Int = 0
 
     private let awakeBackground = Color(red: 0.957, green: 0.953, blue: 0.941)
     private let sleepBackground = Color(red: 0.129, green: 0.141, blue: 0.165)
@@ -59,6 +63,7 @@ struct ContentView: View {
                 }
             }
             .onAppear {
+                alarmManager.requestNotificationPermission()
                 nfcManager.onRecognizedTap = {
                     guard isNightModeArmed else { return }
                     ShortcutManager.shared.runSleepShortcut()
@@ -72,6 +77,9 @@ struct ContentView: View {
             .sheet(isPresented: $showSettings) {
                 SettingsView(nfcManager: nfcManager)
             }
+            .fullScreenCover(isPresented: $alarmManager.isAlarmRinging) {
+                AlarmRingingView(alarmManager: alarmManager)
+            }
         }
     }
 
@@ -83,8 +91,39 @@ struct ContentView: View {
         isNightModeArmed.toggle()
         if isNightModeArmed {
             nfcManager.beginScanning()
+            alarmManager.armAlarm(hour: alarmHour, minute: alarmMinute)
         } else {
             nfcManager.stopScanning()
+            alarmManager.disarmAlarm()
+        }
+    }
+}
+
+struct AlarmRingingView: View {
+    @ObservedObject var alarmManager: AlarmManager
+
+    var body: some View {
+        ZStack {
+            Color.black.ignoresSafeArea()
+            VStack(spacing: 28) {
+                Image(systemName: "alarm.fill")
+                    .font(.system(size: 64))
+                    .foregroundStyle(.white)
+                Text("Hora de acordar")
+                    .font(.title.bold())
+                    .foregroundStyle(.white)
+                Button {
+                    alarmManager.stopRingingAlarm()
+                } label: {
+                    Text("Parar")
+                        .font(.title2.bold())
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.red)
+                .padding(.horizontal, 40)
+            }
         }
     }
 }

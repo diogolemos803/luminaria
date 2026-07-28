@@ -13,6 +13,9 @@
 		AAAAAAAAAAAAAAAAAAAAAA16 /* ShortcutManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA0F /* ShortcutManager.swift */; };
 		AAAAAAAAAAAAAAAAAAAAAA1B /* CoreNFC.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA1A /* CoreNFC.framework */; };
 		AAAAAAAAAAAAAAAAAAAAAA1E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA1D /* Assets.xcassets */; };
+		AAAAAAAAAAAAAAAAAAAAAA20 /* AlarmManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA1F /* AlarmManager.swift */; };
+		AAAAAAAAAAAAAAAAAAAAAA22 /* silence_loop.wav in Resources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA21 /* silence_loop.wav */; };
+		AAAAAAAAAAAAAAAAAAAAAA24 /* alarm_tone.wav in Resources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA23 /* alarm_tone.wav */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -25,6 +28,9 @@
 		AAAAAAAAAAAAAAAAAAAAAA12 /* Luminaria.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Luminaria.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AAAAAAAAAAAAAAAAAAAAAA1A /* CoreNFC.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreNFC.framework; path = System/Library/Frameworks/CoreNFC.framework; sourceTree = SDKROOT; };
 		AAAAAAAAAAAAAAAAAAAAAA1D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		AAAAAAAAAAAAAAAAAAAAAA1F /* AlarmManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlarmManager.swift; sourceTree = "<group>"; };
+		AAAAAAAAAAAAAAAAAAAAAA21 /* silence_loop.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = silence_loop.wav; sourceTree = "<group>"; };
+		AAAAAAAAAAAAAAAAAAAAAA23 /* alarm_tone.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = alarm_tone.wav; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -63,7 +69,10 @@
 				AAAAAAAAAAAAAAAAAAAAAA0D /* ContentView.swift */,
 				AAAAAAAAAAAAAAAAAAAAAA0E /* NFCManager.swift */,
 				AAAAAAAAAAAAAAAAAAAAAA0F /* ShortcutManager.swift */,
+				AAAAAAAAAAAAAAAAAAAAAA1F /* AlarmManager.swift */,
 				AAAAAAAAAAAAAAAAAAAAAA1D /* Assets.xcassets */,
+				AAAAAAAAAAAAAAAAAAAAAA21 /* silence_loop.wav */,
+				AAAAAAAAAAAAAAAAAAAAAA23 /* alarm_tone.wav */,
 				AAAAAAAAAAAAAAAAAAAAAA10 /* Info.plist */,
 				AAAAAAAAAAAAAAAAAAAAAA11 /* Luminaria.entitlements */,
 			);
@@ -137,6 +146,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				AAAAAAAAAAAAAAAAAAAAAA1E /* Assets.xcassets in Resources */,
+				AAAAAAAAAAAAAAAAAAAAAA22 /* silence_loop.wav in Resources */,
+				AAAAAAAAAAAAAAAAAAAAAA24 /* alarm_tone.wav in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -151,6 +162,7 @@
 				AAAAAAAAAAAAAAAAAAAAAA14 /* ContentView.swift in Sources */,
 				AAAAAAAAAAAAAAAAAAAAAA15 /* NFCManager.swift in Sources */,
 				AAAAAAAAAAAAAAAAAAAAAA16 /* ShortcutManager.swift in Sources */,
+				AAAAAAAAAAAAAAAAAAAAAA20 /* AlarmManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
