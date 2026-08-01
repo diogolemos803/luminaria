@@ -16,6 +16,12 @@
 		AAAAAAAAAAAAAAAAAAAAAA20 /* AlarmManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA1F /* AlarmManager.swift */; };
 		AAAAAAAAAAAAAAAAAAAAAA22 /* silence_loop.wav in Resources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA21 /* silence_loop.wav */; };
 		AAAAAAAAAAAAAAAAAAAAAA24 /* alarm_tone.wav in Resources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA23 /* alarm_tone.wav */; };
+		AAAAAAAAAAAAAAAAAAAAAA26 /* SleepRoutineStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA25 /* SleepRoutineStore.swift */; };
+		AAAAAAAAAAAAAAAAAAAAAA28 /* SleepRoutinesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA27 /* SleepRoutinesView.swift */; };
+		AAAAAAAAAAAAAAAAAAAAAA2A /* HelpView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA29 /* HelpView.swift */; };
+		AAAAAAAAAAAAAAAAAAAAAA2C /* alarm_carrilhao.wav in Resources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA2B /* alarm_carrilhao.wav */; };
+		AAAAAAAAAAAAAAAAAAAAAA2E /* alarm_alvorada.wav in Resources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA2D /* alarm_alvorada.wav */; };
+		AAAAAAAAAAAAAAAAAAAAAA30 /* alarm_respiracao.wav in Resources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA2F /* alarm_respiracao.wav */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -31,6 +37,12 @@
 		AAAAAAAAAAAAAAAAAAAAAA1F /* AlarmManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlarmManager.swift; sourceTree = "<group>"; };
 		AAAAAAAAAAAAAAAAAAAAAA21 /* silence_loop.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = silence_loop.wav; sourceTree = "<group>"; };
 		AAAAAAAAAAAAAAAAAAAAAA23 /* alarm_tone.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = alarm_tone.wav; sourceTree = "<group>"; };
+		AAAAAAAAAAAAAAAAAAAAAA25 /* SleepRoutineStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepRoutineStore.swift; sourceTree = "<group>"; };
+		AAAAAAAAAAAAAAAAAAAAAA27 /* SleepRoutinesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepRoutinesView.swift; sourceTree = "<group>"; };
+		AAAAAAAAAAAAAAAAAAAAAA29 /* HelpView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelpView.swift; sourceTree = "<group>"; };
+		AAAAAAAAAAAAAAAAAAAAAA2B /* alarm_carrilhao.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = alarm_carrilhao.wav; sourceTree = "<group>"; };
+		AAAAAAAAAAAAAAAAAAAAAA2D /* alarm_alvorada.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = alarm_alvorada.wav; sourceTree = "<group>"; };
+		AAAAAAAAAAAAAAAAAAAAAA2F /* alarm_respiracao.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = alarm_respiracao.wav; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -70,9 +82,15 @@
 				AAAAAAAAAAAAAAAAAAAAAA0E /* NFCManager.swift */,
 				AAAAAAAAAAAAAAAAAAAAAA0F /* ShortcutManager.swift */,
 				AAAAAAAAAAAAAAAAAAAAAA1F /* AlarmManager.swift */,
+				AAAAAAAAAAAAAAAAAAAAAA25 /* SleepRoutineStore.swift */,
+				AAAAAAAAAAAAAAAAAAAAAA27 /* SleepRoutinesView.swift */,
+				AAAAAAAAAAAAAAAAAAAAAA29 /* HelpView.swift */,
 				AAAAAAAAAAAAAAAAAAAAAA1D /* Assets.xcassets */,
 				AAAAAAAAAAAAAAAAAAAAAA21 /* silence_loop.wav */,
 				AAAAAAAAAAAAAAAAAAAAAA23 /* alarm_tone.wav */,
+				AAAAAAAAAAAAAAAAAAAAAA2B /* alarm_carrilhao.wav */,
+				AAAAAAAAAAAAAAAAAAAAAA2D /* alarm_alvorada.wav */,
+				AAAAAAAAAAAAAAAAAAAAAA2F /* alarm_respiracao.wav */,
 				AAAAAAAAAAAAAAAAAAAAAA10 /* Info.plist */,
 				AAAAAAAAAAAAAAAAAAAAAA11 /* Luminaria.entitlements */,
 			);
@@ -148,6 +166,9 @@
 				AAAAAAAAAAAAAAAAAAAAAA1E /* Assets.xcassets in Resources */,
 				AAAAAAAAAAAAAAAAAAAAAA22 /* silence_loop.wav in Resources */,
 				AAAAAAAAAAAAAAAAAAAAAA24 /* alarm_tone.wav in Resources */,
+				AAAAAAAAAAAAAAAAAAAAAA2C /* alarm_carrilhao.wav in Resources */,
+				AAAAAAAAAAAAAAAAAAAAAA2E /* alarm_alvorada.wav in Resources */,
+				AAAAAAAAAAAAAAAAAAAAAA30 /* alarm_respiracao.wav in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -163,6 +184,9 @@
 				AAAAAAAAAAAAAAAAAAAAAA15 /* NFCManager.swift in Sources */,
 				AAAAAAAAAAAAAAAAAAAAAA16 /* ShortcutManager.swift in Sources */,
 				AAAAAAAAAAAAAAAAAAAAAA20 /* AlarmManager.swift in Sources */,
+				AAAAAAAAAAAAAAAAAAAAAA26 /* SleepRoutineStore.swift in Sources */,
+				AAAAAAAAAAAAAAAAAAAAAA28 /* SleepRoutinesView.swift in Sources */,
+				AAAAAAAAAAAAAAAAAAAAAA2A /* HelpView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

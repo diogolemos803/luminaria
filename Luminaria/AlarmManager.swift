@@ -7,38 +7,64 @@ import UserNotifications
 /// Funciona tocando um áudio quase inaudível em loop o tempo todo enquanto armado — isso
 /// mantém o app "vivo" em segundo plano (modo "Audio" do UIBackgroundModes). Quando bate o
 /// horário programado, troca esse áudio pelo som do alarme, em loop, até a pessoa abrir o
-/// app e parar. Uma notificação local serve de reforço, caso o app tenha sido encerrado.
+/// app e parar. Uma notificação local com o MESMO som escolhido serve de reforço — e é ela
+/// quem garante o alarme mesmo se o processo tiver sido suspenso, já que quem a dispara e
+/// toca o som é o próprio iOS, não o nosso `Timer`.
 ///
 /// Ressalva real: se a pessoa fechar o app manualmente (arrastar pra cima no seletor de
 /// apps) ou reiniciar o iPhone, o processo morre e o alarme não toca — mesma limitação de
 /// qualquer app de despertador de terceiros.
 final class AlarmManager: NSObject, ObservableObject {
+    static let shared = AlarmManager()
+
     @Published var isAlarmRinging = false
+    /// `nil` enquanto a permissão ainda não foi pedida/respondida. Exposto pra tela de
+    /// Ajuda poder avisar quando o usuário negou notificações (antes isso falhava calado).
+    @Published var notificationsAuthorized: Bool?
 
     private var silentPlayer: AVAudioPlayer?
     private var alarmPlayer: AVAudioPlayer?
+    private var previewPlayer: AVAudioPlayer?
     private var checkTimer: Timer?
     private var scheduledHour: Int?
     private var scheduledMinute: Int?
+    private var scheduledSoundFileName: String?
 
     private static let notificationID = "com.luminaria.alarm"
+    private static let armedKey = "com.luminaria.alarm.armed"
+    private static let hourKey = "com.luminaria.alarm.hour"
+    private static let minuteKey = "com.luminaria.alarm.minute"
+    private static let soundKey = "com.luminaria.alarm.sound"
 
-    func requestNotificationPermission() {
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { _, _ in }
+    private override init() {
+        super.init()
+        restorePersistedState()
     }
 
-    func armAlarm(hour: Int, minute: Int) {
+    func requestNotificationPermission() {
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { [weak self] granted, _ in
+            DispatchQueue.main.async {
+                self?.notificationsAuthorized = granted
+            }
+        }
+    }
+
+    func armAlarm(hour: Int, minute: Int, soundFileName: String) {
         scheduledHour = hour
         scheduledMinute = minute
+        scheduledSoundFileName = soundFileName
+        persistArmedState()
         configureAudioSession()
         startSilentLoop()
-        scheduleBackupNotification(hour: hour, minute: minute)
+        scheduleBackupNotification(hour: hour, minute: minute, soundFileName: soundFileName)
         startCheckTimer()
     }
 
     func disarmAlarm() {
         scheduledHour = nil
         scheduledMinute = nil
+        scheduledSoundFileName = nil
+        clearPersistedState()
         checkTimer?.invalidate()
         checkTimer = nil
         stopSilentLoop()
@@ -51,9 +77,18 @@ final class AlarmManager: NSObject, ObservableObject {
 
     /// Dispara a tela do alarme na hora, ignorando o horário configurado — só pra testar
     /// como fica sem precisar esperar o horário de verdade chegar.
-    func triggerTestAlarm() {
+    func triggerTestAlarm(soundFileName: String) {
         configureAudioSession()
-        triggerAlarm()
+        triggerAlarm(soundFileName: soundFileName)
+    }
+
+    /// Toca o som uma única vez, sem loop — prévia usada na edição de rotina, não mexe
+    /// no estado do despertador (silêncio/tocando).
+    func previewSound(_ option: AlarmSoundOption) {
+        configureAudioSession()
+        guard let url = Bundle.main.url(forResource: option.fileName, withExtension: "wav") else { return }
+        previewPlayer = try? AVAudioPlayer(contentsOf: url)
+        previewPlayer?.play()
     }
 
     /// Chamado quando a pessoa toca "Parar" na tela do alarme tocando.
@@ -63,6 +98,13 @@ final class AlarmManager: NSObject, ObservableObject {
         if scheduledHour != nil {
             startSilentLoop()
         }
+    }
+
+    /// Chamado quando o app volta a ficar ativo (ver `scenePhase` em `ContentView`) — cobre
+    /// o caso de o horário já ter passado com o app suspenso e nem o timer interno nem o
+    /// delegate da notificação terem tido chance de rodar a tempo.
+    func checkForMissedAlarm() {
+        checkAlarmTime()
     }
 
     private func configureAudioSession() {
@@ -92,17 +134,19 @@ final class AlarmManager: NSObject, ObservableObject {
     }
 
     private func checkAlarmTime() {
-        guard let hour = scheduledHour, let minute = scheduledMinute, !isAlarmRinging else { return }
+        guard let hour = scheduledHour, let minute = scheduledMinute, let soundFileName = scheduledSoundFileName,
+              !isAlarmRinging else { return }
         let now = Calendar.current.dateComponents([.hour, .minute], from: Date())
         if now.hour == hour && now.minute == minute {
-            triggerAlarm()
+            triggerAlarm(soundFileName: soundFileName)
         }
     }
 
-    private func triggerAlarm() {
+    private func triggerAlarm(soundFileName: String) {
+        guard !isAlarmRinging else { return }
         isAlarmRinging = true
         stopSilentLoop()
-        guard let url = Bundle.main.url(forResource: "alarm_tone", withExtension: "wav") else { return }
+        guard let url = Bundle.main.url(forResource: soundFileName, withExtension: "wav") else { return }
         alarmPlayer = try? AVAudioPlayer(contentsOf: url)
         alarmPlayer?.numberOfLoops = -1
         alarmPlayer?.volume = 1.0
@@ -114,14 +158,14 @@ final class AlarmManager: NSObject, ObservableObject {
         alarmPlayer = nil
     }
 
-    private func scheduleBackupNotification(hour: Int, minute: Int) {
+    private func scheduleBackupNotification(hour: Int, minute: Int, soundFileName: String) {
         let center = UNUserNotificationCenter.current()
         center.removePendingNotificationRequests(withIdentifiers: [Self.notificationID])
 
         let content = UNMutableNotificationContent()
         content.title = "Despertador"
         content.body = "Toque para abrir o Luminária"
-        content.sound = .default
+        content.sound = UNNotificationSound(named: UNNotificationSoundName("\(soundFileName).wav"))
         content.interruptionLevel = .timeSensitive
 
         var dateComponents = DateComponents()
@@ -130,5 +174,66 @@ final class AlarmManager: NSObject, ObservableObject {
         let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: true)
         let request = UNNotificationRequest(identifier: Self.notificationID, content: content, trigger: trigger)
         center.add(request)
+    }
+
+    private func persistArmedState() {
+        let defaults = UserDefaults.standard
+        defaults.set(true, forKey: Self.armedKey)
+        defaults.set(scheduledHour, forKey: Self.hourKey)
+        defaults.set(scheduledMinute, forKey: Self.minuteKey)
+        defaults.set(scheduledSoundFileName, forKey: Self.soundKey)
+    }
+
+    private func clearPersistedState() {
+        UserDefaults.standard.set(false, forKey: Self.armedKey)
+    }
+
+    /// Restaura o estado armado ao relançar o processo (ex.: o iOS mata o app em segundo
+    /// plano e o relança por causa do toque na notificação) — sem isso, o player de alarme
+    /// não saberia qual som tocar nem o timer teria o que comparar.
+    private func restorePersistedState() {
+        let defaults = UserDefaults.standard
+        guard defaults.bool(forKey: Self.armedKey) else { return }
+        guard defaults.object(forKey: Self.hourKey) != nil,
+              defaults.object(forKey: Self.minuteKey) != nil,
+              let soundFileName = defaults.string(forKey: Self.soundKey) else { return }
+        scheduledHour = defaults.integer(forKey: Self.hourKey)
+        scheduledMinute = defaults.integer(forKey: Self.minuteKey)
+        scheduledSoundFileName = soundFileName
+        configureAudioSession()
+        startSilentLoop()
+        startCheckTimer()
+    }
+
+    /// Reação imediata à entrega/toque da notificação de alarme — evita depender só do
+    /// `Timer` de 15s (que só roda se o processo estiver vivo) pra fazer a tela de tocar
+    /// aparecer. A própria entrega da notificação já significa que é hora do alarme.
+    private func handleAlarmNotificationFired() {
+        guard let soundFileName = scheduledSoundFileName else { return }
+        triggerAlarm(soundFileName: soundFileName)
+    }
+}
+
+extension AlarmManager: UNUserNotificationCenterDelegate {
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        willPresent notification: UNNotification,
+        withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+    ) {
+        if notification.request.identifier == Self.notificationID {
+            handleAlarmNotificationFired()
+        }
+        completionHandler([.banner, .sound, .list])
+    }
+
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        didReceive response: UNNotificationResponse,
+        withCompletionHandler completionHandler: @escaping () -> Void
+    ) {
+        if response.notification.request.identifier == Self.notificationID {
+            handleAlarmNotificationFired()
+        }
+        completionHandler()
     }
 }

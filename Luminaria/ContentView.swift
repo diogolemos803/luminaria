@@ -2,13 +2,12 @@ import SwiftUI
 
 struct ContentView: View {
     @StateObject private var nfcManager = NFCManager()
-    @StateObject private var alarmManager = AlarmManager()
+    @StateObject private var alarmManager = AlarmManager.shared
+    @StateObject private var routineStore = SleepRoutineStore()
+    @Environment(\.scenePhase) private var scenePhase
     @State private var isNightModeArmed = false
     @State private var isPressed = false
     @State private var showSettings = false
-
-    @AppStorage("alarmHour") private var alarmHour: Int = 7
-    @AppStorage("alarmMinute") private var alarmMinute: Int = 0
 
     private let awakeBackground = Color(red: 0.957, green: 0.953, blue: 0.941)
     private let sleepBackground = Color(red: 0.129, green: 0.141, blue: 0.165)
@@ -65,9 +64,14 @@ struct ContentView: View {
             .onAppear {
                 alarmManager.requestNotificationPermission()
                 nfcManager.onRecognizedTap = {
-                    guard isNightModeArmed else { return }
+                    guard isNightModeArmed, let routine = routineStore.activeRoutine else { return }
                     ShortcutManager.shared.runSleepShortcut()
-                    alarmManager.armAlarm(hour: alarmHour, minute: alarmMinute)
+                    alarmManager.armAlarm(hour: routine.alarmHour, minute: routine.alarmMinute, soundFileName: routine.soundOption.fileName)
+                }
+            }
+            .onChange(of: scenePhase) { newPhase in
+                if newPhase == .active {
+                    alarmManager.checkForMissedAlarm()
                 }
             }
             .onOpenURL { _ in
@@ -76,7 +80,7 @@ struct ContentView: View {
                 // Atalhos por completo ao disparar o Atalho.
             }
             .sheet(isPresented: $showSettings) {
-                SettingsView(nfcManager: nfcManager, alarmManager: alarmManager)
+                SettingsView(nfcManager: nfcManager, alarmManager: alarmManager, routineStore: routineStore)
             }
             .fullScreenCover(isPresented: $alarmManager.isAlarmRinging) {
                 AlarmRingingView(alarmManager: alarmManager)
@@ -131,42 +135,9 @@ struct AlarmRingingView: View {
 struct SettingsView: View {
     @ObservedObject var nfcManager: NFCManager
     @ObservedObject var alarmManager: AlarmManager
+    @ObservedObject var routineStore: SleepRoutineStore
     @Environment(\.dismiss) private var dismiss
-    @State private var showShortcutSetup = false
-
-    @AppStorage("alarmHour") private var alarmHour: Int = 7
-    @AppStorage("alarmMinute") private var alarmMinute: Int = 0
-    @AppStorage("nightShiftOffHour") private var nightShiftOffHour: Int = 7
-    @AppStorage("nightShiftOffMinute") private var nightShiftOffMinute: Int = 30
-
-    private var alarmTime: Binding<Date> {
-        Binding(
-            get: { Self.date(hour: alarmHour, minute: alarmMinute) },
-            set: { newValue in
-                let comps = Calendar.current.dateComponents([.hour, .minute], from: newValue)
-                alarmHour = comps.hour ?? 7
-                alarmMinute = comps.minute ?? 0
-            }
-        )
-    }
-
-    private var nightShiftOffTime: Binding<Date> {
-        Binding(
-            get: { Self.date(hour: nightShiftOffHour, minute: nightShiftOffMinute) },
-            set: { newValue in
-                let comps = Calendar.current.dateComponents([.hour, .minute], from: newValue)
-                nightShiftOffHour = comps.hour ?? 7
-                nightShiftOffMinute = comps.minute ?? 30
-            }
-        )
-    }
-
-    private static func date(hour: Int, minute: Int) -> Date {
-        var components = Calendar.current.dateComponents([.year, .month, .day], from: Date())
-        components.hour = hour
-        components.minute = minute
-        return Calendar.current.date(from: components) ?? Date()
-    }
+    @State private var showHelp = false
 
     var body: some View {
         NavigationStack {
@@ -194,21 +165,29 @@ struct SettingsView: View {
                     }
                 }
 
-                Section("Atalho de Foco") {
-                    Button {
-                        showShortcutSetup = true
+                Section("Rotina de sono") {
+                    NavigationLink {
+                        SleepRoutinesView(store: routineStore)
                     } label: {
-                        Label("Configurar Atalho de Foco", systemImage: "moon.zzz")
+                        if let routine = routineStore.activeRoutine {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Rotina ativa: \(routine.name)")
+                                Text(String(format: "%02d:%02d · %@", routine.alarmHour, routine.alarmMinute, routine.soundOption.displayName))
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        } else {
+                            Text("Gerenciar rotinas de sono")
+                        }
                     }
                 }
 
-                Section {
-                    DatePicker("Horário do despertador", selection: alarmTime, displayedComponents: .hourAndMinute)
-                    DatePicker("Desligar Modo Noturno às", selection: nightShiftOffTime, displayedComponents: .hourAndMinute)
-                } header: {
-                    Text("Rotina de sono")
-                } footer: {
-                    Text("O despertador é do próprio Luminária (não passa pelo Atalho) e só arma quando a luminária é reconhecida via NFC com o modo noite ativo. Já o horário de desligar o Modo Noturno precisa ser configurado manualmente numa automação por horário no app Atalhos — a Apple não permite que o Luminária crie isso sozinho.")
+                Section("Ajuda") {
+                    Button {
+                        showHelp = true
+                    } label: {
+                        Label("Como configurar o Atalho", systemImage: "questionmark.circle")
+                    }
                 }
 
                 if !nfcManager.statusMessage.isEmpty {
@@ -231,84 +210,10 @@ struct SettingsView: View {
                     Button("Fechar") { dismiss() }
                 }
             }
-            .sheet(isPresented: $showShortcutSetup) {
-                ShortcutSetupView()
+            .sheet(isPresented: $showHelp) {
+                HelpView()
             }
         }
-    }
-}
-
-/// Passo único e manual: a Apple não permite que apps terceiros criem
-/// automaticamente um Atalho com a ação "Definir Foco" ou "Definir Modo Noturno".
-/// O despertador NÃO passa por aqui — é nativo do Luminária.
-struct ShortcutSetupView: View {
-    @Environment(\.dismiss) private var dismiss
-
-    var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    Text("Configuração única")
-                        .font(.title2.bold())
-
-                    Text("Crie um Atalho chamado \"\(ShortcutManager.shortcutName)\" no app Atalhos com as ações abaixo, nessa ordem. Depois disso, toque no botão pra armar o modo noite e, em seguida, encoste o iPhone na luminária — este atalho será executado automaticamente.")
-                        .font(.body)
-
-                    VStack(alignment: .leading, spacing: 8) {
-                        stepRow(number: 1, text: "Abra o app Atalhos")
-                        stepRow(number: 2, text: "Toque em + para criar um novo atalho")
-                        stepRow(number: 3, text: "Nomeie como \"\(ShortcutManager.shortcutName)\"")
-                        stepRow(number: 4, text: "Adicione \"Definir Foco\" e escolha o modo desejado, ligado")
-                        stepRow(number: 5, text: "Adicione \"Definir Modo Noturno\" como ligado")
-                        stepRow(number: 6, text: "Salve o atalho")
-                    }
-                    .padding(.top, 8)
-
-                    Divider()
-                        .padding(.vertical, 4)
-
-                    Text("Desligar o Modo Noturno de manhã")
-                        .font(.headline)
-
-                    Text("Isso precisa de uma segunda automação, separada, porque o Atalho acima roda uma única vez à noite e não pode \"esperar\" até de manhã. Crie na aba Automação do app Atalhos:")
-                        .font(.body)
-
-                    VStack(alignment: .leading, spacing: 8) {
-                        stepRow(number: 1, text: "Na aba Automação, toque em + e escolha \"Horário do Dia\"")
-                        stepRow(number: 2, text: "Defina o mesmo horário configurado em \"Desligar Modo Noturno às\" no Luminária")
-                        stepRow(number: 3, text: "Adicione a ação \"Definir Modo Noturno\" como desligado")
-                        stepRow(number: 4, text: "Desative \"Perguntar Antes de Executar\"")
-                    }
-                    .padding(.top, 4)
-
-                    Button {
-                        ShortcutManager.shared.openShortcutsAppToCreate()
-                    } label: {
-                        Label("Abrir app Atalhos", systemImage: "arrow.up.right.square")
-                            .frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.large)
-                    .padding(.top, 8)
-                }
-                .padding()
-            }
-            .navigationTitle("Atalho de Foco")
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Fechar") { dismiss() }
-                }
-            }
-        }
-    }
-
-    private func stepRow(number: Int, text: String) -> some View {
-        HStack(alignment: .top, spacing: 8) {
-            Text("\(number).")
-                .fontWeight(.semibold)
-            Text(text)
-        }
-        .font(.subheadline)
     }
 }
 
