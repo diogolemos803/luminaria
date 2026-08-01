@@ -29,12 +29,19 @@ final class AlarmManager: NSObject, ObservableObject {
     private var scheduledHour: Int?
     private var scheduledMinute: Int?
     private var scheduledSoundFileName: String?
+    /// Próximo instante de verdade (data + hora) em que o alarme deve tocar. Comparar
+    /// contra isso, em vez de só "hora atual == hora agendada", é o que permite pegar o
+    /// alarme MESMO que a checagem só rode bem depois do horário (app reaberto tarde) —
+    /// antes, uma checagem por igualdade exata perdia a janela e nunca mais disparava
+    /// naquele dia.
+    private var nextFireDate: Date?
 
     private static let notificationID = "com.luminaria.alarm"
     private static let armedKey = "com.luminaria.alarm.armed"
     private static let hourKey = "com.luminaria.alarm.hour"
     private static let minuteKey = "com.luminaria.alarm.minute"
     private static let soundKey = "com.luminaria.alarm.sound"
+    private static let nextFireKey = "com.luminaria.alarm.nextFire"
 
     private override init() {
         super.init()
@@ -53,6 +60,7 @@ final class AlarmManager: NSObject, ObservableObject {
         scheduledHour = hour
         scheduledMinute = minute
         scheduledSoundFileName = soundFileName
+        nextFireDate = Self.nextOccurrence(hour: hour, minute: minute, after: Date())
         persistArmedState()
         configureAudioSession()
         startSilentLoop()
@@ -64,6 +72,7 @@ final class AlarmManager: NSObject, ObservableObject {
         scheduledHour = nil
         scheduledMinute = nil
         scheduledSoundFileName = nil
+        nextFireDate = nil
         clearPersistedState()
         checkTimer?.invalidate()
         checkTimer = nil
@@ -133,13 +142,34 @@ final class AlarmManager: NSObject, ObservableObject {
         }
     }
 
+    /// `>=`, não `==`: dispara tanto no instante exato quanto — o que importa de verdade
+    /// pro "atraso" — quando a checagem só roda bem depois do horário (app reaberto tarde,
+    /// timer perdeu a janela). Uma comparação por igualdade de hora/minuto só pega o alarme
+    /// dentro do minuto certo; passado esse minuto, nunca mais dispararia até o dia seguinte.
     private func checkAlarmTime() {
-        guard let hour = scheduledHour, let minute = scheduledMinute, let soundFileName = scheduledSoundFileName,
+        guard let fireDate = nextFireDate, let soundFileName = scheduledSoundFileName,
               !isAlarmRinging else { return }
-        let now = Calendar.current.dateComponents([.hour, .minute], from: Date())
-        if now.hour == hour && now.minute == minute {
-            triggerAlarm(soundFileName: soundFileName)
+        if Date() >= fireDate {
+            fireScheduledAlarm(soundFileName: soundFileName)
         }
+    }
+
+    /// Alarme disparado pelo agendamento real (timer, notificação, ou checagem ao reabrir
+    /// o app) — avança `nextFireDate` pro dia seguinte, pra permitir repetir diariamente
+    /// enquanto continuar armado, sem disparar de novo no mesmo dia depois de "Parar".
+    private func fireScheduledAlarm(soundFileName: String) {
+        if var fireDate = nextFireDate {
+            let calendar = Calendar.current
+            // Avança em loop, não só +1 dia: se o app ficou dias sem abrir enquanto
+            // armado, uma única adição poderia deixar a próxima data ainda no passado,
+            // disparando de novo em sequência assim que "Parar" fosse tocado.
+            repeat {
+                fireDate = calendar.date(byAdding: .day, value: 1, to: fireDate) ?? fireDate.addingTimeInterval(86400)
+            } while fireDate <= Date()
+            nextFireDate = fireDate
+            persistArmedState()
+        }
+        triggerAlarm(soundFileName: soundFileName)
     }
 
     private func triggerAlarm(soundFileName: String) {
@@ -151,6 +181,23 @@ final class AlarmManager: NSObject, ObservableObject {
         alarmPlayer?.numberOfLoops = -1
         alarmPlayer?.volume = 1.0
         alarmPlayer?.play()
+    }
+
+    /// Próxima ocorrência de `hour:minute` estritamente depois de `date` — se já passou
+    /// hoje, cai pro dia seguinte. Usar `Calendar` em vez de comparar só minutos-do-dia
+    /// evita o bug de virada de meia-noite (armar às 22h pra um alarme às 7h não pode
+    /// disparar na hora, tem que ser o 7h de amanhã).
+    private static func nextOccurrence(hour: Int, minute: Int, after date: Date) -> Date {
+        let calendar = Calendar.current
+        var components = calendar.dateComponents([.year, .month, .day], from: date)
+        components.hour = hour
+        components.minute = minute
+        components.second = 0
+        let candidate = calendar.date(from: components) ?? date
+        if candidate > date {
+            return candidate
+        }
+        return calendar.date(byAdding: .day, value: 1, to: candidate) ?? candidate
     }
 
     private func stopAlarmSound() {
@@ -182,6 +229,7 @@ final class AlarmManager: NSObject, ObservableObject {
         defaults.set(scheduledHour, forKey: Self.hourKey)
         defaults.set(scheduledMinute, forKey: Self.minuteKey)
         defaults.set(scheduledSoundFileName, forKey: Self.soundKey)
+        defaults.set(nextFireDate?.timeIntervalSince1970, forKey: Self.nextFireKey)
     }
 
     private func clearPersistedState() {
@@ -200,6 +248,11 @@ final class AlarmManager: NSObject, ObservableObject {
         scheduledHour = defaults.integer(forKey: Self.hourKey)
         scheduledMinute = defaults.integer(forKey: Self.minuteKey)
         scheduledSoundFileName = soundFileName
+        if defaults.object(forKey: Self.nextFireKey) != nil {
+            nextFireDate = Date(timeIntervalSince1970: defaults.double(forKey: Self.nextFireKey))
+        } else {
+            nextFireDate = Self.nextOccurrence(hour: scheduledHour ?? 7, minute: scheduledMinute ?? 0, after: Date())
+        }
         configureAudioSession()
         startSilentLoop()
         startCheckTimer()
@@ -210,7 +263,7 @@ final class AlarmManager: NSObject, ObservableObject {
     /// aparecer. A própria entrega da notificação já significa que é hora do alarme.
     private func handleAlarmNotificationFired() {
         guard let soundFileName = scheduledSoundFileName else { return }
-        triggerAlarm(soundFileName: soundFileName)
+        fireScheduledAlarm(soundFileName: soundFileName)
     }
 }
 

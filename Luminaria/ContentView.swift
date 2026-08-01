@@ -63,6 +63,9 @@ struct ContentView: View {
             }
             .onAppear {
                 alarmManager.requestNotificationPermission()
+                // Cobre o app sendo aberto do zero (cold launch): onChange(of: scenePhase)
+                // só reage a mudanças, não à primeira transição pra .active.
+                alarmManager.checkForMissedAlarm()
                 nfcManager.onRecognizedTap = {
                     guard isNightModeArmed, let routine = routineStore.activeRoutine else { return }
                     ShortcutManager.shared.runSleepShortcut()
