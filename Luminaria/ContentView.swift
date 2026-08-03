@@ -84,6 +84,7 @@ struct ContentView: View {
             }
             .sheet(isPresented: $showSettings) {
                 SettingsView(nfcManager: nfcManager, alarmManager: alarmManager, routineStore: routineStore)
+                    .environment(\.isNightModeArmed, isNightModeArmed)
             }
             .fullScreenCover(isPresented: $alarmManager.isAlarmRinging) {
                 AlarmRingingView(alarmManager: alarmManager)
@@ -140,74 +141,118 @@ struct SettingsView: View {
     @ObservedObject var alarmManager: AlarmManager
     @ObservedObject var routineStore: SleepRoutineStore
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.isNightModeArmed) private var isNightModeArmed
     @State private var showHelp = false
+
+    private var theme: ModeTheme { .current(armed: isNightModeArmed) }
 
     var body: some View {
         NavigationStack {
-            List {
-                Section("Luminária") {
-                    if nfcManager.isLinked {
-                        Label("Vinculada", systemImage: "checkmark.circle.fill")
-                            .foregroundStyle(.green)
-                        Button {
-                            nfcManager.beginScanning()
-                        } label: {
-                            Label("Testar leitura da tag", systemImage: "wave.3.right")
-                        }
-                        Button(role: .destructive) {
-                            nfcManager.unlink()
-                        } label: {
-                            Label("Desvincular luminária", systemImage: "xmark.circle")
-                        }
-                    } else {
-                        Button {
-                            nfcManager.beginScanning()
-                        } label: {
-                            Label("Vincular luminária", systemImage: "wave.3.right")
-                        }
-                    }
-                }
-
-                Section("Rotina de sono") {
-                    NavigationLink {
-                        SleepRoutinesView(store: routineStore)
-                    } label: {
-                        if let routine = routineStore.activeRoutine {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("Rotina ativa: \(routine.name)")
-                                Text(String(format: "%02d:%02d · %@", routine.alarmHour, routine.alarmMinute, routine.soundOption.displayName))
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
+            ZStack {
+                theme.stage.ignoresSafeArea()
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 20) {
+                        ThemedCard(title: "Luminária", theme: theme) {
+                            if nfcManager.isLinked {
+                                Button {
+                                    nfcManager.beginScanning()
+                                } label: {
+                                    ThemedRow(
+                                        theme: theme,
+                                        title: "Vinculada",
+                                        subtitle: "Testar leitura da tag",
+                                        leading: { IconBadge(systemName: "checkmark", theme: theme) },
+                                        accessory: { chevron }
+                                    )
+                                }
+                                .buttonStyle(.plain)
+                                Button {
+                                    nfcManager.unlink()
+                                } label: {
+                                    ThemedRow(
+                                        theme: theme,
+                                        showsDivider: true,
+                                        title: "Desvincular luminária",
+                                        leading: { IconBadge(systemName: "xmark", isDanger: true, theme: theme) },
+                                        accessory: { EmptyView() }
+                                    )
+                                }
+                                .buttonStyle(.plain)
+                            } else {
+                                Button {
+                                    nfcManager.beginScanning()
+                                } label: {
+                                    ThemedRow(
+                                        theme: theme,
+                                        title: "Vincular luminária",
+                                        leading: { IconBadge(systemName: "wave.3.right", theme: theme) },
+                                        accessory: { chevron }
+                                    )
+                                }
+                                .buttonStyle(.plain)
                             }
-                        } else {
-                            Text("Gerenciar rotinas de sono")
+                        }
+
+                        ThemedCard(title: "Rotina de sono", theme: theme) {
+                            NavigationLink {
+                                SleepRoutinesView(store: routineStore)
+                            } label: {
+                                if let routine = routineStore.activeRoutine {
+                                    ThemedRow(
+                                        theme: theme,
+                                        title: routine.name,
+                                        subtitle: String(format: "%02d:%02d · %@", routine.alarmHour, routine.alarmMinute, routine.soundOption.displayName),
+                                        leading: { ActiveDot(theme: theme) },
+                                        accessory: { chevron }
+                                    )
+                                } else {
+                                    ThemedRow(
+                                        theme: theme,
+                                        title: "Gerenciar rotinas de sono",
+                                        leading: { ActiveDot(theme: theme) },
+                                        accessory: { chevron }
+                                    )
+                                }
+                            }
+                        }
+
+                        ThemedCard(title: "Ajuda", theme: theme) {
+                            Button {
+                                showHelp = true
+                            } label: {
+                                ThemedRow(
+                                    theme: theme,
+                                    title: "Como configurar o Atalho",
+                                    leading: { IconBadge(systemName: "questionmark", theme: theme) },
+                                    accessory: { chevron }
+                                )
+                            }
+                            .buttonStyle(.plain)
+                        }
+
+                        if !nfcManager.statusMessage.isEmpty {
+                            Text(nfcManager.statusMessage)
+                                .font(.luminaria(.footnote, weight: .medium))
+                                .foregroundStyle(.green)
+                                .padding(.horizontal, 10)
+                        }
+
+                        if let error = nfcManager.errorMessage {
+                            Text(error)
+                                .font(.luminaria(.footnote, weight: .medium))
+                                .foregroundStyle(theme.danger)
+                                .padding(.horizontal, 10)
                         }
                     }
-                }
-
-                Section("Ajuda") {
-                    Button {
-                        showHelp = true
-                    } label: {
-                        Label("Como configurar o Atalho", systemImage: "questionmark.circle")
-                    }
-                }
-
-                if !nfcManager.statusMessage.isEmpty {
-                    Section {
-                        Text(nfcManager.statusMessage)
-                            .foregroundStyle(.green)
-                    }
-                }
-
-                if let error = nfcManager.errorMessage {
-                    Section {
-                        Text(error)
-                            .foregroundStyle(.red)
-                    }
+                    .padding(16)
+                    .padding(.top, 4)
                 }
             }
             .navigationTitle("Configurações")
+            .toolbarBackground(theme.stage, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
+            .toolbarColorScheme(isNightModeArmed ? .dark : .light, for: .navigationBar)
+            .tint(theme.accent)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Fechar") { dismiss() }
@@ -215,8 +260,15 @@ struct SettingsView: View {
             }
             .sheet(isPresented: $showHelp) {
                 HelpView()
+                    .environment(\.isNightModeArmed, isNightModeArmed)
             }
         }
+    }
+
+    private var chevron: some View {
+        Image(systemName: "chevron.right")
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(theme.inkMuted.opacity(0.7))
     }
 }
 

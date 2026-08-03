@@ -6,87 +6,77 @@ import SwiftUI
 /// antes ficavam misturadas na tela de Configurações.
 struct HelpView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.isNightModeArmed) private var isNightModeArmed
     @ObservedObject private var alarmManager = AlarmManager.shared
+
+    private var theme: ModeTheme { .current(armed: isNightModeArmed) }
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    Text("Configuração única")
-                        .font(.title2.bold())
+            ZStack {
+                theme.stage.ignoresSafeArea()
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 20) {
+                        Text("Configuração única")
+                            .font(.luminaria(.title2, weight: .bold))
+                            .foregroundStyle(theme.ink)
 
-                    Text("Crie um Atalho chamado \"\(ShortcutManager.shortcutName)\" no app Atalhos com as ações abaixo, nessa ordem. Depois disso, toque no botão pra armar o modo noite e, em seguida, encoste o iPhone na luminária — este atalho será executado automaticamente.")
-                        .font(.body)
+                        Text("Crie um Atalho chamado \"\(ShortcutManager.shortcutName)\" no app Atalhos com as ações abaixo, nessa ordem. Depois disso, toque no botão pra armar o modo noite e, em seguida, encoste o iPhone na luminária — este atalho será executado automaticamente.")
+                            .font(.luminaria(.subheadline))
+                            .foregroundStyle(theme.inkMuted)
 
-                    VStack(alignment: .leading, spacing: 8) {
-                        stepRow(number: 1, text: "Abra o app Atalhos")
-                        stepRow(number: 2, text: "Toque em + para criar um novo atalho")
-                        stepRow(number: 3, text: "Nomeie como \"\(ShortcutManager.shortcutName)\"")
-                        stepRow(number: 4, text: "Adicione \"Definir Foco\" e escolha o modo desejado, ligado")
-                        stepRow(number: 5, text: "Adicione \"Definir Modo Noturno\" como ligado")
-                        stepRow(number: 6, text: "Salve o atalho")
+                        ThemedCard(theme: theme) {
+                            stepRow(1, "Abra o app Atalhos")
+                            stepRow(2, "Toque em + para criar um novo atalho")
+                            stepRow(3, "Nomeie como \"\(ShortcutManager.shortcutName)\"")
+                            stepRow(4, "Adicione \"Definir Foco\" e escolha o modo desejado, ligado")
+                            stepRow(5, "Adicione \"Definir Modo Noturno\" como ligado")
+                            stepRow(6, "Salve o atalho")
+                        }
+
+                        FullPillButton(title: "Abrir app Atalhos", theme: theme) {
+                            ShortcutManager.shared.openShortcutsAppToCreate()
+                        }
+
+                        sectionHeading("Desligar o Modo Noturno de manhã")
+
+                        Text("O despertador é do próprio Luminária e não depende do Atalho — só arma quando a luminária é reconhecida via NFC com o modo noite ativo. Já o Modo Noturno precisa de uma automação separada, porque o Atalho acima roda uma única vez à noite e não pode \"esperar\" até de manhã. Crie na aba Automação do app Atalhos, usando o mesmo horário configurado na rotina de sono:")
+                            .font(.luminaria(.subheadline))
+                            .foregroundStyle(theme.inkMuted)
+
+                        ThemedCard(theme: theme) {
+                            stepRow(1, "Na aba Automação, toque em + e escolha \"Horário do Dia\"")
+                            stepRow(2, "Defina o mesmo horário configurado em \"Desligar Modo Noturno às\" na rotina ativa")
+                            stepRow(3, "Adicione a ação \"Definir Modo Noturno\" como desligado")
+                            stepRow(4, "Desative \"Perguntar Antes de Executar\"")
+                        }
+
+                        sectionHeading("Se o despertador não aparecer na tela bloqueada")
+
+                        Text("O Atalho ativa um Foco pra dormir sem celular — o próprio iOS pode estar escondendo a notificação do despertador por causa disso. Confira:")
+                            .font(.luminaria(.subheadline))
+                            .foregroundStyle(theme.inkMuted)
+
+                        ThemedCard(theme: theme) {
+                            stepRow(1, "Ajustes → Notificações → Luminária: ative Banners, Sons e \"Mostrar na Tela Bloqueada\"")
+                            stepRow(2, "Ajustes → Foco → (o modo que o Atalho ativa): adicione o Luminária aos apps sempre permitidos, ou ative \"Notificações Sensíveis ao Tempo\"")
+                        }
+
+                        statusChip
+
+                        Text("Uma sirene de verdade, tipo a do app Relógio, que ignora até o modo silencioso, exige uma permissão especial da Apple (\"alertas críticos\") inviável sem conta de desenvolvedor paga — por isso o despertador aqui depende de notificações normais do sistema.")
+                            .font(.luminaria(.caption))
+                            .foregroundStyle(theme.inkMuted)
                     }
-                    .padding(.top, 8)
-
-                    Divider()
-                        .padding(.vertical, 4)
-
-                    Text("Desligar o Modo Noturno de manhã")
-                        .font(.headline)
-
-                    Text("O despertador é do próprio Luminária e não depende do Atalho — só arma quando a luminária é reconhecida via NFC com o modo noite ativo. Já o Modo Noturno precisa de uma automação separada, porque o Atalho acima roda uma única vez à noite e não pode \"esperar\" até de manhã. Crie na aba Automação do app Atalhos, usando o mesmo horário configurado na rotina de sono:")
-                        .font(.body)
-
-                    VStack(alignment: .leading, spacing: 8) {
-                        stepRow(number: 1, text: "Na aba Automação, toque em + e escolha \"Horário do Dia\"")
-                        stepRow(number: 2, text: "Defina o mesmo horário configurado em \"Desligar Modo Noturno às\" na rotina ativa")
-                        stepRow(number: 3, text: "Adicione a ação \"Definir Modo Noturno\" como desligado")
-                        stepRow(number: 4, text: "Desative \"Perguntar Antes de Executar\"")
-                    }
+                    .padding(16)
                     .padding(.top, 4)
-
-                    Button {
-                        ShortcutManager.shared.openShortcutsAppToCreate()
-                    } label: {
-                        Label("Abrir app Atalhos", systemImage: "arrow.up.right.square")
-                            .frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.large)
-                    .padding(.top, 8)
-
-                    Divider()
-                        .padding(.vertical, 4)
-
-                    Text("Se o despertador não aparecer na tela bloqueada")
-                        .font(.headline)
-
-                    Text("O Atalho ativa um Foco pra dormir sem celular — o próprio iOS pode estar escondendo a notificação do despertador por causa disso. Confira:")
-                        .font(.body)
-
-                    VStack(alignment: .leading, spacing: 8) {
-                        stepRow(number: 1, text: "Ajustes → Notificações → Luminária: ative Banners, Sons e \"Mostrar na Tela Bloqueada\"")
-                        stepRow(number: 2, text: "Ajustes → Foco → (o modo que o Atalho ativa): adicione o Luminária aos apps sempre permitidos, ou ative \"Notificações Sensíveis ao Tempo\"")
-                    }
-                    .padding(.top, 4)
-
-                    HStack(spacing: 4) {
-                        Text("Notificações:")
-                        Text(notificationStatusText)
-                            .fontWeight(.semibold)
-                            .foregroundStyle(notificationStatusColor)
-                    }
-                    .font(.subheadline)
-                    .padding(.top, 4)
-
-                    Text("Uma sirene de verdade, tipo a do app Relógio, que ignora até o modo silencioso, exige uma permissão especial da Apple (\"alertas críticos\") inviável sem conta de desenvolvedor paga — por isso o despertador aqui depende de notificações normais do sistema.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .padding(.top, 4)
                 }
-                .padding()
             }
             .navigationTitle("Ajuda")
+            .toolbarBackground(theme.stage, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
+            .toolbarColorScheme(isNightModeArmed ? .dark : .light, for: .navigationBar)
+            .tint(theme.accent)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Fechar") { dismiss() }
@@ -97,30 +87,50 @@ struct HelpView: View {
 
     private var notificationStatusText: String {
         if alarmManager.notificationsAuthorized == true {
-            return "autorizadas"
+            return "Notificações autorizadas"
         } else if alarmManager.notificationsAuthorized == false {
-            return "negadas — abra Ajustes do iPhone pra permitir"
+            return "Notificações negadas — abra Ajustes do iPhone"
         } else {
-            return "ainda não solicitadas"
+            return "Notificações ainda não solicitadas"
         }
     }
 
-    private var notificationStatusColor: Color {
-        if alarmManager.notificationsAuthorized == true {
-            return .green
-        } else if alarmManager.notificationsAuthorized == false {
-            return .red
-        } else {
-            return .secondary
+    private var statusChip: some View {
+        let isGood = alarmManager.notificationsAuthorized == true
+        let color = alarmManager.notificationsAuthorized == false ? theme.danger : (isGood ? Color(uiColor: .systemGreen) : theme.inkMuted)
+        return HStack(spacing: 6) {
+            Circle().fill(color).frame(width: 7, height: 7)
+            Text(notificationStatusText)
+                .font(.luminaria(.caption, weight: .bold))
+                .foregroundStyle(color)
         }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(color.opacity(0.12))
+        .clipShape(Capsule())
     }
 
-    private func stepRow(number: Int, text: String) -> some View {
-        HStack(alignment: .top, spacing: 8) {
-            Text("\(number).")
-                .fontWeight(.semibold)
+    private func sectionHeading(_ text: String) -> some View {
+        Text(text)
+            .font(.luminaria(.headline, weight: .bold))
+            .foregroundStyle(theme.ink)
+            .padding(.top, 4)
+    }
+
+    private func stepRow(_ number: Int, _ text: String) -> some View {
+        HStack(alignment: .top, spacing: 10) {
+            Text("\(number)")
+                .font(.luminaria(.caption, weight: .heavy))
+                .foregroundStyle(theme.accent)
+                .frame(width: 20, height: 20)
+                .background(theme.accentWash)
+                .clipShape(Circle())
+                .padding(.top, 1)
             Text(text)
+                .font(.luminaria(.subheadline))
+                .foregroundStyle(theme.ink)
         }
-        .font(.subheadline)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 7)
     }
 }
