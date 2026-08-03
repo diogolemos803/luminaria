@@ -210,6 +210,20 @@ Fluxo usado pra testar de verdade, todo do Windows:
   longo ou deslizar a notificação) — funciona com a tela bloqueada, sem exigir
   desbloquear nem abrir o app, e é o mais perto que dá de "parar o despertador da tela
   de bloqueio" sem a permissão especial de alertas críticos da Apple.
+- **Bug real já corrigido: `interruptionLevel = .timeSensitive` na notificação não tinha
+  efeito nenhum** — achado testando no device: o Atalho ativa o Foco "Não Perturbe", que
+  filtrava o despertador mesmo marcado como sensível ao tempo no código. Causa: marcar
+  o *conteúdo* da notificação como `.timeSensitive` não basta — o app também precisa ter
+  pedido a *permissão* `.timeSensitive` em `requestAuthorization`, senão o iOS trata a
+  notificação como normal (sujeita a qualquer Foco ativo) independente do que o código
+  define. `requestNotificationPermission()` pedia só `[.alert, .sound]`; corrigido pra
+  `[.alert, .sound, .timeSensitive]`. Ressalva: quem já tinha o app instalado com a
+  permissão antiga precisa ativar manualmente "Notificações Sensíveis ao Tempo" em
+  Ajustes → Notificações → Luminária (ou apagar e reinstalar o app), já que o iOS não
+  reexibe o prompt de permissão sozinho só porque o código pediu uma opção nova — e
+  mesmo com a opção concedida, o Foco específico ativado pelo Atalho (ex.: Não Perturbe)
+  precisa ter o Luminária na lista de apps sempre permitidos pra garantia total (ver
+  checklist na `HelpView`).
 - **O som da notificação de backup era o som padrão do sistema, não o som do
   despertador** — trocado pra `UNNotificationSound(named:)` carregando o mesmo `.wav`
   escolhido na rotina ativa, assim mesmo com o app suspenso o som que toca (via

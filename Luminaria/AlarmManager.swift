@@ -51,8 +51,14 @@ final class AlarmManager: NSObject, ObservableObject {
         restorePersistedState()
     }
 
+    /// Pede `.timeSensitive` além de `.alert`/`.sound` — sem essa opção, marcar a
+    /// notificação como `content.interruptionLevel = .timeSensitive` não tem efeito
+    /// nenhum: o iOS trata como notificação normal e ela é filtrada por qualquer Foco
+    /// ativo (achado real testando no device: o Atalho liga o "Não Perturbe", que sem
+    /// essa permissão bloqueava o despertador mesmo com o nível marcado como sensível
+    /// ao tempo no código).
     func requestNotificationPermission() {
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { [weak self] granted, _ in
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .timeSensitive]) { [weak self] granted, _ in
             DispatchQueue.main.async {
                 self?.notificationsAuthorized = granted
             }
