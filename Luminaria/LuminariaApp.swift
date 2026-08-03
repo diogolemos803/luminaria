@@ -18,10 +18,20 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
 @main
 struct LuminariaApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+    @ObservedObject private var alarmManager = AlarmManager.shared
 
     var body: some Scene {
         WindowGroup {
+            // O fullScreenCover do despertador precisa ficar aqui, acima do ContentView,
+            // e não dentro dele: SwiftUI só permite UMA apresentação modal ativa por view,
+            // então se ele ficasse no mesmo nível do .sheet do menu de Configurações, o
+            // despertador não conseguiria aparecer por cima com o menu já aberto (bug real
+            // encontrado no device físico). Num nível acima, ele cobre tudo, inclusive uma
+            // sheet aberta por uma view descendente.
             ContentView()
+                .fullScreenCover(isPresented: $alarmManager.isAlarmRinging) {
+                    AlarmRingingView(alarmManager: alarmManager)
+                }
         }
     }
 }

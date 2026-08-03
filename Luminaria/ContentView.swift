@@ -86,9 +86,6 @@ struct ContentView: View {
                 SettingsView(nfcManager: nfcManager, alarmManager: alarmManager, routineStore: routineStore)
                     .environment(\.isNightModeArmed, isNightModeArmed)
             }
-            .fullScreenCover(isPresented: $alarmManager.isAlarmRinging) {
-                AlarmRingingView(alarmManager: alarmManager)
-            }
         }
     }
 
