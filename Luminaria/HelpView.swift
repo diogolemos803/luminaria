@@ -57,14 +57,19 @@ struct HelpView: View {
                             .font(.luminaria(.subheadline))
                             .foregroundStyle(theme.inkMuted)
 
-                        Text("Se nem o som tocar, o Atalho pode estar ativando um Foco que está escondendo a notificação. Confira:")
+                        Text("Se nem o som tocar, o Foco que o Atalho ativa (geralmente \"Não Perturbe\") está filtrando a notificação. O jeito mais confiável de resolver é adicionar o Luminária aos apps sempre permitidos DESSE Foco específico — não adianta liberar em outro:")
                             .font(.luminaria(.subheadline))
                             .foregroundStyle(theme.inkMuted)
 
                         ThemedCard(theme: theme) {
-                            stepRow(1, "Ajustes → Notificações → Luminária: ative Banners, Sons e \"Mostrar na Tela Bloqueada\"")
-                            stepRow(2, "Ajustes → Foco → (o modo que o Atalho ativa): adicione o Luminária aos apps sempre permitidos, ou ative \"Notificações Sensíveis ao Tempo\"")
+                            stepRow(1, "Ajustes → Foco → (o Foco que o Atalho ativa, ex.: Não Perturbe) → Apps → Adicionar Apps Permitidos → Luminária")
+                            stepRow(2, "Na mesma tela, ative \"Notificações Sensíveis ao Tempo\" como reforço")
+                            stepRow(3, "Ajustes → Notificações → Luminária: confirme Banners, Sons, \"Mostrar na Tela Bloqueada\" e \"Notificações Sensíveis ao Tempo\" todos ativados")
                         }
+
+                        Text("Se você já tinha instalado uma versão anterior do app, o iOS pode ter guardado a permissão de notificação antiga, sem a opção de sensível ao tempo — force o toggle manualmente no passo 3 acima, ou apague e reinstale o app pra pedir a permissão de novo do zero.")
+                            .font(.luminaria(.caption))
+                            .foregroundStyle(theme.inkMuted)
 
                         statusChip
 
