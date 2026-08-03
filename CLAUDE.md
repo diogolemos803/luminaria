@@ -56,6 +56,17 @@ depende de CI num runner macOS na nuvem (GitHub Actions) e de sideload via AltSt
   (antes era `ShortcutSetupView`, embutida em `ContentView.swift`) + o passo a passo de
   "desligar Modo Noturno de manhã" + um checklist novo pra quando o despertador não
   aparece na tela bloqueada (Ajustes → Notificações e Ajustes → Foco do iPhone).
+- `Luminaria/AppTheme.swift` — `ModeTheme` (paleta por modo: cream/branco no Living mode,
+  chumbo no Zleepy mode, acento âmbar de luminária acesa vs. periwinkle de luar) e os
+  componentes reutilizáveis (`ThemedCard`, `ThemedRow`, `IconBadge`, `ActiveDot`,
+  `FullPillButton`, `GhostDangerButton`) usados por `SettingsView`, `SleepRoutinesView` e
+  `HelpView` pra parecerem parte do mesmo app do botão redondo, não o Ajustes do iPhone.
+  Também define a `EnvironmentKey` `isNightModeArmed`, que propaga se o modo noite está
+  armado pras telas secundárias sem precisar passar o bool por parâmetro em cada `init`
+  — setada uma vez no `.sheet`/`.environment` de `ContentView`. **O botão redondo e o
+  texto "Living mode"/"Zleepy mode" da tela principal não usam nada disso** — ficam
+  exatamente como estavam antes, por pedido explícito do usuário (é a identidade da
+  marca, não deve mudar).
 - `Luminaria/silence_loop.wav` / `Luminaria/alarm_tone.wav` — sons originais (sirene
   clássica), gerados programaticamente. `Luminaria/alarm_carrilhao.wav` /
   `alarm_alvorada.wav` / `alarm_respiracao.wav` — 3 sons novos, calmos (onda senoidal
@@ -174,6 +185,31 @@ Fluxo usado pra testar de verdade, todo do Windows:
   de notificações estarem desativadas. Também foi preciso persistir o estado armado
   (hora/minuto/som) em `UserDefaults`, porque se o iOS mata e relança o processo pelo
   toque na notificação, as variáveis em memória se perdem.
+- **Bug real já corrigido: a checagem do despertador comparava hora/minuto exatos, não
+  "já passou desse horário?"** — mesmo com o delegate de notificação implementado, a
+  tela de "Parar" continuava aparecendo atrasada. Causa: `checkAlarmTime()` só disparava
+  se `now.hour == hour && now.minute == minute` — reabrir o app um pouco depois do
+  minuto certo (o caso mais comum) fazia a checagem falhar pra sempre naquele dia, já
+  que o minuto exato tinha passado. Trocado por um `nextFireDate` (`Date` de verdade,
+  não hora/minuto soltos) comparado com `>=`, calculado via `Calendar.nextOccurrence`
+  pra não cair no bug de virada de meia-noite (armar às 22h pra um alarme às 7h não pode
+  disparar na hora — tem que ser o 7h do dia seguinte). Também chama a checagem no
+  `.onAppear` do `ContentView`, já que `.onChange(of: scenePhase)` não reage à transição
+  inicial num cold launch.
+- **Bug real já corrigido: o despertador não conseguia aparecer com o menu de
+  Configurações aberto** — o `fullScreenCover` do despertador e o `.sheet` do menu
+  estavam os dois no `ContentView`; o SwiftUI só permite uma apresentação modal ativa
+  por view, então com o menu já aberto o `fullScreenCover` não conseguia furar. Corrigido
+  movendo o `fullScreenCover` pro `LuminariaApp`, um nível acima do `ContentView` — dali
+  ele cobre qualquer sheet aberta por uma view descendente.
+- **Nenhum app de terceiros consegue desenhar tela nenhuma por cima da tela de
+  bloqueio** — confirmado testando no device físico (o som toca normalmente com a tela
+  bloqueada, só a tela "Parar" que não aparece até desbloquear). Isso é um limite real
+  da plataforma, não um bug: só o app Relógio tem esse privilégio. Adicionado um botão
+  "Parar" direto na notificação (`UNNotificationAction`/`UNNotificationCategory`, toque
+  longo ou deslizar a notificação) — funciona com a tela bloqueada, sem exigir
+  desbloquear nem abrir o app, e é o mais perto que dá de "parar o despertador da tela
+  de bloqueio" sem a permissão especial de alertas críticos da Apple.
 - **O som da notificação de backup era o som padrão do sistema, não o som do
   despertador** — trocado pra `UNNotificationSound(named:)` carregando o mesmo `.wav`
   escolhido na rotina ativa, assim mesmo com o app suspenso o som que toca (via
@@ -192,6 +228,15 @@ Fluxo usado pra testar de verdade, todo do Windows:
   campos soltos em `@AppStorage` (`alarmHour`/`alarmMinute`/`nightShiftOffHour`/
   `nightShiftOffMinute`) por `SleepRoutineStore`, com migração automática pra não perder
   a configuração que já existia num device físico real em teste.
+- **Identidade visual própria nas telas secundárias, em vez de List/Form padrão do
+  iOS** — feedback do usuário: Configurações, Rotinas e Ajuda tinham "cara de Ajustes do
+  iPhone". Resolvido reaproveitando a paleta e a forma do botão principal (cream/chumbo,
+  cantos bem redondos, sombra suave) em cartões e badges circulares (`AppTheme.swift`),
+  em vez de inventar uma identidade nova. Processo idêntico ao já usado pro botão
+  principal: protótipo em `design/luminaria_settings_prototipo.html` → Artifact no
+  claude.ai → aprovação do usuário → implementação em SwiftUI. **Ressalva explícita do
+  usuário**: o botão redondo e a seleção Living/Zleepy mode da tela principal NÃO fazem
+  parte dessa mudança — são a identidade da marca, ficam intocados.
 - **Sons novos gerados por síntese, não baixados** — pedido explícito do usuário pra não
   soar como sirene ("alarme anti bombas"). São ondas senoidais puras com envelope suave
   de ataque/liberação, frequências mais baixas e ritmo mais lento que o som original
@@ -306,35 +351,41 @@ O usuário perguntou sobre viabilidade de controlar a luminária de verdade via 
   sozinho) em vez do app iOS tentar "ficar acordado" mandando comando por comando durante
   os 15 minutos — apps em segundo plano no iOS não têm garantia de rodar num horário exato.
 
-## Status atual (2026-08-01)
+## Status atual (2026-08-03)
 
-- Primeiro round de testes reais no iPhone físico (via AltStore, `teste-gratis-sem-nfc`)
-  trouxe 5 pontos, todos endereçados nesta rodada:
-  1. Despertador não aparecia na tela bloqueada quando disparava — corrigido com
-     `AlarmManager` virando `UNUserNotificationCenterDelegate` + som customizado na
-     notificação (ver Decisões acima). O que sobra é configuração de Ajustes do iPhone
-     (Foco/notificações), documentado na tela Ajuda.
-  2. Som chegava na hora mas a tela demorava — corrigido pelo mesmo fix (reação
-     orientada a evento em vez de só o `Timer` de 15s) + um catch-up via `scenePhase`
-     quando o app volta a ficar ativo.
-  3. Sem opção de som e o som soava como sirene — adicionados 3 sons calmos sintetizados
-     (`alarm_carrilhao`, `alarm_alvorada`, `alarm_respiracao`) e um seletor por rotina,
-     com botão de prévia.
-  4. Faltava suporte a várias rotinas de sono — `SleepRoutineStore` (lista dinâmica,
-     criar/editar/excluir/ativar), com migração automática da configuração antiga.
-  5. Menu de Configurações misturava instruções com campos de verdade — instruções
-     migradas pra `HelpView`, Configurações ficou só com controles.
+- Primeiro round de testes reais no iPhone físico (via AltStore, `teste-gratis-sem-nfc`,
+  2026-08-01) trouxe 5 pontos, todos endereçados naquela rodada: despertador não
+  aparecia na tela bloqueada quando disparava; som chegava na hora mas a tela demorava;
+  sem opção de som (e o som soava como sirene); faltava suporte a várias rotinas de
+  sono; menu de Configurações misturava instruções com campos de verdade. Ver Decisões
+  acima (`AlarmManager` virou `UNUserNotificationCenterDelegate`, `SleepRoutineStore`,
+  3 sons novos, `HelpView`).
+- Segundo round de testes (2026-08-03) trouxe mais 4 pontos, todos endereçados:
+  1. A tela de "Parar" ainda aparecia atrasada mesmo com o fix anterior — causa raiz
+     era comparação de hora/minuto exatos em vez de "já passou desse horário?"
+     (`checkAlarmTime` → `nextFireDate` com `>=`, ver Decisões acima).
+  2. O despertador não conseguia aparecer com o menu de Configurações aberto —
+     `fullScreenCover` e `.sheet` competindo pela mesma apresentação modal no
+     `ContentView`; movido pro `LuminariaApp`.
+  3. Confirmado que o despertador não aparece (nem pode) com a tela bloqueada — limite
+     real da plataforma, não bug; o som toca normalmente nessa hora. Adicionado botão
+     "Parar" direto na notificação (`UNNotificationAction`), funciona com a tela
+     bloqueada sem abrir o app.
+  4. "Cara de Ajustes do iPhone" nas telas secundárias — identidade visual própria
+     (`AppTheme.swift`), reaproveitando a paleta do botão principal em cartões e badges
+     circulares. Botão redondo e seleção Living/Zleepy mode continuam intocados (pedido
+     explícito do usuário).
 - Build compila com sucesso no CI em ambas as branches (checar `build.yml` e
-  `sideload-ipa.yml` depois deste round de mudanças).
+  `sideload-ipa.yml` depois de qualquer mudança nova).
 - UI do botão principal aprovada pelo usuário (checkpoint marcado com a tag `v1` no
-  `main`, protótipo aprovado em `design/luminaria_prototipo.html`).
+  `main`, protótipo aprovado em `design/luminaria_prototipo.html`). Identidade das
+  telas secundárias aprovada em `design/luminaria_settings_prototipo.html`.
 - O Atalho "Dormir sem celular" já foi criado pelo usuário no app Atalhos e testado com
   sucesso (ações: Definir Foco, Definir Modo Noturno).
-- Ainda faltam: o usuário testar esta rodada de mudanças no device físico (ver
-  verificação no fim do plano desta sessão); conseguir acesso a conta Apple Developer
-  paga (adiado por causa do custo) pra testar o NFC de verdade e configurar os secrets
-  do `release.yml`; criar manualmente a automação por horário de "desligar Modo Noturno
-  de manhã" no Atalhos.
+- Ainda faltam: o usuário testar esta rodada de mudanças no device físico; conseguir
+  acesso a conta Apple Developer paga (adiado por causa do custo) pra testar o NFC de
+  verdade e configurar os secrets do `release.yml`; criar manualmente a automação por
+  horário de "desligar Modo Noturno de manhã" no Atalhos.
 
 ## Como retomar em outro computador
 
