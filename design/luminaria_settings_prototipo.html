@@ -1,0 +1,670 @@
+<title>Luminária — identidade das telas secundárias</title>
+<style>
+  :root {
+    --stage-living: #F4F3F0;
+    --stage-zleepy: #21242A;
+    --card-living: #FFFFFF;
+    --card-zleepy: #2B2F37;
+    --ink-living: #4A4844;
+    --ink-zleepy: #D8DAE0;
+    --ink-muted-living: #96938A;
+    --ink-muted-zleepy: #888D96;
+    --hairline-living: rgba(20, 18, 10, 0.07);
+    --hairline-zleepy: rgba(255, 255, 255, 0.08);
+    --accent-lamp: #C6924F;
+    --accent-lamp-wash: rgba(198, 146, 79, 0.14);
+    --accent-moon: #93A3D6;
+    --accent-moon-wash: rgba(147, 163, 214, 0.16);
+    --danger-living: #B15C46;
+    --danger-zleepy: #D18A76;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    background: #EAE8E3;
+    font-family: ui-rounded, -apple-system, "SF Pro Rounded", "Segoe UI", sans-serif;
+    color: #33322E;
+  }
+  @media (prefers-color-scheme: dark) {
+    html, body { background: #17181B; color: #E7E6E2; }
+  }
+
+  .lab {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 40px 20px 80px;
+  }
+  .lab-head {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 28px;
+  }
+  .eyebrow {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.10em;
+    text-transform: uppercase;
+    color: var(--accent-lamp);
+  }
+  .lab-head h1 {
+    margin: 0;
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+  }
+  .lab-head p {
+    margin: 0;
+    max-width: 62ch;
+    font-size: 14.5px;
+    line-height: 1.55;
+    color: #6B685F;
+  }
+  @media (prefers-color-scheme: dark) {
+    .lab-head p { color: #AEACA4; }
+  }
+
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 32px;
+  }
+  .seg {
+    display: inline-flex;
+    background: rgba(0,0,0,0.05);
+    padding: 4px;
+    border-radius: 999px;
+    gap: 2px;
+  }
+  @media (prefers-color-scheme: dark) {
+    .seg { background: rgba(255,255,255,0.08); }
+  }
+  .seg button {
+    appearance: none;
+    border: none;
+    background: transparent;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 8px 16px;
+    border-radius: 999px;
+    cursor: pointer;
+    color: inherit;
+    opacity: 0.55;
+    transition: opacity 160ms ease, background-color 160ms ease, color 160ms ease;
+  }
+  .seg button.active {
+    opacity: 1;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.16);
+  }
+  @media (prefers-color-scheme: dark) {
+    .seg button.active { background: #34363C; }
+  }
+
+  .phones {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 28px;
+    align-items: flex-start;
+  }
+
+  .phone {
+    width: 300px;
+    height: 634px;
+    border-radius: 46px;
+    padding: 10px;
+    background: #0B0B0C;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.28), 0 2px 8px rgba(0,0,0,0.14);
+    flex: none;
+  }
+  .screen {
+    width: 100%;
+    height: 100%;
+    border-radius: 38px;
+    overflow: hidden;
+    position: relative;
+    background: var(--stage-living);
+    transition: background-color 320ms ease;
+    display: flex;
+    flex-direction: column;
+  }
+  .screen.zleepy { background: var(--stage-zleepy); }
+
+  .notch {
+    position: absolute;
+    top: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90px;
+    height: 22px;
+    border-radius: 12px;
+    background: #0B0B0C;
+    z-index: 5;
+  }
+
+  .navbar {
+    padding: 46px 22px 6px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex: none;
+  }
+  .navback {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,0.05);
+    color: var(--ink-living);
+    font-size: 15px;
+  }
+  .screen.zleepy .navback { background: rgba(255,255,255,0.08); color: var(--ink-zleepy); }
+  .navtitle {
+    font-size: 12.5px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--ink-muted-living);
+  }
+  .screen.zleepy .navtitle { color: var(--ink-muted-zleepy); }
+  .navspacer { width: 34px; }
+
+  .content {
+    flex: 1;
+    overflow: hidden;
+    padding: 6px 18px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .pagetitle {
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: var(--ink-living);
+    padding: 2px 4px 0;
+  }
+  .screen.zleepy .pagetitle { color: var(--ink-zleepy); }
+
+  .group {
+    background: var(--card-living);
+    border-radius: 22px;
+    padding: 4px;
+    box-shadow: 0 1px 2px rgba(20,18,10,0.04);
+  }
+  .screen.zleepy .group { background: var(--card-zleepy); box-shadow: none; }
+
+  .grouplabel {
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-muted-living);
+    padding: 0 10px 6px;
+  }
+  .screen.zleepy .grouplabel { color: var(--ink-muted-zleepy); }
+
+  .row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 11px 10px;
+    border-radius: 16px;
+    position: relative;
+  }
+  .row + .row::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 46px; right: 10px;
+    height: 1px;
+    background: var(--hairline-living);
+  }
+  .screen.zleepy .row + .row::before { background: var(--hairline-zleepy); }
+
+  .badge {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    font-size: 15px;
+    background: var(--accent-lamp-wash);
+    color: var(--accent-lamp);
+  }
+  .screen.zleepy .badge { background: var(--accent-moon-wash); color: var(--accent-moon); }
+  .badge.danger { background: rgba(177,92,70,0.12); color: var(--danger-living); }
+  .screen.zleepy .badge.danger { background: rgba(209,138,118,0.14); color: var(--danger-zleepy); }
+
+  .rowtext { flex: 1; min-width: 0; }
+  .rowtitle {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--ink-living);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .screen.zleepy .rowtitle { color: var(--ink-zleepy); }
+  .rowsub {
+    font-size: 12.5px;
+    color: var(--ink-muted-living);
+    margin-top: 1px;
+    font-variant-numeric: tabular-nums;
+  }
+  .screen.zleepy .rowsub { color: var(--ink-muted-zleepy); }
+
+  .chev {
+    font-size: 13px;
+    color: var(--ink-muted-living);
+    opacity: 0.6;
+  }
+  .screen.zleepy .chev { color: var(--ink-muted-zleepy); }
+
+  .dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--accent-lamp);
+    flex: none;
+  }
+  .screen.zleepy .dot { background: var(--accent-moon); }
+
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 14px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 700;
+    background: var(--accent-lamp);
+    color: #fff;
+  }
+  .screen.zleepy .pill { background: var(--accent-moon); color: #1B1E24; }
+
+  .fullpill {
+    width: 100%;
+    text-align: center;
+    padding: 14px;
+    border-radius: 18px;
+    font-size: 15.5px;
+    font-weight: 700;
+    background: var(--accent-lamp);
+    color: #fff;
+  }
+  .screen.zleepy .fullpill { background: var(--accent-moon); color: #1B1E24; }
+
+  .ghostpill {
+    width: 100%;
+    text-align: center;
+    padding: 13px;
+    border-radius: 18px;
+    font-size: 14.5px;
+    font-weight: 600;
+    color: var(--danger-living);
+    background: rgba(177,92,70,0.08);
+  }
+  .screen.zleepy .ghostpill { color: var(--danger-zleepy); background: rgba(209,138,118,0.10); }
+
+  .fieldrow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 12px;
+  }
+  .fieldlabel { font-size: 15px; font-weight: 500; color: var(--ink-living); }
+  .screen.zleepy .fieldlabel { color: var(--ink-zleepy); }
+  .fieldvalue {
+    font-size: 15px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--accent-lamp);
+  }
+  .screen.zleepy .fieldvalue { color: var(--accent-moon); }
+
+  .swatchrow { display: flex; gap: 10px; padding: 8px 10px 10px; }
+  .swatch {
+    flex: 1;
+    aspect-ratio: 1;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    background: rgba(0,0,0,0.04);
+    color: var(--ink-muted-living);
+    border: 2px solid transparent;
+  }
+  .screen.zleepy .swatch { background: rgba(255,255,255,0.06); color: var(--ink-muted-zleepy); }
+  .swatch.selected { border-color: var(--accent-lamp); color: var(--accent-lamp); background: var(--accent-lamp-wash); }
+  .screen.zleepy .swatch.selected { border-color: var(--accent-moon); color: var(--accent-moon); background: var(--accent-moon-wash); }
+
+  .textblock {
+    font-size: 14px;
+    line-height: 1.55;
+    color: var(--ink-living);
+    padding: 2px 8px;
+  }
+  .screen.zleepy .textblock { color: var(--ink-zleepy); }
+  .caption {
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: var(--ink-muted-living);
+    padding: 0 8px;
+  }
+  .screen.zleepy .caption { color: var(--ink-muted-zleepy); }
+
+  .step {
+    display: flex;
+    gap: 10px;
+    padding: 9px 10px;
+    align-items: flex-start;
+  }
+  .stepnum {
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: var(--accent-lamp-wash);
+    color: var(--accent-lamp);
+    font-size: 11px;
+    font-weight: 800;
+    display: flex; align-items: center; justify-content: center;
+    flex: none;
+    margin-top: 1px;
+  }
+  .screen.zleepy .stepnum { background: var(--accent-moon-wash); color: var(--accent-moon); }
+  .steptext { font-size: 13.5px; line-height: 1.5; color: var(--ink-living); }
+  .screen.zleepy .steptext { color: var(--ink-zleepy); }
+
+  .statuschip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 5px 10px 5px 8px;
+    border-radius: 999px;
+    background: rgba(93,143,96,0.14);
+    color: #4F7D52;
+    margin: 0 8px;
+    width: fit-content;
+  }
+  .screen.zleepy .statuschip { background: rgba(93,143,96,0.18); color: #8FBF92; }
+
+  .footnote {
+    margin-top: auto;
+    font-size: 11px;
+    text-align: center;
+    color: var(--ink-muted-living);
+    opacity: 0.7;
+    padding-bottom: 4px;
+  }
+  .screen.zleepy .footnote { color: var(--ink-muted-zleepy); }
+
+  .legend {
+    margin-top: 40px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+  }
+  .legend-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 16px 18px;
+    box-shadow: 0 1px 2px rgba(20,18,10,0.05);
+  }
+  @media (prefers-color-scheme: dark) {
+    .legend-card { background: #202226; box-shadow: none; }
+  }
+  .legend-card h3 {
+    margin: 0 0 6px;
+    font-size: 13px;
+    letter-spacing: 0.02em;
+  }
+  .legend-card p {
+    margin: 0;
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: #7A776E;
+  }
+  @media (prefers-color-scheme: dark) {
+    .legend-card p { color: #9C9A93; }
+  }
+  .swatches {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+  .sw { width: 22px; height: 22px; border-radius: 7px; }
+</style>
+
+<div class="lab">
+  <div class="lab-head">
+    <div class="eyebrow">Luminária · identidade das telas secundárias</div>
+    <h1>Configurações, Rotinas e Ajuda deixam de parecer o Ajustes do iPhone</h1>
+    <p>Mesma paleta e forma do botão principal — fundo cream/chumbo, cantos bem redondos,
+      sombra suave — só que aplicada em cartões e badges circulares em vez de listas
+      padrão do sistema. O acento muda de cor conforme o modo: âmbar de luminária acesa
+      no Living mode, azul de luar no Zleepy mode.</p>
+  </div>
+
+  <div class="controls">
+    <div class="seg" id="screenSeg">
+      <button class="active" data-screen="settings">Configurações</button>
+      <button data-screen="routines">Rotinas</button>
+      <button data-screen="edit">Editar rotina</button>
+      <button data-screen="help">Ajuda</button>
+    </div>
+    <div class="seg" id="modeSeg">
+      <button class="active" data-mode="living">Living mode</button>
+      <button data-mode="zleepy">Zleepy mode</button>
+    </div>
+  </div>
+
+  <div class="phones">
+    <div class="phone">
+      <div class="screen" id="screenStage">
+        <div class="notch"></div>
+
+        <!-- SETTINGS -->
+        <div class="pane" data-pane="settings">
+          <div class="navbar">
+            <span class="navspacer"></span>
+            <span class="navtitle">Configurações</span>
+            <span class="navspacer"></span>
+          </div>
+          <div class="content">
+            <div class="group">
+              <div class="grouplabel">Luminária</div>
+              <div class="row">
+                <div class="badge">✓</div>
+                <div class="rowtext">
+                  <div class="rowtitle">Vinculada</div>
+                  <div class="rowsub">Testar leitura da tag</div>
+                </div>
+                <span class="chev">›</span>
+              </div>
+              <div class="row">
+                <div class="badge danger">✕</div>
+                <div class="rowtext"><div class="rowtitle">Desvincular luminária</div></div>
+              </div>
+            </div>
+
+            <div class="group">
+              <div class="grouplabel">Rotina de sono</div>
+              <div class="row">
+                <div class="dot"></div>
+                <div class="rowtext">
+                  <div class="rowtitle">Minha rotina</div>
+                  <div class="rowsub">07:00 · Carrilhão suave</div>
+                </div>
+                <span class="chev">›</span>
+              </div>
+            </div>
+
+            <div class="group">
+              <div class="grouplabel">Ajuda</div>
+              <div class="row">
+                <div class="badge">?</div>
+                <div class="rowtext"><div class="rowtitle">Como configurar o Atalho</div></div>
+                <span class="chev">›</span>
+              </div>
+            </div>
+
+            <div class="footnote">Luminária Circadiana</div>
+          </div>
+        </div>
+
+        <!-- ROUTINES -->
+        <div class="pane" data-pane="routines" style="display:none">
+          <div class="navbar">
+            <div class="navback">‹</div>
+            <span class="navtitle">Rotinas</span>
+            <div class="navback">+</div>
+          </div>
+          <div class="content">
+            <div class="pagetitle">Rotinas de sono</div>
+            <div class="group">
+              <div class="row">
+                <div class="dot"></div>
+                <div class="rowtext">
+                  <div class="rowtitle">Minha rotina</div>
+                  <div class="rowsub">07:00 · Carrilhão suave</div>
+                </div>
+                <span class="chev">›</span>
+              </div>
+              <div class="row">
+                <div class="badge" style="background:transparent"></div>
+                <div class="rowtext">
+                  <div class="rowtitle">Fim de semana</div>
+                  <div class="rowsub">09:30 · Alvorada</div>
+                </div>
+                <span class="chev">›</span>
+              </div>
+              <div class="row">
+                <div class="badge" style="background:transparent"></div>
+                <div class="rowtext">
+                  <div class="rowtitle">Viagem</div>
+                  <div class="rowsub">05:45 · Respiração</div>
+                </div>
+                <span class="chev">›</span>
+              </div>
+            </div>
+            <div class="caption">Toque numa rotina pra editar. Deslize da esquerda pra ativar.</div>
+          </div>
+        </div>
+
+        <!-- EDIT ROUTINE -->
+        <div class="pane" data-pane="edit" style="display:none">
+          <div class="navbar">
+            <span class="navtitle" style="opacity:0.5">Cancelar</span>
+            <span class="navtitle">Editar rotina</span>
+            <span class="pill">Salvar</span>
+          </div>
+          <div class="content">
+            <div class="group">
+              <div class="fieldrow"><span class="fieldlabel">Nome</span><span class="fieldvalue">Minha rotina</span></div>
+            </div>
+            <div class="group">
+              <div class="fieldrow"><span class="fieldlabel">Despertador</span><span class="fieldvalue">07:00</span></div>
+              <div class="fieldrow"><span class="fieldlabel">Modo Noturno até</span><span class="fieldvalue">07:30</span></div>
+            </div>
+            <div class="group">
+              <div class="grouplabel">Som do despertador</div>
+              <div class="swatchrow">
+                <div class="swatch">🔔</div>
+                <div class="swatch selected">🎐</div>
+                <div class="swatch">🌅</div>
+                <div class="swatch">🌬️</div>
+              </div>
+              <div class="row" style="padding-top:0"><div class="rowtext"><div class="rowtitle" style="font-weight:600;font-size:13.5px">▶ Testar som</div></div></div>
+            </div>
+            <div class="ghostpill">Excluir rotina</div>
+          </div>
+        </div>
+
+        <!-- HELP -->
+        <div class="pane" data-pane="help" style="display:none">
+          <div class="navbar">
+            <div class="navback">‹</div>
+            <span class="navtitle">Ajuda</span>
+            <span class="navspacer"></span>
+          </div>
+          <div class="content" style="gap:14px">
+            <div class="pagetitle" style="font-size:21px">Configuração única</div>
+            <div class="textblock">Crie um Atalho chamado "Dormir sem celular" com as ações abaixo, nessa ordem.</div>
+            <div class="group">
+              <div class="step"><div class="stepnum">1</div><div class="steptext">Abra o app Atalhos</div></div>
+              <div class="step"><div class="stepnum">2</div><div class="steptext">Nomeie como "Dormir sem celular"</div></div>
+              <div class="step"><div class="stepnum">3</div><div class="steptext">Adicione "Definir Foco", ligado</div></div>
+              <div class="step"><div class="stepnum">4</div><div class="steptext">Adicione "Definir Modo Noturno", ligado</div></div>
+            </div>
+            <div class="fullpill">Abrir app Atalhos</div>
+            <div class="statuschip">● Notificações autorizadas</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="legend">
+    <div class="legend-card">
+      <div class="swatches">
+        <div class="sw" style="background:#F4F3F0;border:1px solid #ddd"></div>
+        <div class="sw" style="background:#21242A"></div>
+        <div class="sw" style="background:#C6924F"></div>
+        <div class="sw" style="background:#93A3D6"></div>
+      </div>
+      <h3>Cor</h3>
+      <p>Fundo cream/chumbo herdado do botão principal. Acento âmbar (luminária acesa) no
+        Living mode, acento periwinkle (luar) no Zleepy mode — o próprio produto é uma
+        lâmpada, então a cor de destaque muda de temperatura com o modo.</p>
+    </div>
+    <div class="legend-card">
+      <div class="swatches">
+        <div class="sw" style="background:#fff;border:1px solid #ddd;display:flex;align-items:center;justify-content:center;font-size:11px;color:#333">Aa</div>
+      </div>
+      <h3>Tipografia</h3>
+      <p>SF Pro Rounded (design <code>.rounded</code> nativo do SwiftUI) em vez da fonte
+        padrão do sistema — mais macio, sem parecer tela de Ajustes. Horários em
+        tabular-nums, rótulos de seção em versalete com leve tracking.</p>
+    </div>
+    <div class="legend-card">
+      <div class="swatches">
+        <div class="sw" style="border-radius:50%;background:#C6924F"></div>
+        <div class="sw" style="border-radius:8px;background:#eee;border:1px solid #ddd"></div>
+      </div>
+      <h3>Layout</h3>
+      <p>Cartões com cantos bem redondos (22px) flutuando no fundo, badges circulares em
+        vez de ícones soltos, e botões em pílula cheia — ecoando o círculo do botão
+        principal em vez do hairline list padrão do iOS.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+  const screenBtns = document.querySelectorAll('#screenSeg button');
+  const modeBtns = document.querySelectorAll('#modeSeg button');
+  const stage = document.getElementById('screenStage');
+  const panes = document.querySelectorAll('.pane');
+
+  screenBtns.forEach(btn => btn.addEventListener('click', () => {
+    screenBtns.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const target = btn.dataset.screen;
+    panes.forEach(p => p.style.display = (p.dataset.pane === target) ? '' : 'none');
+  }));
+
+  modeBtns.forEach(btn => btn.addEventListener('click', () => {
+    modeBtns.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    stage.classList.toggle('zleepy', btn.dataset.mode === 'zleepy');
+  }));
+</script>
