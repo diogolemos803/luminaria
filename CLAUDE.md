@@ -104,13 +104,16 @@ Diferenças em relação ao `main`:
 - `Luminaria.entitlements` fica **vazio** — a capability de NFC só é liberada com conta
   paga; um Apple ID grátis (Personal Team, ou o certificado que o AltServer gera) não
   consegue assiná-la.
-- `SettingsView` tem uma seção extra **"Teste sem NFC"** com três botões: "Testar disparo
-  do Atalho" (chama `ShortcutManager.shared.runSleepShortcut()` direto), "Testar tela do
-  despertador" (chama `alarmManager.triggerTestAlarm(soundFileName:)` direto, toca a tela
-  na hora) e "Armar despertador de teste" (chama `alarmManager.armAlarm(...)` com os
-  dados da rotina ativa, exercitando o pipeline real de agendamento/notificação sem
-  precisar de NFC funcional) — todos sem depender do NFC, pra validar cada parte
-  isoladamente sem precisar de tag nem luminária física.
+- `SettingsView` tem uma seção extra **"Teste sem NFC"** com quatro botões, todos sem
+  depender do NFC: "Testar disparo do Atalho" (`ShortcutManager.shared.runSleepShortcut()`
+  direto); "Testar tela do despertador" (`alarmManager.triggerTestAlarm(soundFileName:)`
+  direto — mostra a tela na hora, mas **nunca agenda notificação nenhuma**, é só uma
+  prévia visual instantânea, não exercita o pipeline real); "Armar despertador de teste"
+  (`alarmManager.armAlarm(...)` com os dados da rotina ativa — agenda de verdade, mas
+  só dispara no horário real configurado na rotina, ex. 07:00, não na hora que o botão
+  é tocado); "Armar para daqui a 1 min" (`alarmManager.armTestAlarm(soundFileName:)` —
+  mesmo pipeline real do `armAlarm`, só que calculando o horário como "agora + 60s", pra
+  ver a notificação de verdade chegar rápido sem precisar editar o horário da rotina).
 - `.github/workflows/sideload-ipa.yml` — só existe nesta branch. Compila pra dispositivo
   real (`-sdk iphoneos`, `-destination 'generic/platform=iOS'`) **sem assinatura**
   (`CODE_SIGNING_ALLOWED=NO`) e empacota num `.ipa` (zip com `Payload/Luminaria.app`),

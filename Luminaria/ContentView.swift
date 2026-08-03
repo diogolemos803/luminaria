@@ -263,7 +263,23 @@ struct SettingsView: View {
                                     theme: theme,
                                     showsDivider: true,
                                     title: "Armar despertador de teste",
+                                    subtitle: routineStore.activeRoutine.map { String(format: "Dispara às %02d:%02d, o horário da rotina", $0.alarmHour, $0.alarmMinute) },
                                     leading: { IconBadge(systemName: "clock.arrow.circlepath", theme: theme) },
+                                    accessory: { EmptyView() }
+                                )
+                            }
+                            .buttonStyle(.plain)
+                            .disabled(routineStore.activeRoutine == nil)
+                            Button {
+                                guard let routine = routineStore.activeRoutine else { return }
+                                alarmManager.armTestAlarm(soundFileName: routine.soundOption.fileName)
+                            } label: {
+                                ThemedRow(
+                                    theme: theme,
+                                    showsDivider: true,
+                                    title: "Armar para daqui a 1 min",
+                                    subtitle: "Testa a notificação de verdade sem esperar o horário da rotina",
+                                    leading: { IconBadge(systemName: "stopwatch", theme: theme) },
                                     accessory: { EmptyView() }
                                 )
                             }

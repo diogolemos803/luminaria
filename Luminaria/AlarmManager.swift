@@ -83,6 +83,15 @@ final class AlarmManager: NSObject, ObservableObject {
         UNUserNotificationCenter.current().setNotificationCategories([category])
     }
 
+    /// Arma pra ~1 minuto no futuro, com o mesmo pipeline real (`armAlarm`) — atalho de
+    /// teste pra disparar a notificação de verdade rapidinho, sem precisar editar o
+    /// horário da rotina toda vez só pra ver a notificação chegar.
+    func armTestAlarm(soundFileName: String) {
+        let target = Date().addingTimeInterval(60)
+        let comps = Calendar.current.dateComponents([.hour, .minute], from: target)
+        armAlarm(hour: comps.hour ?? 0, minute: comps.minute ?? 0, soundFileName: soundFileName)
+    }
+
     func armAlarm(hour: Int, minute: Int, soundFileName: String) {
         scheduledHour = hour
         scheduledMinute = minute
