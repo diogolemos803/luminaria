@@ -1,0 +1,60 @@
+workflows:
+  ios-testflight:
+    name: iOS - TestFlight
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+
+    integrations:
+      app_store_connect: LuminariaAppStoreKey   # nome que você vai dar à chave no passo "Integrations" do Codemagic
+
+    environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.luminaria.app
+      vars:
+        XCODE_PROJECT: "Luminaria.xcodeproj"
+        XCODE_SCHEME: "Luminaria"
+        APP_STORE_APPLE_ID: 0000000000          # <-- AJUSTE: Apple ID numérico do app no App Store Connect (~10 dígitos)
+      xcode: latest
+      cocoapods: default
+
+    scripts:
+      - name: Aplicar perfis de provisionamento no projeto
+        script: |
+          xcode-project use-profiles
+
+      - name: Incrementar o número de build automaticamente
+        script: |
+          BUILD_NUMBER=$(app-store-connect get-latest-app-store-build-number "$APP_STORE_APPLE_ID" || echo "0")
+          agvtool new-version -all $(($BUILD_NUMBER + 1))
+
+      - name: Compilar o IPA
+        script: |
+          xcode-project build-ipa \
+            --project "$XCODE_PROJECT" \
+            --scheme "$XCODE_SCHEME"
+
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.app.dSYM
+
+    publishing:
+      email:
+        recipients:
+          - diogolemos803@gmail.com
+        notify:
+          success: true
+          failure: true
+
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        beta_groups:
+          - Testadores Internos                 # <-- precisa existir no App Store Connect com esse nome exato
+
+    # Builds só manuais por enquanto (sem bloco "triggering"): como o projeto ainda está em
+    # desenvolvimento ativo com pushes frequentes na main, disparar um build+envio ao
+    # TestFlight a cada push consumiria minutos do Codemagic e criaria uma build nova pros
+    # testadores toda hora. Rode manualmente pelo painel do Codemagic ("Start new build")
+    # quando quiser cortar uma versão de teste de verdade.

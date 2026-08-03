@@ -76,6 +76,11 @@ depende de CI num runner macOS na nuvem (GitHub Actions) e de sideload via AltSt
 - `Luminaria/Assets.xcassets` — `LogoAcordado`/`LogoSono`, PNGs com transparência real,
   recolorido (cinza escuro/cinza claro em vez de preto/branco puro) e recortado rente ao
   desenho. Os originais brutos ficam em `Assets/` na raiz (fora do git, só staging local).
+  `AppIcon` (só no `main`) — ícone da App Store, 1024×1024 sem canal alfa (exigência da
+  Apple), gerado por `scripts/generate_app_icon.ps1`: `LogoAcordado` centralizado num
+  círculo branco sobre fundo cream, imitando o botão principal em miniatura. É
+  provisório — feito só pra não travar o primeiro build no Codemagic/TestFlight,
+  substituir por um ícone de verdade quando houver um definido.
 - `design/luminaria_prototipo.html` — protótipo HTML aprovado do botão, referência visual
   do checkpoint (`v1`). Não é o app de verdade, é só pra revisar visual sem precisar de
   Mac — publicado também como Artifact no claude.ai durante o desenvolvimento.
@@ -87,6 +92,17 @@ depende de CI num runner macOS na nuvem (GitHub Actions) e de sideload via AltSt
   funciona depois de configurar secrets (certificado, provisioning profile, API key da
   App Store Connect) e trocar o Team ID em `ExportOptions.plist`. Ainda não usado — exige
   conta paga que o usuário decidiu adiar.
+- `codemagic.yaml` (só no `main`) — caminho alternativo ao `release.yml` pra publicar no
+  TestFlight, usando Codemagic.io em vez de GitHub Actions. Diferente do `release.yml`
+  (certificado/profile manuais via secrets), o Codemagic gera e renova sozinho o
+  certificado e o provisioning profile a partir de uma App Store Connect API Key
+  cadastrada na conta do Codemagic — não precisa de Mac nem de Keychain em momento
+  nenhum. Builds são só manuais (sem gatilho automático em push) de propósito: com
+  pushes frequentes na `main`, disparar builds a cada push gastaria minutos do
+  Codemagic à toa e mandaria uma build nova pros testadores toda hora. Falta preencher
+  `APP_STORE_APPLE_ID` no YAML (depois de criar o app no App Store Connect) e cadastrar
+  a chave `LuminariaAppStoreKey` na conta do Codemagic — os dois exigem a conta Apple
+  Developer paga, que ainda está pendente.
 
 ## As duas branches
 
@@ -310,6 +326,13 @@ Fluxo usado pra testar de verdade, todo do Windows:
 - **Processamento de imagem sem instalar nada**: sem Pillow/ImageMagick disponíveis (e o
   usuário pediu explicitamente pra não instalar pacotes), o recorte/recolorização dos
   ícones foi feito com o que já vem no Windows — PowerShell + `System.Drawing` (.NET).
+- **Bug real já corrigido: `Bitmap` com `Format32bppRgb` ainda salva PNG com canal
+  alfa** — gerando o `AppIcon-1024.png`, `Format32bppRgb` (sem "A" no nome, teoricamente
+  sem alfa) ainda produzia um PNG RGBA de verdade (alfa sempre opaco, mas o canal
+  continuava existindo no arquivo) — o encoder de PNG do GDI+ não elimina o canal só por
+  causa do pixel format do `Bitmap` em memória. A Apple rejeita qualquer ícone de App
+  Store com canal alfa presente, mesmo 100% opaco. Fix: `Format24bppRgb` (24 bits,
+  literalmente sem espaço pra canal alfa) em vez de `Format32bppRgb`.
 - **Sem `gh` CLI instalado** — o push pro GitHub usa `git` puro por HTTPS; o Git Credential
   Manager do Windows já cuida da autenticação (abre navegador se precisar). Downloads de
   artifacts de Actions, porém, **exigem autenticação e não dão pra baixar via curl sem
@@ -389,6 +412,10 @@ O usuário perguntou sobre viabilidade de controlar a luminária de verdade via 
      (`AppTheme.swift`), reaproveitando a paleta do botão principal em cartões e badges
      circulares. Botão redondo e seleção Living/Zleepy mode continuam intocados (pedido
      explícito do usuário).
+- `main` foi trazido pra paridade de funcionalidades com `teste-gratis-sem-nfc` via
+  cherry-pick (checagem `>=` do despertador, identidade visual, fix do `fullScreenCover`,
+  botão "Parar" na notificação, permissão `.timeSensitive`) — importante porque o `main`
+  é a branch usada pra testar NFC de verdade, e estava 6 commits atrasada.
 - Build compila com sucesso no CI em ambas as branches (checar `build.yml` e
   `sideload-ipa.yml` depois de qualquer mudança nova).
 - UI do botão principal aprovada pelo usuário (checkpoint marcado com a tag `v1` no
@@ -396,10 +423,15 @@ O usuário perguntou sobre viabilidade de controlar a luminária de verdade via 
   telas secundárias aprovada em `design/luminaria_settings_prototipo.html`.
 - O Atalho "Dormir sem celular" já foi criado pelo usuário no app Atalhos e testado com
   sucesso (ações: Definir Foco, Definir Modo Noturno).
+- Pipeline do Codemagic (`codemagic.yaml`) e os ajustes que ele exige (ícone de App
+  Store, `ITSAppUsesNonExemptEncryption`) já estão prontos no `main`, preparando o
+  terreno pra publicar no TestFlight assim que a conta Apple Developer paga existir.
 - Ainda faltam: o usuário testar esta rodada de mudanças no device físico; conseguir
-  acesso a conta Apple Developer paga (adiado por causa do custo) pra testar o NFC de
-  verdade e configurar os secrets do `release.yml`; criar manualmente a automação por
-  horário de "desligar Modo Noturno de manhã" no Atalhos.
+  acesso a conta Apple Developer paga (usuário ia decidir isso numa reunião com uma
+  desenvolvedora de apps em 2026-08-03) pra testar o NFC de verdade, configurar os
+  secrets do `release.yml` ou a chave do Codemagic, e trocar o ícone provisório por um
+  de verdade; criar manualmente a automação por horário de "desligar Modo Noturno de
+  manhã" no Atalhos.
 
 ## Como retomar em outro computador
 
