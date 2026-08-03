@@ -42,9 +42,12 @@ final class AlarmManager: NSObject, ObservableObject {
     private static let minuteKey = "com.luminaria.alarm.minute"
     private static let soundKey = "com.luminaria.alarm.sound"
     private static let nextFireKey = "com.luminaria.alarm.nextFire"
+    private static let alarmCategoryID = "com.luminaria.alarmCategory"
+    private static let stopActionID = "com.luminaria.stopAlarmAction"
 
     private override init() {
         super.init()
+        registerNotificationCategories()
         restorePersistedState()
     }
 
@@ -54,6 +57,24 @@ final class AlarmManager: NSObject, ObservableObject {
                 self?.notificationsAuthorized = granted
             }
         }
+    }
+
+    /// Botão "Parar" direto na notificação (toque longo ou deslizar), sem precisar abrir
+    /// o app — funciona até com a tela bloqueada, já que ações de notificação não exigem
+    /// desbloquear o iPhone por padrão.
+    private func registerNotificationCategories() {
+        let stopAction = UNNotificationAction(
+            identifier: Self.stopActionID,
+            title: "Parar",
+            options: []
+        )
+        let category = UNNotificationCategory(
+            identifier: Self.alarmCategoryID,
+            actions: [stopAction],
+            intentIdentifiers: [],
+            options: []
+        )
+        UNUserNotificationCenter.current().setNotificationCategories([category])
     }
 
     func armAlarm(hour: Int, minute: Int, soundFileName: String) {
@@ -214,6 +235,7 @@ final class AlarmManager: NSObject, ObservableObject {
         content.body = "Toque para abrir o Luminária"
         content.sound = UNNotificationSound(named: UNNotificationSoundName("\(soundFileName).wav"))
         content.interruptionLevel = .timeSensitive
+        content.categoryIdentifier = Self.alarmCategoryID
 
         var dateComponents = DateComponents()
         dateComponents.hour = hour
@@ -265,6 +287,17 @@ final class AlarmManager: NSObject, ObservableObject {
         guard let soundFileName = scheduledSoundFileName else { return }
         fireScheduledAlarm(soundFileName: soundFileName)
     }
+
+    /// Botão "Parar" tocado direto na notificação, sem abrir o app. Passa pelo mesmo
+    /// `fireScheduledAlarm` antes de parar — garante que `nextFireDate` avança pro dia
+    /// seguinte mesmo se o app estivesse suspenso e o loop de alarme nunca tivesse
+    /// chegado a tocar de verdade (só o som da própria notificação rodou).
+    private func handleStopFromNotification() {
+        if let soundFileName = scheduledSoundFileName {
+            fireScheduledAlarm(soundFileName: soundFileName)
+        }
+        stopRingingAlarm()
+    }
 }
 
 extension AlarmManager: UNUserNotificationCenterDelegate {
@@ -285,7 +318,11 @@ extension AlarmManager: UNUserNotificationCenterDelegate {
         withCompletionHandler completionHandler: @escaping () -> Void
     ) {
         if response.notification.request.identifier == Self.notificationID {
-            handleAlarmNotificationFired()
+            if response.actionIdentifier == Self.stopActionID {
+                handleStopFromNotification()
+            } else {
+                handleAlarmNotificationFired()
+            }
         }
         completionHandler()
     }

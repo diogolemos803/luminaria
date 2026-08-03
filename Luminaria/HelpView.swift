@@ -51,9 +51,13 @@ struct HelpView: View {
                             stepRow(4, "Desative \"Perguntar Antes de Executar\"")
                         }
 
-                        sectionHeading("Se o despertador não aparecer na tela bloqueada")
+                        sectionHeading("Com a tela bloqueada")
 
-                        Text("O Atalho ativa um Foco pra dormir sem celular — o próprio iOS pode estar escondendo a notificação do despertador por causa disso. Confira:")
+                        Text("Nenhum app de terceiros consegue desenhar tela nenhuma por cima da tela de bloqueio — nem este, nem qualquer outro despertador da App Store. Quem funciona de verdade nessa hora é a notificação: ela toca o som escolhido e tem um botão \"Parar\" (toque longo ou deslize a notificação) pra desarmar sem precisar desbloquear o iPhone. A tela de \"Parar\" dentro do app só aparece quando você desbloqueia e abre o Luminária.")
+                            .font(.luminaria(.subheadline))
+                            .foregroundStyle(theme.inkMuted)
+
+                        Text("Se nem o som tocar, o Atalho pode estar ativando um Foco que está escondendo a notificação. Confira:")
                             .font(.luminaria(.subheadline))
                             .foregroundStyle(theme.inkMuted)
 
