@@ -257,9 +257,10 @@ struct RoutineEditView: View {
     private func iconName(for option: AlarmSoundOption) -> String {
         switch option {
         case .classic: return "bell.fill"
-        case .gentleChime: return "sparkles"
         case .sunrise: return "sunrise.fill"
-        case .breathing: return "wind"
+        case .oceanWaves: return "water.waves"
+        case .rain: return "cloud.rain.fill"
+        case .birds: return "bird.fill"
         }
     }
 }

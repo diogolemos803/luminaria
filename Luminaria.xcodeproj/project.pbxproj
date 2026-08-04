@@ -19,10 +19,11 @@
 		AAAAAAAAAAAAAAAAAAAAAA26 /* SleepRoutineStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA25 /* SleepRoutineStore.swift */; };
 		AAAAAAAAAAAAAAAAAAAAAA28 /* SleepRoutinesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA27 /* SleepRoutinesView.swift */; };
 		AAAAAAAAAAAAAAAAAAAAAA2A /* HelpView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA29 /* HelpView.swift */; };
-		AAAAAAAAAAAAAAAAAAAAAA2C /* alarm_carrilhao.wav in Resources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA2B /* alarm_carrilhao.wav */; };
 		AAAAAAAAAAAAAAAAAAAAAA2E /* alarm_alvorada.wav in Resources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA2D /* alarm_alvorada.wav */; };
-		AAAAAAAAAAAAAAAAAAAAAA30 /* alarm_respiracao.wav in Resources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA2F /* alarm_respiracao.wav */; };
 		AAAAAAAAAAAAAAAAAAAAAA32 /* AppTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA31 /* AppTheme.swift */; };
+		AAAAAAAAAAAAAAAAAAAAAA34 /* alarm_ondas.wav in Resources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA33 /* alarm_ondas.wav */; };
+		AAAAAAAAAAAAAAAAAAAAAA36 /* alarm_chuva.wav in Resources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA35 /* alarm_chuva.wav */; };
+		AAAAAAAAAAAAAAAAAAAAAA38 /* alarm_passaros.wav in Resources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA37 /* alarm_passaros.wav */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -41,10 +42,11 @@
 		AAAAAAAAAAAAAAAAAAAAAA25 /* SleepRoutineStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepRoutineStore.swift; sourceTree = "<group>"; };
 		AAAAAAAAAAAAAAAAAAAAAA27 /* SleepRoutinesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepRoutinesView.swift; sourceTree = "<group>"; };
 		AAAAAAAAAAAAAAAAAAAAAA29 /* HelpView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelpView.swift; sourceTree = "<group>"; };
-		AAAAAAAAAAAAAAAAAAAAAA2B /* alarm_carrilhao.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = alarm_carrilhao.wav; sourceTree = "<group>"; };
 		AAAAAAAAAAAAAAAAAAAAAA2D /* alarm_alvorada.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = alarm_alvorada.wav; sourceTree = "<group>"; };
-		AAAAAAAAAAAAAAAAAAAAAA2F /* alarm_respiracao.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = alarm_respiracao.wav; sourceTree = "<group>"; };
 		AAAAAAAAAAAAAAAAAAAAAA31 /* AppTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppTheme.swift; sourceTree = "<group>"; };
+		AAAAAAAAAAAAAAAAAAAAAA33 /* alarm_ondas.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = alarm_ondas.wav; sourceTree = "<group>"; };
+		AAAAAAAAAAAAAAAAAAAAAA35 /* alarm_chuva.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = alarm_chuva.wav; sourceTree = "<group>"; };
+		AAAAAAAAAAAAAAAAAAAAAA37 /* alarm_passaros.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = alarm_passaros.wav; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -91,9 +93,10 @@
 				AAAAAAAAAAAAAAAAAAAAAA1D /* Assets.xcassets */,
 				AAAAAAAAAAAAAAAAAAAAAA21 /* silence_loop.wav */,
 				AAAAAAAAAAAAAAAAAAAAAA23 /* alarm_tone.wav */,
-				AAAAAAAAAAAAAAAAAAAAAA2B /* alarm_carrilhao.wav */,
 				AAAAAAAAAAAAAAAAAAAAAA2D /* alarm_alvorada.wav */,
-				AAAAAAAAAAAAAAAAAAAAAA2F /* alarm_respiracao.wav */,
+				AAAAAAAAAAAAAAAAAAAAAA33 /* alarm_ondas.wav */,
+				AAAAAAAAAAAAAAAAAAAAAA35 /* alarm_chuva.wav */,
+				AAAAAAAAAAAAAAAAAAAAAA37 /* alarm_passaros.wav */,
 				AAAAAAAAAAAAAAAAAAAAAA10 /* Info.plist */,
 				AAAAAAAAAAAAAAAAAAAAAA11 /* Luminaria.entitlements */,
 			);
@@ -169,9 +172,10 @@
 				AAAAAAAAAAAAAAAAAAAAAA1E /* Assets.xcassets in Resources */,
 				AAAAAAAAAAAAAAAAAAAAAA22 /* silence_loop.wav in Resources */,
 				AAAAAAAAAAAAAAAAAAAAAA24 /* alarm_tone.wav in Resources */,
-				AAAAAAAAAAAAAAAAAAAAAA2C /* alarm_carrilhao.wav in Resources */,
 				AAAAAAAAAAAAAAAAAAAAAA2E /* alarm_alvorada.wav in Resources */,
-				AAAAAAAAAAAAAAAAAAAAAA30 /* alarm_respiracao.wav in Resources */,
+				AAAAAAAAAAAAAAAAAAAAAA34 /* alarm_ondas.wav in Resources */,
+				AAAAAAAAAAAAAAAAAAAAAA36 /* alarm_chuva.wav in Resources */,
+				AAAAAAAAAAAAAAAAAAAAAA38 /* alarm_passaros.wav in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
