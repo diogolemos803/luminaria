@@ -3,30 +3,63 @@ import Foundation
 /// Som do despertador escolhido pela rotina. `fileName` é o nome do recurso .wav
 /// no bundle (sem extensão), usado tanto pelo player em loop quanto pelo som
 /// customizado da notificação de backup.
-enum AlarmSoundOption: String, CaseIterable, Codable, Hashable, Identifiable {
+///
+/// `gentleChime` e `breathing` (tons puros) saíram de uso, substituídos pelos sons de
+/// natureza abaixo (ruído filtrado, mais forte e mais parecido com gravação de verdade
+/// — mesma linha dos concorrentes de despertador confortável). `Codable` é implementado
+/// à mão (em vez do sintetizado) só pra migrar rotinas já salvas que apontavam pros
+/// casos antigos, em vez de falhar o decode e resetar as rotinas do usuário.
+enum AlarmSoundOption: String, CaseIterable, Hashable, Identifiable {
     case classic
-    case gentleChime
     case sunrise
-    case breathing
+    case oceanWaves
+    case rain
+    case birds
 
     var id: String { rawValue }
 
     var fileName: String {
         switch self {
         case .classic: return "alarm_tone"
-        case .gentleChime: return "alarm_carrilhao"
         case .sunrise: return "alarm_alvorada"
-        case .breathing: return "alarm_respiracao"
+        case .oceanWaves: return "alarm_ondas"
+        case .rain: return "alarm_chuva"
+        case .birds: return "alarm_passaros"
         }
     }
 
     var displayName: String {
         switch self {
         case .classic: return "Sirene clássica"
-        case .gentleChime: return "Carrilhão suave"
         case .sunrise: return "Alvorada"
-        case .breathing: return "Respiração"
+        case .oceanWaves: return "Ondas do mar"
+        case .rain: return "Chuva"
+        case .birds: return "Passarinhos ao amanhecer"
         }
+    }
+}
+
+extension AlarmSoundOption: Codable {
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let raw = try container.decode(String.self)
+        switch raw {
+        case "gentleChime": self = .oceanWaves
+        case "breathing": self = .birds
+        default:
+            guard let value = AlarmSoundOption(rawValue: raw) else {
+                throw DecodingError.dataCorruptedError(
+                    in: container,
+                    debugDescription: "Som de despertador desconhecido: \(raw)"
+                )
+            }
+            self = value
+        }
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(rawValue)
     }
 }
 
@@ -46,7 +79,7 @@ struct SleepRoutine: Identifiable, Codable, Equatable {
         alarmMinute: Int = 0,
         nightShiftOffHour: Int = 7,
         nightShiftOffMinute: Int = 30,
-        soundOption: AlarmSoundOption = .gentleChime
+        soundOption: AlarmSoundOption = .oceanWaves
     ) {
         self.id = id
         self.name = name

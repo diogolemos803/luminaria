@@ -68,11 +68,18 @@ depende de CI num runner macOS na nuvem (GitHub Actions) e de sideload via AltSt
   exatamente como estavam antes, por pedido explícito do usuário (é a identidade da
   marca, não deve mudar).
 - `Luminaria/silence_loop.wav` / `Luminaria/alarm_tone.wav` — sons originais (sirene
-  clássica), gerados programaticamente. `Luminaria/alarm_carrilhao.wav` /
-  `alarm_alvorada.wav` / `alarm_respiracao.wav` — 3 sons novos, calmos (onda senoidal
-  pura, envelope suave, sem estridência), pensados pra acordar sem susto. Todos 16-bit
-  PCM mono 44.1kHz, gerados por `scripts/generate_alarm_sounds.ps1` (PowerShell + .NET —
-  ver decisão abaixo sobre por que não é mais um script Python).
+  clássica), gerados programaticamente. `Luminaria/alarm_alvorada.wav` — tom puro
+  (arpejo pentatônico ascendente), mantido. `Luminaria/alarm_ondas.wav` /
+  `alarm_chuva.wav` / `alarm_passaros.wav` — sons de natureza (ondas do mar, chuva,
+  passarinhos ao amanhecer), sintetizados a partir de **ruído branco filtrado** (não
+  tons puros) pra soar mais parecido com gravação de verdade — a mesma técnica que
+  concorrentes de despertador confortável (Sleep Cycle, Pillow etc.) usam de verdade
+  pra esse tipo de som — e normalizados bem mais alto (~85-92% do pico) que os tons
+  calmos anteriores, pra funcionar de verdade como despertador. Substituíram
+  `alarm_carrilhao.wav`/`alarm_respiracao.wav` (removidos), que eram tons puros demais
+  e não convenciam como "som de acordar". Todos 16-bit PCM mono 44.1kHz, gerados por
+  `scripts/generate_alarm_sounds.ps1` (PowerShell + .NET — ver decisão abaixo sobre por
+  que não é mais um script Python, e sobre por que não são gravações baixadas).
 - `Luminaria/Assets.xcassets` — `LogoAcordado`/`LogoSono`, PNGs com transparência real,
   recolorido (cinza escuro/cinza claro em vez de preto/branco puro) e recortado rente ao
   desenho. Os originais brutos ficam em `Assets/` na raiz (fora do git, só staging local).
@@ -271,6 +278,28 @@ Fluxo usado pra testar de verdade, todo do Windows:
   soar como sirene ("alarme anti bombas"). São ondas senoidais puras com envelope suave
   de ataque/liberação, frequências mais baixas e ritmo mais lento que o som original
   (bipe triplo em 1000Hz).
+- **Sons de natureza também são sintetizados, não gravações baixadas** — o usuário pediu
+  sons "de verdade" tipo praia/natureza, inspirados em concorrentes de despertador
+  confortável (Sleep Cycle, Pillow etc.). Decisão explícita de **não baixar** essas
+  gravações de bancos de som (freesound.org e afins): licenciamento de áudio "grátis"
+  varia arquivo a arquivo e precisaria ser conferido um por um antes de publicar na App
+  Store — risco desnecessário pra um app hobby. Resolvido sintetizando com **ruído
+  branco filtrado** (`Apply-LowPass`, filtro IIR de um polo) em vez de tons puros: ondas
+  do mar = ruído bem filtrado com envelope de 3 "ondas"; chuva = ruído menos filtrado
+  (mais "chiado") + estalos curtos aleatórios simulando gotas; passarinhos = ruído bem
+  filtrado bem baixo (ambiente) + glissandos curtos agudos (~2-4kHz) espalhados
+  aleatoriamente. Normalizados bem mais alto (pico ~85-92%) que os tons calmos antigos
+  (que ficavam em ~30-60%) — pedido do usuário ("sons maiores"), pra funcionar de
+  verdade como despertador em vez de só ambiente relaxante.
+- **Bug potencial evitado: mudar os casos do enum `AlarmSoundOption` quebraria rotinas
+  já salvas** — remover `gentleChime`/`breathing` do enum faria o `JSONDecoder` falhar
+  ao decodificar qualquer rotina já persistida que apontasse pra esses sons (o decode
+  sintetizado do Swift rejeita valores brutos desconhecidos), resetando as rotinas do
+  usuário sem aviso — ele já estava testando o app de verdade com rotinas criadas. Fix:
+  `Codable` implementado à mão em `AlarmSoundOption` (em vez do sintetizado), mapeando
+  os dois valores antigos pros equivalentes novos mais parecidos (`gentleChime` →
+  `oceanWaves`, `breathing` → `birds`) durante o decode, e persistindo esses valores
+  novos na próxima gravação — migração transparente, sem perder nada.
 - **Processamento de áudio sem Python**: a intenção original era reusar a mesma técnica
   de antes (Python stdlib `wave`/`struct`/`math`), mas esta máquina não tem Python
   instalado (só o stub da Microsoft Store). Resolvido do mesmo jeito que as imagens
