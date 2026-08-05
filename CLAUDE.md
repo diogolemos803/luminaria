@@ -126,9 +126,13 @@ depende de CI num runner macOS na nuvem (GitHub Actions) e de sideload via AltSt
   do checkpoint (`v1`). Não é o app de verdade, é só pra revisar visual sem precisar de
   Mac — publicado também como Artifact no claude.ai durante o desenvolvimento.
 - `.github/workflows/build.yml` — roda em todo push **pra `main`** (e PRs pra `main`),
-  compila pra Simulador sem assinatura. Não dispara sozinho na branch
-  `teste-gratis-sem-nfc` — precisa rodar manualmente ("Run workflow") quando for validar
-  uma mudança feita só nela.
+  compila pra device real sem assinatura (`-sdk iphoneos -destination
+  'generic/platform=iOS'`, mesma receita do `sideload-ipa.yml`). Não dispara sozinho na
+  branch `teste-gratis-sem-nfc` — precisa rodar manualmente ("Run workflow") quando for
+  validar uma mudança feita só nela. **Trocado de Simulador pra device em 2026-08-05**:
+  `FamilyControls`/`ManagedSettings` não têm suporte ao Simulador da Apple, o que
+  quebrava a compilação (`no such module`) assim que esses frameworks foram
+  adicionados — ver Decisões abaixo.
 - `.github/workflows/release.yml` — disparo manual, archive + upload TestFlight. Só
   funciona depois de configurar secrets (certificado, provisioning profile, API key da
   App Store Connect) e trocar o Team ID em `ExportOptions.plist`. Ainda não usado — exige
@@ -275,11 +279,18 @@ Fluxo usado pra testar de verdade, todo do Windows:
   contato desenvolvedor). Detalhe real de API: essa extension só pode responder
   `.none`/`.defer`/`.close` — não existe jeito suportado dela abrir o app principal
   de volta, só contar/registrar e fechar.
-- **`FamilyControls`/`ManagedSettings` não funcionam no Simulador** — só em device
-  físico de verdade, e só depois da entitlement aprovada. O código compila
-  normalmente pro Simulador (os frameworks existem no SDK do Simulador só pra
-  compilar), então o `build.yml` continua passando; o teste funcional de verdade
-  exige device físico assinado com a entitlement.
+- **`FamilyControls`/`ManagedSettings` não têm suporte nem pra compilar no SDK do
+  Simulador** — a suposição inicial era que eles compilariam normalmente pro Simulador
+  (só não funcionariam de verdade em runtime), mas o primeiro push real depois de
+  adicionar esses frameworks quebrou o `build.yml` com erro de compilação (`no such
+  module`), confirmado checando os logs do Actions. Diferente de frameworks que só
+  falham em runtime sem entitlement (ex.: `CoreNFC` compila e roda parcialmente sem
+  a entitlement de NFC), a Apple simplesmente não distribui esses dois frameworks na
+  slice do SDK do Simulador. Fix: `build.yml` trocado de
+  `-destination 'generic/platform=iOS Simulator'` pra `-sdk iphoneos -destination
+  'generic/platform=iOS'` (mesma receita, sem assinatura, do `sideload-ipa.yml`) — o
+  teste funcional de verdade ainda exige device físico assinado com a entitlement
+  aprovada, mas agora pelo menos a compilação no CI reflete a plataforma real.
 - **A partir de agora, desenvolvimento só no `main`** — decisão do usuário depois de
   conseguir a conta Apple Developer paga: bloqueio de apps e o gate de "inútil sem
   luminária" só fazem sentido com a entitlement paga mesmo, então a

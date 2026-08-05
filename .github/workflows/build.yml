@@ -9,7 +9,7 @@ on:
 
 jobs:
   build:
-    name: Build (Simulator, sem assinatura)
+    name: Build (device, sem assinatura)
     runs-on: macos-15
 
     steps:
@@ -19,10 +19,18 @@ jobs:
       - name: Show Xcode version
         run: xcodebuild -version
 
-      - name: Build for iOS Simulator
+      # Destino trocado de "iOS Simulator" pra "iOS" (device generico, sem assinatura):
+      # FamilyControls/ManagedSettings (Screen Time API) nao tem suporte ao Simulador da
+      # Apple - o build falhava na compilacao ("no such module") ao linkar contra esses
+      # frameworks pro SDK do Simulador. Mesma receita ja usada com sucesso em
+      # sideload-ipa.yml (so existe na branch teste-gratis-sem-nfc).
+      - name: Build for iOS device (sem assinatura)
         run: |
           xcodebuild build \
             -project Luminaria.xcodeproj \
             -scheme Luminaria \
-            -destination 'generic/platform=iOS Simulator' \
-            CODE_SIGNING_ALLOWED=NO
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY=""
