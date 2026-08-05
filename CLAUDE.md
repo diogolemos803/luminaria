@@ -334,18 +334,25 @@ Fluxo usado pra testar de verdade, todo do Windows:
   `com.luminaria.app` e o certificado recém-criado, baixar o `.mobileprovision` e subir
   em Codemagic → Code signing identities → iOS provisioning profiles. Depois de criados
   uma vez, o Codemagic deve reutilizá-los sozinho nos próximos builds/renovações.
-- **Bug real já corrigido: `NDEF is disallowed` rejeitava o envio no processamento do
-  App Store Connect** (erro clássico da Apple, ITMS-90778) — `Luminaria.entitlements`
-  tinha `com.apple.developer.nfc.readersession.formats` com o valor `NDEF`, um padrão
-  que versões antigas do Xcode inseriam automaticamente ao ativar a capability de NFC,
-  mas que a Apple descontinuou (só `TAG` é aceito nessa entitlement hoje). A boa notícia:
-  `NFCNDEFReaderSession` (a API usada em `NFCManager.swift`) **não precisa dessa
-  entitlement pra funcionar** — ela só é exigida pra leitura de baixo nível via
-  `NFCTagReaderSession`, que não é o caso daqui. Basta o `NFCReaderUsageDescription` no
-  `Info.plist` (que já existia). Fix: `Luminaria.entitlements` esvaziado (`<dict/>`),
-  igual ao que a branch `teste-gratis-sem-nfc` já fazia sem conta paga — a leitura NFC
-  continua funcionando normalmente, só o processamento no App Store Connect que exigia
-  isso.
+- **Bug real já corrigido (2 etapas): `NDEF is disallowed` no processamento do App
+  Store Connect, depois NFC quebrado de verdade no device** (erro clássico da Apple,
+  ITMS-90778) — `Luminaria.entitlements` tinha `com.apple.developer.nfc.readersession.
+  formats` com o valor `NDEF`, um padrão que versões antigas do Xcode inseriam
+  automaticamente ao ativar a capability de NFC, mas que a Apple descontinuou. Primeira
+  tentativa de fix: esvaziar a entitlement por completo (`<dict/>`), baseado em
+  documentação genérica de que `NFCNDEFReaderSession` "não precisaria" da entitlement —
+  isso **resolveu o envio, mas quebrou o NFC de verdade**: testando no device via
+  TestFlight, `NFCNDEFReaderSession.readingAvailable` voltava `false` (confirmado só
+  depois de corrigir `LockedView` pra mostrar `nfcManager.errorMessage`, que antes
+  ficava silencioso). Causa real: um build assinado pra distribuição (TestFlight/App
+  Store) parece exigir *algum* valor nessa entitlement pra liberar CoreNFC em runtime,
+  diferente de rodar via Xcode/AltStore com assinatura de desenvolvimento. Fix
+  definitivo: entitlement restaurada com o valor **`TAG`** (não `NDEF`) — é o valor
+  atual aceito pela Apple, passa na validação do App Store Connect, e parece satisfazer
+  o runtime mesmo a sessão sendo `NFCNDEFReaderSession`, não `NFCTagReaderSession`.
+  **Lição**: documentação genérica sobre entitlements do CoreNFC não bate
+  necessariamente com o comportamento real de um build de distribuição — testar no
+  device antes de considerar um fix de entitlement definitivo.
 - **Primeiro envio de verdade pro TestFlight funcionou (2026-08-05)** — depois dos 3
   fixes acima (device family, certificado/profile manuais, entitlement NDEF), o upload
   do binário teve sucesso ("Build completed successfully"). Sobrou só um erro cosmético
