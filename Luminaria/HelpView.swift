@@ -51,6 +51,12 @@ struct HelpView: View {
                             stepRow(4, "Desative \"Perguntar Antes de Executar\"")
                         }
 
+                        sectionHeading("Bloqueio de apps e relatório de sono")
+
+                        Text("Enquanto o modo noite estiver ativo e a luminária for reconhecida via NFC, os apps que você escolher em Configurações → Bloqueio de apps ficam bloqueados de verdade pelo próprio iOS, até você desarmar pelo botão. Por privacidade, a Apple não deixa o Luminária saber QUAIS apps foram escolhidos — só quantos. E não existe nenhuma forma, pra nenhum app, de contar quantas notificações ou ligações foram bloqueadas — isso simplesmente não é exposto pela Apple. O relatório mostra só o que dá pra medir de verdade: quantos apps ficaram bloqueados e por quanto tempo.")
+                            .font(.luminaria(.subheadline))
+                            .foregroundStyle(theme.inkMuted)
+
                         sectionHeading("Com a tela bloqueada")
 
                         Text("Nenhum app de terceiros consegue desenhar tela nenhuma por cima da tela de bloqueio — nem este, nem qualquer outro despertador da App Store. Quem funciona de verdade nessa hora é a notificação: ela toca o som escolhido e tem um botão \"Parar\" (toque longo ou deslize a notificação) pra desarmar sem precisar desbloquear o iPhone. A tela de \"Parar\" dentro do app só aparece quando você desbloqueia e abre o Luminária.")

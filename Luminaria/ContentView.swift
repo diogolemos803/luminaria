@@ -4,6 +4,8 @@ struct ContentView: View {
     @StateObject private var nfcManager = NFCManager()
     @StateObject private var alarmManager = AlarmManager.shared
     @StateObject private var routineStore = SleepRoutineStore()
+    @StateObject private var screenTimeManager = ScreenTimeManager.shared
+    @StateObject private var sleepReportStore = SleepReportStore.shared
     @Environment(\.scenePhase) private var scenePhase
     @State private var isNightModeArmed = false
     @State private var isPressed = false
@@ -24,33 +26,41 @@ struct ContentView: View {
 
     var body: some View {
         NavigationStack {
-            ZStack {
-                (isNightModeArmed ? sleepBackground : awakeBackground)
-                    .ignoresSafeArea()
+            Group {
+                if nfcManager.isLinked {
+                    ZStack {
+                        (isNightModeArmed ? sleepBackground : awakeBackground)
+                            .ignoresSafeArea()
 
-                Button(action: toggleNightMode) {
-                    Image(isNightModeArmed ? "LogoSono" : "LogoAcordado")
-                        .resizable()
-                        .scaledToFit()
-                        .padding(9)
-                        .frame(width: 220, height: 220)
-                        .background(isNightModeArmed ? buttonSleepFill : buttonAwakeFill)
-                        .clipShape(Circle())
-                        .shadow(color: .black.opacity(0.25), radius: 24, x: 0, y: 12)
+                        Button(action: toggleNightMode) {
+                            Image(isNightModeArmed ? "LogoSono" : "LogoAcordado")
+                                .resizable()
+                                .scaledToFit()
+                                .padding(9)
+                                .frame(width: 220, height: 220)
+                                .background(isNightModeArmed ? buttonSleepFill : buttonAwakeFill)
+                                .clipShape(Circle())
+                                .shadow(color: .black.opacity(0.25), radius: 24, x: 0, y: 12)
+                        }
+                        .buttonStyle(.plain)
+                        .scaleEffect(isPressed ? 0.88 : 1.0)
+                        .accessibilityLabel(modeName)
+
+                        Text(modeName)
+                            .font(.footnote)
+                            .tracking(0.4)
+                            .foregroundStyle(isNightModeArmed ? inkSleep : inkAwake)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+                            .padding(.bottom, 40)
+                    }
+                    .animation(.easeInOut(duration: 0.5), value: isNightModeArmed)
+                    .animation(.spring(response: 0.25, dampingFraction: 0.55), value: isPressed)
+                } else {
+                    // Pedido explícito do usuário: o app não faz nada de útil (arma
+                    // modo noite, bloqueia apps) sem uma luminária física vinculada.
+                    LockedView(onLinkTapped: { nfcManager.beginScanning() })
                 }
-                .buttonStyle(.plain)
-                .scaleEffect(isPressed ? 0.88 : 1.0)
-                .accessibilityLabel(modeName)
-
-                Text(modeName)
-                    .font(.footnote)
-                    .tracking(0.4)
-                    .foregroundStyle(isNightModeArmed ? inkSleep : inkAwake)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-                    .padding(.bottom, 40)
             }
-            .animation(.easeInOut(duration: 0.5), value: isNightModeArmed)
-            .animation(.spring(response: 0.25, dampingFraction: 0.55), value: isPressed)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
@@ -63,18 +73,27 @@ struct ContentView: View {
             }
             .onAppear {
                 alarmManager.requestNotificationPermission()
+                screenTimeManager.refreshAuthorizationStatus()
                 // Cobre o app sendo aberto do zero (cold launch): onChange(of: scenePhase)
                 // só reage a mudanças, não à primeira transição pra .active.
                 alarmManager.checkForMissedAlarm()
+                // O bloqueio de apps (ManagedSettingsStore) continua valendo mesmo se o
+                // processo morrer — sem isso, o botão reabriria mostrando "Living mode"
+                // com os apps ainda travados e nenhum jeito de desarmar pelo app.
+                if screenTimeManager.isShieldActive {
+                    isNightModeArmed = true
+                }
                 nfcManager.onRecognizedTap = {
                     guard isNightModeArmed, let routine = routineStore.activeRoutine else { return }
                     ShortcutManager.shared.runSleepShortcut()
                     alarmManager.armAlarm(hour: routine.alarmHour, minute: routine.alarmMinute, soundFileName: routine.soundOption.fileName)
+                    screenTimeManager.applyShield()
                 }
             }
             .onChange(of: scenePhase) { newPhase in
                 if newPhase == .active {
                     alarmManager.checkForMissedAlarm()
+                    screenTimeManager.refreshAuthorizationStatus()
                 }
             }
             .onOpenURL { _ in
@@ -83,8 +102,14 @@ struct ContentView: View {
                 // Atalhos por completo ao disparar o Atalho.
             }
             .sheet(isPresented: $showSettings) {
-                SettingsView(nfcManager: nfcManager, alarmManager: alarmManager, routineStore: routineStore)
-                    .environment(\.isNightModeArmed, isNightModeArmed)
+                SettingsView(
+                    nfcManager: nfcManager,
+                    alarmManager: alarmManager,
+                    routineStore: routineStore,
+                    screenTimeManager: screenTimeManager,
+                    sleepReportStore: sleepReportStore
+                )
+                .environment(\.isNightModeArmed, isNightModeArmed)
             }
         }
     }
@@ -100,6 +125,7 @@ struct ContentView: View {
         } else {
             nfcManager.stopScanning()
             alarmManager.disarmAlarm()
+            screenTimeManager.removeShield()
         }
     }
 }
@@ -137,6 +163,8 @@ struct SettingsView: View {
     @ObservedObject var nfcManager: NFCManager
     @ObservedObject var alarmManager: AlarmManager
     @ObservedObject var routineStore: SleepRoutineStore
+    @ObservedObject var screenTimeManager: ScreenTimeManager
+    @ObservedObject var sleepReportStore: SleepReportStore
     @Environment(\.dismiss) private var dismiss
     @Environment(\.isNightModeArmed) private var isNightModeArmed
     @State private var showHelp = false
@@ -213,6 +241,34 @@ struct SettingsView: View {
                             }
                         }
 
+                        ThemedCard(title: "Bloqueio de apps", theme: theme) {
+                            NavigationLink {
+                                AppBlockingView(screenTimeManager: screenTimeManager)
+                            } label: {
+                                ThemedRow(
+                                    theme: theme,
+                                    title: "Apps bloqueados no modo noite",
+                                    subtitle: blockingSubtitle,
+                                    leading: { IconBadge(systemName: "shield.lefthalf.filled", theme: theme) },
+                                    accessory: { chevron }
+                                )
+                            }
+                        }
+
+                        ThemedCard(title: "Relatório", theme: theme) {
+                            NavigationLink {
+                                SleepReportView(store: sleepReportStore)
+                            } label: {
+                                ThemedRow(
+                                    theme: theme,
+                                    title: "Relatório de sono",
+                                    subtitle: "\(sleepReportStore.entries.count) noite\(sleepReportStore.entries.count == 1 ? "" : "s") registrada\(sleepReportStore.entries.count == 1 ? "" : "s")",
+                                    leading: { IconBadge(systemName: "moon.zzz", theme: theme) },
+                                    accessory: { chevron }
+                                )
+                            }
+                        }
+
                         ThemedCard(title: "Ajuda", theme: theme) {
                             Button {
                                 showHelp = true
@@ -266,6 +322,11 @@ struct SettingsView: View {
         Image(systemName: "chevron.right")
             .font(.caption.weight(.semibold))
             .foregroundStyle(theme.inkMuted.opacity(0.7))
+    }
+
+    private var blockingSubtitle: String {
+        let count = screenTimeManager.totalSelectedCount
+        return count == 0 ? "Nenhum app escolhido" : "\(count) selecionado\(count == 1 ? "" : "s")"
     }
 }
 

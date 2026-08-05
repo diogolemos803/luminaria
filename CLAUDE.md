@@ -67,6 +67,40 @@ depende de CI num runner macOS na nuvem (GitHub Actions) e de sideload via AltSt
   texto "Living mode"/"Zleepy mode" da tela principal não usam nada disso** — ficam
   exatamente como estavam antes, por pedido explícito do usuário (é a identidade da
   marca, não deve mudar).
+- `Luminaria/LockedView.swift` (só no `main`) — tela mostrada por `ContentView` no
+  lugar do botão redondo enquanto `!nfcManager.isLinked`. Pedido explícito do usuário:
+  o app não deve fazer nada de útil (armar modo noite, bloquear apps) sem uma
+  luminária física de verdade vinculada. Não mexe no `NavigationStack`/toolbar — o
+  menu ☰ continua abrindo `SettingsView` normalmente, que é onde o vínculo também
+  pode ser feito/desfeito (um único caminho de código pra vincular, não dois).
+- `Luminaria/ScreenTimeManager.swift` (só no `main`) — bloqueia apps/categorias/sites
+  escolhidos pelo usuário enquanto o modo noite estiver ativo, usando a Screen Time
+  API da Apple (`FamilyControls`/`ManagedSettings`) — a mesma base que apps como
+  Brick/Opal usam. Singleton (`ScreenTimeManager.shared`) no mesmo estilo do
+  `AlarmManager`: `@Published var selection: FamilyActivitySelection` (persistida
+  como JSON — o tipo já é `Codable` nativamente) e `@Published private(set) var
+  isShieldActive` **persistido e restaurado no `init()`**, exatamente como o estado
+  armado do `AlarmManager` — sem isso, se o processo morresse com o bloqueio ativo (o
+  `ManagedSettingsStore` continua valendo mesmo com o app fechado), o app reabriria
+  mostrando "Living mode" com os apps ainda travados e nenhum caminho de código pra
+  desarmar. `applyShield()`/`removeShield()` chamados no mesmo instante em que o
+  Atalho e o despertador já disparam/desarmam (`onRecognizedTap` e o ramo de desarmar
+  de `toggleNightMode()`), reaproveitando o ciclo de vida existente em vez de inventar
+  um padrão de interação novo. Por privacidade, o app NUNCA sabe quais apps foram
+  escolhidos — só tokens opacos (dá pra saber quantos, não quais).
+- `Luminaria/AppBlockingView.swift` (só no `main`) — apresenta o `FamilyActivityPicker`
+  do sistema (via `.familyActivityPicker(isPresented:selection:)`), chip de status de
+  autorização (mesmo padrão do status de notificação em `HelpView`), acessível via
+  `NavigationLink` de dentro de `SettingsView` (mesmo padrão de `SleepRoutinesView` —
+  não `.sheet`, pra não reintroduzir a classe de bug que o `fullScreenCover` do
+  despertador já teve com apresentações modais concorrentes).
+- `Luminaria/SleepReportStore.swift` / `SleepReportView.swift` (só no `main`) — mesmo
+  padrão de `SleepRoutineStore`: histórico de sessões de bloqueio (`SleepReportEntry`:
+  data, quantidade de apps, duração), persistido como JSON no `UserDefaults`, gravado
+  por `ScreenTimeManager.removeShield()` ao desarmar. **Não guarda contagem de
+  notificações/ligações bloqueadas** — isso não é tecnicamente possível (ver Decisões
+  abaixo) — só o que dá pra medir de verdade: quantos apps ficaram bloqueados e por
+  quanto tempo.
 - `Luminaria/silence_loop.wav` / `Luminaria/alarm_tone.wav` — sons originais (sirene
   clássica), gerados programaticamente. `Luminaria/alarm_alvorada.wav` — tom puro
   (arpejo pentatônico ascendente), mantido. `Luminaria/alarm_ondas.wav` /
@@ -115,13 +149,18 @@ depende de CI num runner macOS na nuvem (GitHub Actions) e de sideload via AltSt
 
 ### `main`
 Versão completa, com a entitlement de NFC (`com.apple.developer.nfc.readersession.formats`)
-declarada em `Luminaria.entitlements`. Só pode ser assinada/instalada com conta Apple
-Developer Program paga — ainda não testada num device real por esse motivo.
+declarada em `Luminaria.entitlements`. Desde que o usuário conseguiu a conta Apple
+Developer paga (2026-08-04), **todo desenvolvimento novo acontece só aqui** — bloqueio
+de apps, o gate de "inútil sem luminária" e o relatório de sono só fazem sentido com
+a entitlement paga mesmo.
 
-### `teste-gratis-sem-nfc`
-Branch paralela, criada porque o usuário não quer pagar a Apple Developer Program
-(~US$99/ano, ~R$550) antes de validar se o conceito vale a pena, e também não tem
-acesso a Mac. **É aqui que o app foi de fato testado num iPhone físico.**
+### `teste-gratis-sem-nfc` (congelada)
+Branch paralela, criada porque o usuário não queria pagar a Apple Developer Program
+(~US$99/ano, ~R$550) antes de validar se o conceito valia a pena, e também não tinha
+acesso a Mac. **Foi aqui que o app foi testado pela primeira vez num iPhone físico**,
+via AltStore/sideload. Agora que o usuário tem a conta paga, essa branch **não recebe
+mais cherry-pick** — fica como estava, congelada nas features testadas até
+2026-08-04, caso sirva de referência ou demo pra alguém sem conta paga no futuro.
 
 Diferenças em relação ao `main`:
 - `Luminaria.entitlements` fica **vazio** — a capability de NFC só é liberada com conta
@@ -187,7 +226,7 @@ Fluxo usado pra testar de verdade, todo do Windows:
 
 - **`Luminaria.xcodeproj/project.pbxproj` foi escrito à mão**, linha por linha — não existe
   Xcode/macOS neste ambiente de desenvolvimento (Windows). IDs de objeto seguem o padrão
-  `AAAAAAAAAAAAAAAAAAAAAA` + 2 dígitos hex incrementais (maior em uso: `30`); qualquer
+  `AAAAAAAAAAAAAAAAAAAAAA` + 2 dígitos hex incrementais (maior em uso: `46`); qualquer
   novo arquivo precisa de entradas em `PBXBuildFile`, `PBXFileReference`, no grupo, e na
   build phase certa (`Sources` pra `.swift`, `Resources` pra assets/sons). Sempre
   verificar balanço de chaves/parênteses e contagem de referências de cada ID novo
@@ -198,6 +237,53 @@ Fluxo usado pra testar de verdade, todo do Windows:
   sozinho só arma e começa a escuta NFC; o disparo de verdade só acontece quando a tag é
   reconhecida (`NFCManager.onRecognizedTap`, gated por `isNightModeArmed`), usando os
   dados da rotina marcada como ativa em `SleepRoutineStore`.
+- **Vincular já funciona com qualquer tag NFC, não uma específica** — confirmado
+  revisando `NFCManager.handleDetectedTag`: o identificador da PRIMEIRA tag lida (ramo
+  `else` quando `!isLinked`) é o que vira "a" luminária vinculada; não há tag
+  hardcoded. Único requisito real: a tag precisa ser NDEF-capaz (praticamente
+  qualquer adesivo NFC barato tipo NTAG213/215 serve; cartões de pagamento/transporte
+  por aproximação podem não servir). Nenhuma mudança de código foi necessária pra
+  isso — só confirmar o comportamento já existente.
+- **Bloqueio de apps exige uma entitlement separada, que não vem só da conta
+  Developer paga** — `com.apple.developer.family-controls` (Screen Time API) é uma
+  entitlement privilegiada: a Apple exige um pedido escrito à parte (bundle ID +
+  justificativa), aprovado manualmente, sem prazo fixo (dias a semanas). Diferente da
+  entitlement de NFC (que só depende de ter a conta paga), essa depende de aprovação
+  humana da Apple. `ScreenTimeManager.swift`/`AppBlockingView.swift` compilam
+  normalmente sem a entitlement (as APIs não exigem isso pra compilar); só não
+  funcionam de verdade num device até ela ser aprovada E adicionada em
+  `Luminaria.entitlements` — adicionar antes da aprovação quebraria a assinatura no
+  device (perfil de provisionamento não suporta a capability ainda).
+- **Não existe API pública pra contar notificações ou ligações bloqueadas** — é
+  deliberadamente não exposto pela Apple por privacidade. Bloqueio de ligação,
+  inclusive, é uma API totalmente separada (`CallKit`), sem relação nenhuma com
+  bloqueio de apps. O que dá pra medir de verdade sem nenhuma *extension* nova:
+  quantos apps/categorias/sites foram escolhidos (`FamilyActivitySelection`), e por
+  quanto tempo o bloqueio ficou ativo (timestamps próprios de quando o app
+  arma/desarma o shield). Contagem de "tentativas de abrir um app bloqueado" só dá
+  com uma **`ShieldActionExtension`** — um target novo no Xcode (ver pendência
+  abaixo), não implementado ainda.
+- **`ShieldActionExtension` fica adiada pra uma sessão real no Xcode, não escrita às
+  cegas** — confirmado olhando o `pbxproj` atual: existe hoje um único
+  `PBXNativeTarget`; um target de extension novo precisa de bem mais que o padrão de
+  "2 IDs, 4 pontos de registro" já usado ~10 vezes neste projeto pra arquivos comuns
+  — entra `PBXNativeTarget`, `PBXContainerItemProxy`, `PBXTargetDependency`,
+  entitlements próprio (com App Group compartilhado com o app principal), Info.plist
+  com dicionário `NSExtension`, e uma build phase "Embed App Extensions" no target
+  principal. Isso nunca foi tentado à mão neste projeto e não deve ser — só quando
+  houver acesso a um Xcode interativo de verdade (o usuário conseguiu isso via um
+  contato desenvolvedor). Detalhe real de API: essa extension só pode responder
+  `.none`/`.defer`/`.close` — não existe jeito suportado dela abrir o app principal
+  de volta, só contar/registrar e fechar.
+- **`FamilyControls`/`ManagedSettings` não funcionam no Simulador** — só em device
+  físico de verdade, e só depois da entitlement aprovada. O código compila
+  normalmente pro Simulador (os frameworks existem no SDK do Simulador só pra
+  compilar), então o `build.yml` continua passando; o teste funcional de verdade
+  exige device físico assinado com a entitlement.
+- **A partir de agora, desenvolvimento só no `main`** — decisão do usuário depois de
+  conseguir a conta Apple Developer paga: bloqueio de apps e o gate de "inútil sem
+  luminária" só fazem sentido com a entitlement paga mesmo, então a
+  `teste-gratis-sem-nfc` fica congelada como estava (não recebe mais cherry-pick).
 - **Notificação como fonte da verdade do despertador, não só o `Timer` interno** (fix do
   primeiro round de testes físicos, 2026-08-01): antes, só um `Timer` de 15 segundos
   comparava a hora atual com o horário agendado — se o processo estivesse suspenso, a
@@ -400,6 +486,22 @@ folha de sistema do NFC ficaria visível quase o tempo todo, e o iOS suspende a 
 assim que a tela trava (justamente quando a pessoa realmente vai dormir) — não foi
 implementada, mas fica registrada como ideia intermediária caso valha revisitar.
 
+## ⚠️ Pendências do bloqueio de apps (não esquecer)
+
+1. **Pedido da entitlement `Family Controls`** — precisa ser feito pelo usuário em
+   developer.apple.com (bundle ID `com.luminaria.app`), aprovação manual da Apple, sem
+   prazo fixo. Sem isso, `ScreenTimeManager`/`AppBlockingView` compilam mas não
+   funcionam de verdade em nenhum device. Verificar status antes de cada tentativa de
+   teste real no device.
+2. **`Luminaria.entitlements` só recebe `com.apple.developer.family-controls` depois**
+   da aprovação acima — adicionar antes quebra a assinatura no device.
+3. **`ShieldActionExtension`** (contar tentativas de abrir app bloqueado) fica pra
+   quando houver sessão real no Xcode — código Swift ainda não escrito, só planejado
+   (ver Decisões acima). Quando for feita: criar o target via assistente do Xcode
+   (Shield Action Extension), configurar App Group compartilhado com o app principal,
+   pedir a entitlement dessa extension separadamente (bundle ID próprio) em
+   developer.apple.com.
+
 ## Ideia futura, ainda não iniciada: controle Bluetooth da luminária física
 
 O usuário perguntou sobre viabilidade de controlar a luminária de verdade via Bluetooth
@@ -461,6 +563,19 @@ O usuário perguntou sobre viabilidade de controlar a luminária de verdade via 
   secrets do `release.yml` ou a chave do Codemagic, e trocar o ícone provisório por um
   de verdade; criar manualmente a automação por horário de "desligar Modo Noturno de
   manhã" no Atalhos.
+- **2026-08-05**: conta Apple Developer paga adquirida. Implementado, só no `main`
+  (decisão explícita do usuário — `teste-gratis-sem-nfc` congelada dali pra frente):
+  gate "app inútil sem luminária vinculada" (`LockedView`, mostrado no lugar do botão
+  redondo enquanto `!nfcManager.isLinked`); bloqueio de apps específicos durante o modo
+  noite via Screen Time API (`ScreenTimeManager` + `AppBlockingView`, `FamilyControls`/
+  `ManagedSettings`); relatório de sono (`SleepReportStore` + `SleepReportView`,
+  registra apps bloqueados e duração — não notificações/ligações, ver Decisões acima).
+  Confirmado que vincular já funciona com qualquer tag NFC (não precisou de mudança).
+  `project.pbxproj` atualizado com os 5 arquivos novos + frameworks `FamilyControls`/
+  `ManagedSettings` (maior ID em uso agora: `46`). Pendente: pedido da entitlement
+  `Family Controls` em developer.apple.com (ação do usuário, aprovação manual sem
+  prazo fixo — ver pendência acima) antes de testar de verdade num device; até lá o
+  código compila mas o bloqueio não funciona de fato.
 
 ## Como retomar em outro computador
 

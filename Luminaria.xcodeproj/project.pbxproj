@@ -12,6 +12,8 @@
 		AAAAAAAAAAAAAAAAAAAAAA15 /* NFCManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA0E /* NFCManager.swift */; };
 		AAAAAAAAAAAAAAAAAAAAAA16 /* ShortcutManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA0F /* ShortcutManager.swift */; };
 		AAAAAAAAAAAAAAAAAAAAAA1B /* CoreNFC.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA1A /* CoreNFC.framework */; };
+		AAAAAAAAAAAAAAAAAAAAAA44 /* FamilyControls.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA43 /* FamilyControls.framework */; };
+		AAAAAAAAAAAAAAAAAAAAAA46 /* ManagedSettings.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA45 /* ManagedSettings.framework */; };
 		AAAAAAAAAAAAAAAAAAAAAA1E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA1D /* Assets.xcassets */; };
 		AAAAAAAAAAAAAAAAAAAAAA20 /* AlarmManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA1F /* AlarmManager.swift */; };
 		AAAAAAAAAAAAAAAAAAAAAA22 /* silence_loop.wav in Resources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA21 /* silence_loop.wav */; };
@@ -24,6 +26,11 @@
 		AAAAAAAAAAAAAAAAAAAAAA34 /* alarm_ondas.wav in Resources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA33 /* alarm_ondas.wav */; };
 		AAAAAAAAAAAAAAAAAAAAAA36 /* alarm_chuva.wav in Resources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA35 /* alarm_chuva.wav */; };
 		AAAAAAAAAAAAAAAAAAAAAA38 /* alarm_passaros.wav in Resources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA37 /* alarm_passaros.wav */; };
+		AAAAAAAAAAAAAAAAAAAAAA3A /* LockedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA39 /* LockedView.swift */; };
+		AAAAAAAAAAAAAAAAAAAAAA3C /* ScreenTimeManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA3B /* ScreenTimeManager.swift */; };
+		AAAAAAAAAAAAAAAAAAAAAA3E /* AppBlockingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA3D /* AppBlockingView.swift */; };
+		AAAAAAAAAAAAAAAAAAAAAA40 /* SleepReportStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA3F /* SleepReportStore.swift */; };
+		AAAAAAAAAAAAAAAAAAAAAA42 /* SleepReportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA41 /* SleepReportView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -35,6 +42,8 @@
 		AAAAAAAAAAAAAAAAAAAAAA11 /* Luminaria.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Luminaria.entitlements; sourceTree = "<group>"; };
 		AAAAAAAAAAAAAAAAAAAAAA12 /* Luminaria.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Luminaria.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AAAAAAAAAAAAAAAAAAAAAA1A /* CoreNFC.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreNFC.framework; path = System/Library/Frameworks/CoreNFC.framework; sourceTree = SDKROOT; };
+		AAAAAAAAAAAAAAAAAAAAAA43 /* FamilyControls.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = FamilyControls.framework; path = System/Library/Frameworks/FamilyControls.framework; sourceTree = SDKROOT; };
+		AAAAAAAAAAAAAAAAAAAAAA45 /* ManagedSettings.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ManagedSettings.framework; path = System/Library/Frameworks/ManagedSettings.framework; sourceTree = SDKROOT; };
 		AAAAAAAAAAAAAAAAAAAAAA1D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		AAAAAAAAAAAAAAAAAAAAAA1F /* AlarmManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlarmManager.swift; sourceTree = "<group>"; };
 		AAAAAAAAAAAAAAAAAAAAAA21 /* silence_loop.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = silence_loop.wav; sourceTree = "<group>"; };
@@ -47,6 +56,11 @@
 		AAAAAAAAAAAAAAAAAAAAAA33 /* alarm_ondas.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = alarm_ondas.wav; sourceTree = "<group>"; };
 		AAAAAAAAAAAAAAAAAAAAAA35 /* alarm_chuva.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = alarm_chuva.wav; sourceTree = "<group>"; };
 		AAAAAAAAAAAAAAAAAAAAAA37 /* alarm_passaros.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = alarm_passaros.wav; sourceTree = "<group>"; };
+		AAAAAAAAAAAAAAAAAAAAAA39 /* LockedView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockedView.swift; sourceTree = "<group>"; };
+		AAAAAAAAAAAAAAAAAAAAAA3B /* ScreenTimeManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenTimeManager.swift; sourceTree = "<group>"; };
+		AAAAAAAAAAAAAAAAAAAAAA3D /* AppBlockingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppBlockingView.swift; sourceTree = "<group>"; };
+		AAAAAAAAAAAAAAAAAAAAAA3F /* SleepReportStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepReportStore.swift; sourceTree = "<group>"; };
+		AAAAAAAAAAAAAAAAAAAAAA41 /* SleepReportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepReportView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -55,6 +69,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				AAAAAAAAAAAAAAAAAAAAAA1B /* CoreNFC.framework in Frameworks */,
+				AAAAAAAAAAAAAAAAAAAAAA44 /* FamilyControls.framework in Frameworks */,
+				AAAAAAAAAAAAAAAAAAAAAA46 /* ManagedSettings.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -90,6 +106,11 @@
 				AAAAAAAAAAAAAAAAAAAAAA27 /* SleepRoutinesView.swift */,
 				AAAAAAAAAAAAAAAAAAAAAA29 /* HelpView.swift */,
 				AAAAAAAAAAAAAAAAAAAAAA31 /* AppTheme.swift */,
+				AAAAAAAAAAAAAAAAAAAAAA39 /* LockedView.swift */,
+				AAAAAAAAAAAAAAAAAAAAAA3B /* ScreenTimeManager.swift */,
+				AAAAAAAAAAAAAAAAAAAAAA3D /* AppBlockingView.swift */,
+				AAAAAAAAAAAAAAAAAAAAAA3F /* SleepReportStore.swift */,
+				AAAAAAAAAAAAAAAAAAAAAA41 /* SleepReportView.swift */,
 				AAAAAAAAAAAAAAAAAAAAAA1D /* Assets.xcassets */,
 				AAAAAAAAAAAAAAAAAAAAAA21 /* silence_loop.wav */,
 				AAAAAAAAAAAAAAAAAAAAAA23 /* alarm_tone.wav */,
@@ -107,6 +128,8 @@
 			isa = PBXGroup;
 			children = (
 				AAAAAAAAAAAAAAAAAAAAAA1A /* CoreNFC.framework */,
+				AAAAAAAAAAAAAAAAAAAAAA43 /* FamilyControls.framework */,
+				AAAAAAAAAAAAAAAAAAAAAA45 /* ManagedSettings.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -195,6 +218,11 @@
 				AAAAAAAAAAAAAAAAAAAAAA28 /* SleepRoutinesView.swift in Sources */,
 				AAAAAAAAAAAAAAAAAAAAAA2A /* HelpView.swift in Sources */,
 				AAAAAAAAAAAAAAAAAAAAAA32 /* AppTheme.swift in Sources */,
+				AAAAAAAAAAAAAAAAAAAAAA3A /* LockedView.swift in Sources */,
+				AAAAAAAAAAAAAAAAAAAAAA3C /* ScreenTimeManager.swift in Sources */,
+				AAAAAAAAAAAAAAAAAAAAAA3E /* AppBlockingView.swift in Sources */,
+				AAAAAAAAAAAAAAAAAAAAAA40 /* SleepReportStore.swift in Sources */,
+				AAAAAAAAAAAAAAAAAAAAAA42 /* SleepReportView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
