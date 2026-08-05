@@ -25,7 +25,13 @@ workflows:
 
       - name: Incrementar o número de build automaticamente
         script: |
-          BUILD_NUMBER=$(app-store-connect get-latest-app-store-build-number "$APP_STORE_APPLE_ID" || echo "0")
+          # get-latest-app-store-build-number busca a versão pública da App Store, que
+          # ainda não existe (só enviamos pro TestFlight) - por isso sempre falhava e
+          # caía no fallback "0", gerando o mesmo número "1" repetido e sendo rejeitado
+          # pela Apple ("bundle version must be higher than the previously uploaded
+          # version"). get-latest-testflight-build-number busca o último número já no
+          # TestFlight, que é o que precisamos aqui.
+          BUILD_NUMBER=$(app-store-connect get-latest-testflight-build-number "$APP_STORE_APPLE_ID" || echo "0")
           agvtool new-version -all $(($BUILD_NUMBER + 1))
 
       - name: Compilar o IPA

@@ -352,6 +352,17 @@ Fluxo usado pra testar de verdade, todo do Windows:
   atribuição — `beta_groups` só faz sentido pra grupos de Teste Externo. Removido do
   YAML; o upload e o processamento continuam funcionando igual, só sem essa etapa
   redundante.
+- **Bug real já corrigido: `get-latest-app-store-build-number` sempre falhava e
+  travava o segundo envio** — depois do fix do `beta_groups`, o próximo build falhou
+  com "bundle version must be higher than the previously uploaded version". Causa: o
+  script "Incrementar o número de build automaticamente" busca o último número de build
+  via `app-store-connect get-latest-app-store-build-number`, mas esse comando olha a
+  versão **pública da App Store**, que ainda não existe (só enviamos builds pro
+  TestFlight, nunca submetemos uma versão pra revisão) — o comando sempre falhava, caía
+  no fallback `|| echo "0"`, somava 1, e gerava de novo o número `1`, repetindo o do
+  envio anterior (que a Apple rejeita). Fix: trocado pra
+  `get-latest-testflight-build-number`, que busca o último número já usado no
+  TestFlight (o lugar certo, já que é pra lá que a gente manda).
 - **A partir de agora, desenvolvimento só no `main`** — decisão do usuário depois de
   conseguir a conta Apple Developer paga: bloqueio de apps e o gate de "inútil sem
   luminária" só fazem sentido com a entitlement paga mesmo, então a
