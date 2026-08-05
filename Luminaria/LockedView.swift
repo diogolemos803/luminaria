@@ -7,6 +7,7 @@ import SwiftUI
 /// o menu ☰ continua abrindo `SettingsView` normalmente, que é onde o vínculo
 /// também pode ser feito/desfeito.
 struct LockedView: View {
+    @ObservedObject var nfcManager: NFCManager
     let onLinkTapped: () -> Void
 
     private let theme = ModeTheme.living
@@ -32,6 +33,17 @@ struct LockedView: View {
                 FullPillButton(title: "Vincular luminária", theme: theme, action: onLinkTapped)
                     .padding(.horizontal, 40)
                     .padding(.top, 12)
+
+                // Sem isso, um erro do NFCManager (ex.: hardware sem suporte) ficava
+                // silencioso — o botão parecia "não fazer nada" sem explicação.
+                if let error = nfcManager.errorMessage {
+                    Text(error)
+                        .font(.luminaria(.footnote, weight: .medium))
+                        .foregroundStyle(theme.danger)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 32)
+                        .padding(.top, 4)
+                }
             }
             .padding()
         }

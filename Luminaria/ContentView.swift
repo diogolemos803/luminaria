@@ -58,7 +58,7 @@ struct ContentView: View {
                 } else {
                     // Pedido explícito do usuário: o app não faz nada de útil (arma
                     // modo noite, bloqueia apps) sem uma luminária física vinculada.
-                    LockedView(onLinkTapped: { nfcManager.beginScanning() })
+                    LockedView(nfcManager: nfcManager, onLinkTapped: { nfcManager.beginScanning() })
                 }
             }
             .toolbar {

@@ -72,7 +72,10 @@ depende de CI num runner macOS na nuvem (GitHub Actions) e de sideload via AltSt
   o app não deve fazer nada de útil (armar modo noite, bloquear apps) sem uma
   luminária física de verdade vinculada. Não mexe no `NavigationStack`/toolbar — o
   menu ☰ continua abrindo `SettingsView` normalmente, que é onde o vínculo também
-  pode ser feito/desfeito (um único caminho de código pra vincular, não dois).
+  pode ser feito/desfeito (um único caminho de código pra vincular, não dois). Recebe
+  `nfcManager` e mostra `nfcManager.errorMessage` embaixo do botão — sem isso, um erro
+  do `NFCManager` (ex.: hardware sem suporte a NFC) ficava totalmente silencioso, dando
+  a impressão de botão quebrado (achado testando no device físico via TestFlight).
 - `Luminaria/ScreenTimeManager.swift` (só no `main`) — bloqueia apps/categorias/sites
   escolhidos pelo usuário enquanto o modo noite estiver ativo, usando a Screen Time
   API da Apple (`FamilyControls`/`ManagedSettings`) — a mesma base que apps como
