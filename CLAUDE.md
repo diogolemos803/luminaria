@@ -130,9 +130,10 @@ depende de CI num runner macOS na nuvem (GitHub Actions) e de sideload via AltSt
   'generic/platform=iOS'`, mesma receita do `sideload-ipa.yml`). Não dispara sozinho na
   branch `teste-gratis-sem-nfc` — precisa rodar manualmente ("Run workflow") quando for
   validar uma mudança feita só nela. **Trocado de Simulador pra device em 2026-08-05**:
-  `FamilyControls`/`ManagedSettings` não têm suporte ao Simulador da Apple, o que
-  quebrava a compilação (`no such module`) assim que esses frameworks foram
-  adicionados — ver Decisões abaixo.
+  `FamilyControls`/`ManagedSettings` só funcionam de verdade em device físico — a
+  compilação em si (ver Decisões abaixo) acabou quebrando por outro motivo (import
+  faltando), mas o destino ficou em device de qualquer forma por refletir melhor a
+  plataforma real de uso.
 - `.github/workflows/release.yml` — disparo manual, archive + upload TestFlight. Só
   funciona depois de configurar secrets (certificado, provisioning profile, API key da
   App Store Connect) e trocar o Team ID em `ExportOptions.plist`. Ainda não usado — exige
@@ -279,18 +280,25 @@ Fluxo usado pra testar de verdade, todo do Windows:
   contato desenvolvedor). Detalhe real de API: essa extension só pode responder
   `.none`/`.defer`/`.close` — não existe jeito suportado dela abrir o app principal
   de volta, só contar/registrar e fechar.
-- **`FamilyControls`/`ManagedSettings` não têm suporte nem pra compilar no SDK do
-  Simulador** — a suposição inicial era que eles compilariam normalmente pro Simulador
-  (só não funcionariam de verdade em runtime), mas o primeiro push real depois de
-  adicionar esses frameworks quebrou o `build.yml` com erro de compilação (`no such
-  module`), confirmado checando os logs do Actions. Diferente de frameworks que só
-  falham em runtime sem entitlement (ex.: `CoreNFC` compila e roda parcialmente sem
-  a entitlement de NFC), a Apple simplesmente não distribui esses dois frameworks na
-  slice do SDK do Simulador. Fix: `build.yml` trocado de
-  `-destination 'generic/platform=iOS Simulator'` pra `-sdk iphoneos -destination
-  'generic/platform=iOS'` (mesma receita, sem assinatura, do `sideload-ipa.yml`) — o
-  teste funcional de verdade ainda exige device físico assinado com a entitlement
-  aprovada, mas agora pelo menos a compilação no CI reflete a plataforma real.
+- **Bug real já corrigido: `ScreenTimeManager.swift` só importava `FamilyControls`/
+  `ManagedSettings`, sem `Foundation`/`Combine`** — quebrou o primeiro push real depois
+  de adicionar esses frameworks, com erros de compilação em cadeia (`cannot find type
+  'ObservableObject' in scope`, `unknown attribute 'Published'`, `cannot find type
+  'Date' in scope`), só visíveis no log completo do Actions (a API pública só mostra
+  "exit code 65" genérico — pedi pro usuário colar o log manualmente, já que baixar/ver
+  logs completos exige estar logado no GitHub). A suspeita inicial (`FamilyControls`/
+  `ManagedSettings` não compilariam pro Simulador) **era errada** — o log mostrou o
+  build de device chegando normalmente até a etapa de compilação Swift antes de falhar
+  por esse import faltando, ou seja, a causa nunca foi a plataforma. Fix: adicionar
+  `import Combine` e `import Foundation` no topo do arquivo. **Lição**: não confiar em
+  suposição sobre disponibilidade de framework/SDK sem o log real — pedir o log ao
+  usuário antes de tentar um segundo fix às cegas.
+- **`build.yml` trocado de Simulador pra device mesmo assim** — não por causa do bug
+  acima (que era só um import faltando, teria quebrado em qualquer destino), mas porque
+  `FamilyControls`/`ManagedSettings` só funcionam de verdade em device físico; compilar
+  contra o SDK `iphoneos` (mesma receita sem assinatura do `sideload-ipa.yml`) reflete
+  melhor a plataforma real de uso do que o Simulador, onde essas APIs nunca vão rodar de
+  qualquer forma.
 - **A partir de agora, desenvolvimento só no `main`** — decisão do usuário depois de
   conseguir a conta Apple Developer paga: bloqueio de apps e o gate de "inútil sem
   luminária" só fazem sentido com a entitlement paga mesmo, então a
