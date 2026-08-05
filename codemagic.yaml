@@ -14,7 +14,7 @@ workflows:
       vars:
         XCODE_PROJECT: "Luminaria.xcodeproj"
         XCODE_SCHEME: "Luminaria"
-        APP_STORE_APPLE_ID: 0000000000          # <-- AJUSTE: Apple ID numérico do app no App Store Connect (~10 dígitos)
+        APP_STORE_APPLE_ID: 6798370889
       xcode: latest
       cocoapods: default
 
@@ -51,7 +51,7 @@ workflows:
         auth: integration
         submit_to_testflight: true
         beta_groups:
-          - Testadores Internos                 # <-- precisa existir no App Store Connect com esse nome exato
+          - Interno
 
     # Builds só manuais por enquanto (sem bloco "triggering"): como o projeto ainda está em
     # desenvolvimento ativo com pushes frequentes na main, disparar um build+envio ao

@@ -145,10 +145,15 @@ depende de CI num runner macOS na nuvem (GitHub Actions) e de sideload via AltSt
   cadastrada na conta do Codemagic — não precisa de Mac nem de Keychain em momento
   nenhum. Builds são só manuais (sem gatilho automático em push) de propósito: com
   pushes frequentes na `main`, disparar builds a cada push gastaria minutos do
-  Codemagic à toa e mandaria uma build nova pros testadores toda hora. Falta preencher
-  `APP_STORE_APPLE_ID` no YAML (depois de criar o app no App Store Connect) e cadastrar
-  a chave `LuminariaAppStoreKey` na conta do Codemagic — os dois exigem a conta Apple
-  Developer paga, que ainda está pendente.
+  Codemagic à toa e mandaria uma build nova pros testadores toda hora.
+  **2026-08-05**: App ID `com.luminaria.app` registrado em developer.apple.com (NFC Tag
+  Reading habilitado) e app "Zleepy Lamp" criado no App Store Connect (Apple ID numérico
+  `6798370889`, já preenchido em `APP_STORE_APPLE_ID`), com grupo de teste interno do
+  TestFlight chamado `Interno` (nome real usado no `beta_groups`, não o "Testadores
+  Internos" genérico do exemplo original). Falta só: pedir o acesso à capability `Family
+  Controls` (Capability Requests do App ID, aprovação manual sem prazo fixo) e cadastrar
+  a chave `LuminariaAppStoreKey` na conta do Codemagic (Team settings → Integrations →
+  App Store Connect) pra rodar o primeiro build de verdade.
 
 ## As duas branches
 
