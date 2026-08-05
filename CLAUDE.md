@@ -343,6 +343,15 @@ Fluxo usado pra testar de verdade, todo do Windows:
   igual ao que a branch `teste-gratis-sem-nfc` já fazia sem conta paga — a leitura NFC
   continua funcionando normalmente, só o processamento no App Store Connect que exigia
   isso.
+- **Primeiro envio de verdade pro TestFlight funcionou (2026-08-05)** — depois dos 3
+  fixes acima (device family, certificado/profile manuais, entitlement NDEF), o upload
+  do binário teve sucesso ("Build completed successfully"). Sobrou só um erro cosmético
+  no `codemagic.yaml`: `beta_groups: - Interno` tentava atribuir a build manualmente a
+  um grupo de **Teste Interno**, que a API da Apple rejeita ("Cannot add internal group
+  to a build") porque grupos internos recebem builds novos automaticamente, sem
+  atribuição — `beta_groups` só faz sentido pra grupos de Teste Externo. Removido do
+  YAML; o upload e o processamento continuam funcionando igual, só sem essa etapa
+  redundante.
 - **A partir de agora, desenvolvimento só no `main`** — decisão do usuário depois de
   conseguir a conta Apple Developer paga: bloqueio de apps e o gate de "inútil sem
   luminária" só fazem sentido com a entitlement paga mesmo, então a
@@ -639,6 +648,21 @@ O usuário perguntou sobre viabilidade de controlar a luminária de verdade via 
   `Family Controls` em developer.apple.com (ação do usuário, aprovação manual sem
   prazo fixo — ver pendência acima) antes de testar de verdade num device; até lá o
   código compila mas o bloqueio não funciona de fato.
+- **2026-08-05 (mesmo dia, à tarde)**: primeiro envio de verdade pro TestFlight via
+  Codemagic, feito passo a passo pelo usuário direto no navegador (sem acesso a
+  Xcode/Mac). App "Zleepy Lamp" criado no App Store Connect, App ID `com.luminaria.app`
+  registrado com NFC Tag Reading, `codemagic.yaml` preenchido com Apple ID real
+  (`6798370889`) e grupo de teste interno `Interno`. Três problemas reais resolvidos
+  nessa sessão (todos documentados em Decisões acima): app rejeitado por declarar
+  suporte a iPad sem as 4 orientações exigidas pro multitasking (`TARGETED_DEVICE_FAMILY`
+  restrito a `1`, só iPhone); certificado/provisioning profile de distribuição
+  precisaram ser criados manualmente na primeira vez (API key "Admin" sozinha não
+  bastou); entitlement NDEF descontinuada pela Apple travava o processamento do binário
+  (`Luminaria.entitlements` esvaziado). Upload finalizado com sucesso
+  ("Build completed successfully") — build já disponível pro grupo de Teste Interno
+  automaticamente no TestFlight, sem precisar do passo de atribuição manual (removido
+  do `codemagic.yaml`, só serve pra Teste Externo). Ainda falta o usuário confirmar
+  que a build aparece e instala de verdade pelo app TestFlight no iPhone.
 
 ## Como retomar em outro computador
 

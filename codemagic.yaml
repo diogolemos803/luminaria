@@ -50,8 +50,11 @@ workflows:
       app_store_connect:
         auth: integration
         submit_to_testflight: true
-        beta_groups:
-          - Interno
+        # Sem beta_groups: "Interno" é um grupo de Teste Interno no TestFlight, que
+        # recebe builds novos automaticamente - tentar atribuir explicitamente causa
+        # "Cannot add internal group to a build" (a API só aceita isso pra grupos de
+        # Teste Externo). O upload e o processamento continuam funcionando normalmente
+        # sem essa opção.
 
     # Builds só manuais por enquanto (sem bloco "triggering"): como o projeto ainda está em
     # desenvolvimento ativo com pushes frequentes na main, disparar um build+envio ao
