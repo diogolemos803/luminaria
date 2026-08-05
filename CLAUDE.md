@@ -331,6 +331,18 @@ Fluxo usado pra testar de verdade, todo do Windows:
   `com.luminaria.app` e o certificado recém-criado, baixar o `.mobileprovision` e subir
   em Codemagic → Code signing identities → iOS provisioning profiles. Depois de criados
   uma vez, o Codemagic deve reutilizá-los sozinho nos próximos builds/renovações.
+- **Bug real já corrigido: `NDEF is disallowed` rejeitava o envio no processamento do
+  App Store Connect** (erro clássico da Apple, ITMS-90778) — `Luminaria.entitlements`
+  tinha `com.apple.developer.nfc.readersession.formats` com o valor `NDEF`, um padrão
+  que versões antigas do Xcode inseriam automaticamente ao ativar a capability de NFC,
+  mas que a Apple descontinuou (só `TAG` é aceito nessa entitlement hoje). A boa notícia:
+  `NFCNDEFReaderSession` (a API usada em `NFCManager.swift`) **não precisa dessa
+  entitlement pra funcionar** — ela só é exigida pra leitura de baixo nível via
+  `NFCTagReaderSession`, que não é o caso daqui. Basta o `NFCReaderUsageDescription` no
+  `Info.plist` (que já existia). Fix: `Luminaria.entitlements` esvaziado (`<dict/>`),
+  igual ao que a branch `teste-gratis-sem-nfc` já fazia sem conta paga — a leitura NFC
+  continua funcionando normalmente, só o processamento no App Store Connect que exigia
+  isso.
 - **A partir de agora, desenvolvimento só no `main`** — decisão do usuário depois de
   conseguir a conta Apple Developer paga: bloqueio de apps e o gate de "inútil sem
   luminária" só fazem sentido com a entitlement paga mesmo, então a
