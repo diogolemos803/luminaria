@@ -304,6 +304,33 @@ Fluxo usado pra testar de verdade, todo do Windows:
   contra o SDK `iphoneos` (mesma receita sem assinatura do `sideload-ipa.yml`) reflete
   melhor a plataforma real de uso do que o Simulador, onde essas APIs nunca vão rodar de
   qualquer forma.
+- **`TARGETED_DEVICE_FAMILY` trocado de `"1,2"` (iPhone + iPad) pra `1` (só iPhone)**
+  (2026-08-05, achado no primeiro envio real pro TestFlight via Codemagic) — o app
+  compilava e assinava normalmente, mas o envio ao App Store Connect era rejeitado:
+  "Invalid bundle. The UIInterfaceOrientationPortrait orientations were provided...
+  but you need to include all of the ...orientations to support iPad multitasking."
+  A Apple exige que qualquer app universal (iPhone+iPad) declare as 4 orientações no
+  Info.plist, por causa do multitasking do iPad (Split View/Slide Over) — mas o
+  `Info.plist` só declara Portrait, de propósito (é uma tela única com botão redondo,
+  sem layout pensado pra iPad ou paisagem). Em vez de forçar orientações que não fazem
+  sentido pro design só pra passar na validação, a correção certa é não anunciar suporte
+  a iPad, já que o app nunca foi pensado pra rodar lá. `TARGETED_DEVICE_FAMILY = 1`
+  atualizado nas 4 seções de build settings do `project.pbxproj` (Debug/Release ×
+  nível de projeto/target).
+- **Certificado e provisioning profile de distribuição precisam ser criados
+  manualmente na primeira vez, mesmo com API key "Admin" configurada no Codemagic** —
+  descoberto testando o primeiro envio de verdade: mesmo depois de conectar a
+  integração `LuminariaAppStoreKey` (App Store Connect API key com acesso Admin), o
+  build falhava com "No matching profiles found for bundle identifier com.luminaria.app
+  and distribution type app_store". A integração da API key só dá *acesso* — não gera
+  sozinha o certificado de distribuição nem o provisioning profile na primeira vez.
+  Precisou: (1) gerar um certificado "Apple Distribution" em Codemagic → Settings →
+  Code signing identities → iOS certificates → "Generate certificate"; (2) como não
+  existe botão de "gerar" profile no Codemagic, criar o provisioning profile manualmente
+  em developer.apple.com → Profiles → tipo "App Store", usando o App ID
+  `com.luminaria.app` e o certificado recém-criado, baixar o `.mobileprovision` e subir
+  em Codemagic → Code signing identities → iOS provisioning profiles. Depois de criados
+  uma vez, o Codemagic deve reutilizá-los sozinho nos próximos builds/renovações.
 - **A partir de agora, desenvolvimento só no `main`** — decisão do usuário depois de
   conseguir a conta Apple Developer paga: bloqueio de apps e o gate de "inútil sem
   luminária" só fazem sentido com a entitlement paga mesmo, então a
