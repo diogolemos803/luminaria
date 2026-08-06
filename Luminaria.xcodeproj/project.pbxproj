@@ -34,6 +34,7 @@
 		AAAAAAAAAAAAAAAAAAAAAA48 /* LuminariaWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA47 /* LuminariaWidgetBundle.swift */; };
 		AAAAAAAAAAAAAAAAAAAAAA4A /* AlarmWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA49 /* AlarmWidget.swift */; };
 		AAAAAAAAAAAAAAAAAAAAAA52 /* LuminariaWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA4D /* LuminariaWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		AAAAAAAAAAAAAAAAAAAAAA5A /* AppTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA31 /* AppTheme.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -314,6 +315,7 @@
 			files = (
 				AAAAAAAAAAAAAAAAAAAAAA48 /* LuminariaWidgetBundle.swift in Sources */,
 				AAAAAAAAAAAAAAAAAAAAAA4A /* AlarmWidget.swift in Sources */,
+				AAAAAAAAAAAAAAAAAAAAAA5A /* AppTheme.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

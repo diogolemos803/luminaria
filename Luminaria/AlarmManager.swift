@@ -1,5 +1,6 @@
 import AVFoundation
 import UserNotifications
+import WidgetKit
 
 /// Despertador próprio do app, sem depender do Atalhos nem do app Relógio (a Apple não
 /// oferece API pública pra criar um alarme nativo de fora do app Relógio).
@@ -48,6 +49,14 @@ final class AlarmManager: NSObject, ObservableObject {
     private static let soundKey = "com.luminaria.alarm.sound"
     private static let nextFireKey = "com.luminaria.alarm.nextFire"
     private static let alarmCategoryID = "com.luminaria.alarmCategory"
+
+    /// App Group compartilhado com a `LuminariaWidgetExtension` — só pra ela saber o
+    /// próximo horário de despertador (chaves separadas das já existentes acima, que
+    /// continuam em `UserDefaults.standard` sem mudança nenhuma).
+    private static let widgetSuiteName = "group.com.luminaria.app"
+    private static let widgetArmedKey = "widget.isArmed"
+    private static let widgetNextFireKey = "widget.nextFireDate"
+    private static let widgetKind = "com.luminaria.app.AlarmWidget"
     private static let stopActionID = "com.luminaria.stopAlarmAction"
 
     private override init() {
@@ -270,10 +279,24 @@ final class AlarmManager: NSObject, ObservableObject {
         defaults.set(scheduledMinute, forKey: Self.minuteKey)
         defaults.set(scheduledSoundFileName, forKey: Self.soundKey)
         defaults.set(nextFireDate?.timeIntervalSince1970, forKey: Self.nextFireKey)
+        updateWidgetState(isArmed: true, nextFireDate: nextFireDate)
     }
 
     private func clearPersistedState() {
         UserDefaults.standard.set(false, forKey: Self.armedKey)
+        updateWidgetState(isArmed: false, nextFireDate: nil)
+    }
+
+    /// Ponto único chamado tanto por `persistArmedState()` (armar e reagendar após cada
+    /// disparo) quanto por `clearPersistedState()` (desarmar) — cobre os três casos reais
+    /// (`armAlarm`, `disarmAlarm`, `fireScheduledAlarm`) sem duplicar a chamada em cada um.
+    /// Escreve num App Group separado da persistência normal acima, só pra
+    /// `LuminariaWidgetExtension` conseguir ler (processos/sandboxes diferentes).
+    private func updateWidgetState(isArmed: Bool, nextFireDate: Date?) {
+        guard let sharedDefaults = UserDefaults(suiteName: Self.widgetSuiteName) else { return }
+        sharedDefaults.set(isArmed, forKey: Self.widgetArmedKey)
+        sharedDefaults.set(nextFireDate?.timeIntervalSince1970, forKey: Self.widgetNextFireKey)
+        WidgetCenter.shared.reloadTimelines(ofKind: Self.widgetKind)
     }
 
     /// Restaura o estado armado ao relançar o processo (ex.: o iOS mata o app em segundo

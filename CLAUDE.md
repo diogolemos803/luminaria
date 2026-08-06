@@ -128,12 +128,11 @@ depende de CI num runner macOS na nuvem (GitHub Actions) e de sideload via AltSt
 - `LuminariaWidget/` (só no `main`) — **target novo no Xcode** (Widget Extension,
   `com.luminaria.app.LuminariaWidgetExtension`), primeira vez que este projeto ganha um
   target além do app principal. `LuminariaWidgetBundle.swift` (`@main WidgetBundle`) +
-  `AlarmWidget.swift` (por enquanto só esqueleto estático — `TimelineProvider`/`Widget`/
-  view mínimos, sem dado real ainda, só pra validar que o target novo compila e embute
-  certo no app; a funcionalidade de verdade — mostrar o próximo despertador via App
-  Group compartilhado com `AlarmManager`, e um link `luminaria://` que abre o app pra
-  parar o alarme — entra num commit seguinte). Motivo de existir: contornar o Foco/Não
-  Perturbe filtrando a notificação do despertador — widgets não são notificações, o
+  `AlarmWidget.swift` (widget de Tela Bloqueada — `.accessoryRectangular` — mostrando
+  "Despertador às HH:mm" ou "Nenhum despertador armado", lido de um App Group
+  compartilhado com `AlarmManager`; tocar nele abre o app via `.widgetURL(luminaria://
+  open)`). Motivo de existir: contornar o Foco/Não Perturbe filtrando a notificação do
+  despertador — widgets não são notificações, o
   Foco não tem poder sobre eles. Decisão de arquitetura: o widget usa `.widgetURL(...)`
   (link comum, iOS 16+), não um botão interativo via App Intent (iOS 17+) — parar o
   alarme de verdade exige rodar código no processo do app principal de qualquer jeito
@@ -647,18 +646,24 @@ Rollout combinado em 2 commits, pra pegar erro de `pbxproj`/compilação de gra�
 `build.yml` antes de gastar minutos do Codemagic (ver `LuminariaWidget/` em
 Arquitetura acima pro porquê da decisão de usar link em vez de botão interativo):
 
-1. **Commit 1 (feito)**: só o esqueleto mecânico do target novo — compila e embute,
-   sem dado real, sem App Group, sem `AppTheme.swift` compartilhado.
-2. **Commit 2 (falta fazer)**: `AppTheme.swift` compartilhado com a extension (só pelo
-   `Font.luminaria` — cores customizadas da `ModeTheme` são ignoradas pelo material
-   "vibrante" do sistema em widgets de Tela Bloqueada, limitação da Apple, não do
-   código), App Group `group.com.luminaria.app` nas duas entitlements
-   (`Luminaria.entitlements` E `LuminariaWidget/LuminariaWidget.entitlements`), hooks
-   em `AlarmManager.persistArmedState()`/`clearPersistedState()` escrevendo o estado
-   compartilhado + `WidgetCenter.shared.reloadTimelines()`, UI real do widget lendo
-   esse estado, `#available(iOS 17, *)` com `containerBackground(for: .widget)` e
-   fallback `.background()` pra baixo disso (sem isso o widget quebra silenciosamente
-   em iOS 17+, sem erro de build).
+1. **Commit 1 (feito, `build.yml` verde de primeira)**: só o esqueleto mecânico do
+   target novo — compila e embute, sem dado real, sem App Group, sem `AppTheme.swift`
+   compartilhado. Validou que o grafo do `pbxproj` está correto antes de ir pra parte
+   com mais superfície de erro (App Group + API do WidgetKit).
+2. **Commit 2 (feito)**: `AppTheme.swift` compartilhado com a extension (segunda
+   entrada de `PBXBuildFile` apontando pro mesmo `PBXFileReference` já existente, só
+   pelo `Font.luminaria` — cores customizadas da `ModeTheme` são ignoradas pelo
+   material "vibrante" do sistema em widgets de Tela Bloqueada, limitação da Apple,
+   não do código), App Group `group.com.luminaria.app` nas duas entitlements
+   (`Luminaria.entitlements` E `LuminariaWidget/LuminariaWidget.entitlements`), hook
+   único em `AlarmManager.updateWidgetState(isArmed:nextFireDate:)` chamado de dentro
+   de `persistArmedState()`/`clearPersistedState()` — cobre os 3 pontos reais que
+   mexem no estado armado (`armAlarm`, `disarmAlarm`, `fireScheduledAlarm`) sem
+   duplicar a chamada em cada um — escrevendo em `UserDefaults(suiteName:)` +
+   `WidgetCenter.shared.reloadTimelines(ofKind:)`. `AlarmWidget.swift` lê esse estado
+   e mostra "Despertador às HH:mm" (ou "Nenhum despertador armado"), com
+   `#available(iOS 17, *)` + `containerBackground(for: .widget)` e fallback
+   `.background()` pra baixo disso.
 3. **Só depois dos 2 commits com `build.yml` verde**, passos externos (fora do meu
    controle, guiados um a um como já foi feito hoje pra Family Controls): criar o App
    Group em developer.apple.com; registrar o App ID novo
