@@ -738,6 +738,17 @@ O usuário perguntou sobre viabilidade de controlar a luminária de verdade via 
      bug**: depende da entitlement `Family Controls`, ainda pendente de aprovação
      manual da Apple (ver pendência “Bloqueio de apps” acima). Confirmar com o usuário
      se o pedido de acesso já foi enviado em developer.apple.com.
+- **2026-08-05 (checkpoint `v2`)**: `Family Controls` aprovada no mesmo dia do pedido;
+  provisioning profile de distribuição regenerado no Codemagic pra incluir a capability
+  nova. App confirmado funcionando de ponta a ponta no iPhone físico via TestFlight:
+  vincular luminária, reconhecer qualquer tag NFC pra armar o modo noite, despertador
+  disparando junto com a rotina ativa, bloqueio de apps funcionando de verdade (testado
+  bloqueando o TikTok), e bloqueio terminando sozinho quando o despertador toca (ver
+  Decisões acima). Próximo passo (ainda não iniciado): widget de Tela Bloqueada com
+  botão "Parar" pro despertador, que contornaria o Foco/Não Perturbe filtrando a
+  notificação (widgets não são notificações, o Foco não tem poder sobre eles) — mesma
+  categoria de risco da `ShieldActionExtension` (target novo no Xcode, não um arquivo
+  no target existente), então também fica pra quando houver sessão real de Xcode.
 
 ## Como retomar em outro computador
 
