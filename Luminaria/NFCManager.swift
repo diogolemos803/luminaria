@@ -83,12 +83,12 @@ final class NFCManager: NSObject, ObservableObject {
                         self.statusMessage = "Luminária reconhecida"
                         self.onRecognizedTap?()
                     } else {
-                        // IDs mostrados de propósito (diagnóstico temporário): usuário
-                        // relatou "tag não reconhecida" usando a MESMA tag do vínculo
-                        // original — precisa ver os dois valores de verdade num device
-                        // físico pra confirmar se é a mesma tag gerando IDs diferentes
-                        // ou se caiu no fallback de UUID aleatório do identifier(for:).
-                        session.invalidate(errorMessage: "Tag errada. Lida: \(tagID) · Vinculada: \(self.linkedTagID ?? "-")")
+                        // Diagnóstico temporário (2ª rodada): confirmado que o ID lido é
+                        // um UUID aleatório (fallback de identifier(for:) quando a tag
+                        // não bate com nenhum dos 4 tipos concretos conhecidos). Agora
+                        // precisamos saber QUAL é o tipo real da tag pra tratar ele.
+                        let typeName = String(describing: type(of: tag))
+                        session.invalidate(errorMessage: "Tipo da tag: \(typeName)")
                     }
                 } else {
                     self.recognizedThisSession = true
