@@ -596,14 +596,17 @@ implementada, mas fica registrada como ideia intermediária caso valha revisitar
 
 ## ⚠️ Pendências do bloqueio de apps (não esquecer)
 
-1. **Pedido da entitlement `Family Controls`** — precisa ser feito pelo usuário em
-   developer.apple.com (bundle ID `com.luminaria.app`), aprovação manual da Apple, sem
-   prazo fixo. Sem isso, `ScreenTimeManager`/`AppBlockingView` compilam mas não
-   funcionam de verdade em nenhum device. Verificar status antes de cada tentativa de
-   teste real no device.
-2. **`Luminaria.entitlements` só recebe `com.apple.developer.family-controls` depois**
-   da aprovação acima — adicionar antes quebra a assinatura no device.
-3. **`ShieldActionExtension`** (contar tentativas de abrir app bloqueado) fica pra
+1. ~~Pedido da entitlement `Family Controls`~~ — **aprovado em 2026-08-05**, no mesmo
+   dia do pedido (capability "Family Controls (Distribution)" marcada no App ID
+   `com.luminaria.app`, `com.apple.developer.family-controls` adicionado em
+   `Luminaria.entitlements`). Como o App ID ganhou uma capability nova, o provisioning
+   profile de distribuição existente no Codemagic (gerado antes dessa aprovação) precisa
+   ser **regenerado** — o antigo não inclui essa capability. Refazer o passo já
+   documentado nas Decisões acima ("Certificado e provisioning profile... precisam ser
+   criados manualmente"): gerar um profile "App Store" novo em developer.apple.com pro
+   mesmo App ID/certificado, baixar o `.mobileprovision` e subir de novo em Codemagic →
+   Code signing identities → iOS provisioning profiles, antes do próximo build.
+2. **`ShieldActionExtension`** (contar tentativas de abrir app bloqueado) fica pra
    quando houver sessão real no Xcode — código Swift ainda não escrito, só planejado
    (ver Decisões acima). Quando for feita: criar o target via assistente do Xcode
    (Shield Action Extension), configurar App Group compartilhado com o app principal,
