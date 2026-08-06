@@ -55,12 +55,17 @@ workflows:
 
       app_store_connect:
         auth: integration
-        submit_to_testflight: true
-        # Sem beta_groups: "Interno" é um grupo de Teste Interno no TestFlight, que
-        # recebe builds novos automaticamente - tentar atribuir explicitamente causa
-        # "Cannot add internal group to a build" (a API só aceita isso pra grupos de
-        # Teste Externo). O upload e o processamento continuam funcionando normalmente
-        # sem essa opção.
+        # submit_to_testflight desligado de propósito: essa flag dispara um envio pra
+        # "Beta App Review" da Apple, que só é exigido de verdade pra testadores
+        # EXTERNOS. Grupos de Teste Interno (nosso caso, "Interno") nunca precisam de
+        # revisão - ficam disponíveis pros testadores assim que a Apple termina de
+        # processar o binário, automaticamente. Com a flag ligada, toda vez que já
+        # havia uma revisão pendente de um build anterior (que nunca é aprovada nem
+        # rejeitada em teste puramente interno), o envio do build novo travava com
+        # "Another build is in review" - o upload e o processamento sempre funcionavam,
+        # só essa etapa extra e desnecessária que falhava.
+
+    # Builds só manuais por enquanto (sem bloco "triggering"): como o projeto ainda está em
 
     # Builds só manuais por enquanto (sem bloco "triggering"): como o projeto ainda está em
     # desenvolvimento ativo com pushes frequentes na main, disparar um build+envio ao

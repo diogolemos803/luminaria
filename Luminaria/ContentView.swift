@@ -89,6 +89,13 @@ struct ContentView: View {
                     alarmManager.armAlarm(hour: routine.alarmHour, minute: routine.alarmMinute, soundFileName: routine.soundOption.fileName)
                     screenTimeManager.applyShield()
                 }
+                // Sem isso, cancelar a leitura, deixar dar timeout (~60s do CoreNFC) ou
+                // encostar a tag errada deixava o app preso em "Zleepy mode" sem nada
+                // realmente armado — o modo noite só deve "pegar" se a leitura terminar
+                // com sucesso.
+                nfcManager.onScanEndedWithoutMatch = {
+                    isNightModeArmed = false
+                }
             }
             .onChange(of: scenePhase) { newPhase in
                 if newPhase == .active {

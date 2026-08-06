@@ -684,6 +684,31 @@ O usuário perguntou sobre viabilidade de controlar a luminária de verdade via 
   automaticamente no TestFlight, sem precisar do passo de atribuição manual (removido
   do `codemagic.yaml`, só serve pra Teste Externo). Ainda falta o usuário confirmar
   que a build aparece e instala de verdade pelo app TestFlight no iPhone.
+- **2026-08-05 (à noite)**: app confirmado rodando de verdade no iPhone via TestFlight.
+  Três problemas achados testando NFC/bloqueio de apps pela primeira vez num device
+  real:
+  1. Bug real corrigido: `LockedView` não mostrava `nfcManager.errorMessage` — o botão
+     "Vincular luminária" parecia não fazer nada quando na verdade `beginScanning()`
+     retornava cedo com um erro silencioso. Revelou que `NFCNDEFReaderSession.
+     readingAvailable` estava `false` com a entitlement vazia — ver correção da
+     entitlement (`TAG` em vez de vazia) nas Decisões acima.
+  2. **Ainda em diagnóstico**: reconhecer a MESMA tag já vinculada estava retornando
+     "tag não é a luminária vinculada". Causa mais provável (não confirmada): o
+     `identifier(for:)` cai no fallback `UUID()` aleatório quando a tag não bate com
+     nenhum dos 4 tipos concretos (`NFCMiFareTag`/`NFCISO15693Tag`/`NFCISO7816Tag`/
+     `NFCFeliCaTag`) — geraria um ID novo a cada leitura, fazendo a comparação falhar
+     sempre. Adicionado diagnóstico temporário: a mensagem de erro do NFC agora mostra
+     os dois IDs comparados (lido vs. vinculado) pra confirmar a causa real no próximo
+     teste antes de aplicar um fix definitivo.
+  3. Bug real corrigido: nada desarmava o modo noite se a leitura NFC fosse cancelada,
+     desse timeout (~60s do CoreNFC) ou reconhecesse a tag errada — o app ficava preso
+     em "Zleepy mode" sem nada de fato armado. Novo callback `NFCManager.
+     onScanEndedWithoutMatch`, disparado em `didInvalidateWithError` sempre que a
+     sessão termina sem sucesso, desarma `isNightModeArmed` em `ContentView`.
+  4. Bloqueio de apps não funciona ainda ("Não autorizado") — **isso é esperado, não é
+     bug**: depende da entitlement `Family Controls`, ainda pendente de aprovação
+     manual da Apple (ver pendência “Bloqueio de apps” acima). Confirmar com o usuário
+     se o pedido de acesso já foi enviado em developer.apple.com.
 
 ## Como retomar em outro computador
 

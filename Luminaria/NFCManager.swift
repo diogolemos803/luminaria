@@ -10,9 +10,15 @@ final class NFCManager: NSObject, ObservableObject {
 
     /// Chamado quando a tag vinculada é reconhecida novamente (uso: disparar o Atalho).
     var onRecognizedTap: (() -> Void)?
+    /// Chamado quando a sessão termina SEM reconhecer a tag vinculada (cancelou, deu
+    /// timeout dos ~60s do CoreNFC, ou encostou a tag errada) — usado pra desarmar o
+    /// modo noite automaticamente em vez de deixar o app preso num estado "armado" que
+    /// nunca vai disparar nada.
+    var onScanEndedWithoutMatch: (() -> Void)?
 
     private var session: NFCNDEFReaderSession?
     private let linkedTagKey = "com.luminaria.linkedTagID"
+    private var recognizedThisSession = false
 
     override init() {
         super.init()
@@ -22,6 +28,7 @@ final class NFCManager: NSObject, ObservableObject {
 
     func beginScanning() {
         errorMessage = nil
+        recognizedThisSession = false
         guard NFCNDEFReaderSession.readingAvailable else {
             errorMessage = "Este iPhone não tem suporte a leitura NFC."
             return
@@ -70,14 +77,21 @@ final class NFCManager: NSObject, ObservableObject {
             DispatchQueue.main.async {
                 if self.isLinked {
                     if self.linkedTagID == tagID {
+                        self.recognizedThisSession = true
                         session.alertMessage = "Luminária reconhecida!"
                         session.invalidate()
                         self.statusMessage = "Luminária reconhecida"
                         self.onRecognizedTap?()
                     } else {
-                        session.invalidate(errorMessage: "Esta tag não é a luminária vinculada.")
+                        // IDs mostrados de propósito (diagnóstico temporário): usuário
+                        // relatou "tag não reconhecida" usando a MESMA tag do vínculo
+                        // original — precisa ver os dois valores de verdade num device
+                        // físico pra confirmar se é a mesma tag gerando IDs diferentes
+                        // ou se caiu no fallback de UUID aleatório do identifier(for:).
+                        session.invalidate(errorMessage: "Tag errada. Lida: \(tagID) · Vinculada: \(self.linkedTagID ?? "-")")
                     }
                 } else {
+                    self.recognizedThisSession = true
                     UserDefaults.standard.set(tagID, forKey: self.linkedTagKey)
                     self.linkedTagID = tagID
                     self.isLinked = true
@@ -93,6 +107,12 @@ final class NFCManager: NSObject, ObservableObject {
 extension NFCManager: NFCNDEFReaderSessionDelegate {
     func readerSession(_ session: NFCNDEFReaderSession, didInvalidateWithError error: Error) {
         DispatchQueue.main.async {
+            // Sessão terminou sem reconhecer a tag vinculada (cancelou, timeout dos
+            // ~60s do CoreNFC, ou tag errada) — desarma o modo noite pelo mesmo motivo
+            // documentado no app: só fica armado se a leitura realmente for concluída.
+            if !self.recognizedThisSession {
+                self.onScanEndedWithoutMatch?()
+            }
             if let nfcError = error as? NFCReaderError,
                nfcError.code == .readerSessionInvalidationErrorUserCanceled ||
                nfcError.code == .readerSessionInvalidationErrorFirstNDEFTagRead {
