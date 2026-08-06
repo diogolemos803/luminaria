@@ -255,8 +255,23 @@ Fluxo usado pra testar de verdade, todo do Windows:
   `else` quando `!isLinked`) é o que vira "a" luminária vinculada; não há tag
   hardcoded. Único requisito real: a tag precisa ser NDEF-capaz (praticamente
   qualquer adesivo NFC barato tipo NTAG213/215 serve; cartões de pagamento/transporte
-  por aproximação podem não servir). Nenhuma mudança de código foi necessária pra
-  isso — só confirmar o comportamento já existente.
+  por aproximação podem não servir).
+- **Bug real corrigido, depois simplificado por decisão do usuário: reconhecer a tag
+  já vinculada não funcionava num build de distribuição** — testando pela primeira vez
+  via TestFlight (2026-08-05), a mesma tag usada pra vincular era sempre rejeitada como
+  "tag errada". Causa raiz: `identifier(for:)` fazia `tag as? NFCMiFareTag` (e as outras
+  3 classes concretas) diretamente do protocolo `NFCNDEFTag` — isso funciona em build de
+  Debug (Xcode/AltStore, usado em todos os testes anteriores) mas falha num build de
+  Release/distribuição real (`type(of: tag)` confirmado retornando só `"NFCNDEFTag"`, o
+  protocolo, nunca a classe concreta), caindo sempre no fallback `UUID()` aleatório — daí
+  o ID nunca batia com o salvo. Diagnosticado em 2 rodadas (mostrando os IDs comparados,
+  depois o tipo da tag) direto na tela do NFC antes de aplicar qualquer fix, pra não
+  arriscar builds errados com o usuário tendo minutos limitados no Codemagic. Fix técnico
+  aplicado (`tag as AnyObject` antes do `as?`, contornando o downcast direto do
+  protocolo) — mas o usuário decidiu simplificar de qualquer forma: depois de vincular
+  uma vez (mantém a trava de "inútil sem luminária"), **qualquer tag NFC reconhecida
+  dispara o modo noite**, sem comparar ID nenhum. Mais simples e menos frágil a esse
+  tipo de bug de plataforma no futuro.
 - **Bloqueio de apps exige uma entitlement separada, que não vem só da conta
   Developer paga** — `com.apple.developer.family-controls` (Screen Time API) é uma
   entitlement privilegiada: a Apple exige um pedido escrito à parte (bundle ID +
@@ -692,14 +707,15 @@ O usuário perguntou sobre viabilidade de controlar a luminária de verdade via 
      retornava cedo com um erro silencioso. Revelou que `NFCNDEFReaderSession.
      readingAvailable` estava `false` com a entitlement vazia — ver correção da
      entitlement (`TAG` em vez de vazia) nas Decisões acima.
-  2. **Ainda em diagnóstico**: reconhecer a MESMA tag já vinculada estava retornando
-     "tag não é a luminária vinculada". Causa mais provável (não confirmada): o
-     `identifier(for:)` cai no fallback `UUID()` aleatório quando a tag não bate com
-     nenhum dos 4 tipos concretos (`NFCMiFareTag`/`NFCISO15693Tag`/`NFCISO7816Tag`/
-     `NFCFeliCaTag`) — geraria um ID novo a cada leitura, fazendo a comparação falhar
-     sempre. Adicionado diagnóstico temporário: a mensagem de erro do NFC agora mostra
-     os dois IDs comparados (lido vs. vinculado) pra confirmar a causa real no próximo
-     teste antes de aplicar um fix definitivo.
+  2. Bug real diagnosticado e resolvido (via simplificação): reconhecer a MESMA tag já
+     vinculada estava retornando "tag não é a luminária vinculada". Causa raiz
+     confirmada em 2 rodadas de diagnóstico direto na tela do NFC: `identifier(for:)`
+     fazia `tag as? NFCMiFareTag` (e as outras 3 classes) direto do protocolo
+     `NFCNDEFTag`, o que falha num build de Release/distribuição (`type(of: tag)`
+     confirmado retornando só `"NFCNDEFTag"`), caindo sempre no fallback `UUID()`
+     aleatório. Usuário decidiu simplificar em vez de só corrigir o downcast: qualquer
+     tag NFC reconhecida agora dispara o modo noite, sem comparar ID — ver Decisões
+     acima.
   3. Bug real corrigido: nada desarmava o modo noite se a leitura NFC fosse cancelada,
      desse timeout (~60s do CoreNFC) ou reconhecesse a tag errada — o app ficava preso
      em "Zleepy mode" sem nada de fato armado. Novo callback `NFCManager.

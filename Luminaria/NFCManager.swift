@@ -52,13 +52,20 @@ final class NFCManager: NSObject, ObservableObject {
     }
 
     private func identifier(for tag: NFCNDEFTag) -> String {
-        if let mifareTag = tag as? NFCMiFareTag {
+        // Downcast direto do protocolo (`tag as? NFCMiFareTag`) falha num build de
+        // Release/distribuição — confirmado no device via TestFlight (`type(of: tag)`
+        // retornava só "NFCNDEFTag", o próprio protocolo, nunca a classe concreta).
+        // Passar por `AnyObject` primeiro força o cast a usar o runtime do Objective-C
+        // (`isKindOfClass:`) em vez do mecanismo de protocolo do Swift, que é o fix
+        // documentado pra esse problema conhecido do CoreNFC.
+        let object = tag as AnyObject
+        if let mifareTag = object as? NFCMiFareTag {
             return mifareTag.identifier.map { String(format: "%02X", $0) }.joined()
-        } else if let iso15693Tag = tag as? NFCISO15693Tag {
+        } else if let iso15693Tag = object as? NFCISO15693Tag {
             return iso15693Tag.identifier.map { String(format: "%02X", $0) }.joined()
-        } else if let iso7816Tag = tag as? NFCISO7816Tag {
+        } else if let iso7816Tag = object as? NFCISO7816Tag {
             return iso7816Tag.identifier.map { String(format: "%02X", $0) }.joined()
-        } else if let felicaTag = tag as? NFCFeliCaTag {
+        } else if let felicaTag = object as? NFCFeliCaTag {
             return felicaTag.currentIDm.map { String(format: "%02X", $0) }.joined()
         } else {
             return UUID().uuidString
@@ -72,26 +79,22 @@ final class NFCManager: NSObject, ObservableObject {
                 session.invalidate(errorMessage: "Falha ao conectar: \(error.localizedDescription)")
                 return
             }
-            let tagID = self.identifier(for: tag)
 
             DispatchQueue.main.async {
+                self.recognizedThisSession = true
                 if self.isLinked {
-                    if self.linkedTagID == tagID {
-                        self.recognizedThisSession = true
-                        session.alertMessage = "Luminária reconhecida!"
-                        session.invalidate()
-                        self.statusMessage = "Luminária reconhecida"
-                        self.onRecognizedTap?()
-                    } else {
-                        // Diagnóstico temporário (2ª rodada): confirmado que o ID lido é
-                        // um UUID aleatório (fallback de identifier(for:) quando a tag
-                        // não bate com nenhum dos 4 tipos concretos conhecidos). Agora
-                        // precisamos saber QUAL é o tipo real da tag pra tratar ele.
-                        let typeName = String(describing: type(of: tag))
-                        session.invalidate(errorMessage: "Tipo da tag: \(typeName)")
-                    }
+                    // Não compara mais o ID da tag com a vinculada — depois de vincular
+                    // uma vez (o que já mantém a trava de "inútil sem luminária"),
+                    // qualquer tag NFC reconhecida dispara o modo noite. Decisão do
+                    // usuário pra simplificar, depois de identificar (e corrigir) um bug
+                    // real de downcast de `NFCNDEFTag` em build de distribuição que
+                    // tornava a comparação de ID pouco confiável.
+                    session.alertMessage = "Luminária reconhecida!"
+                    session.invalidate()
+                    self.statusMessage = "Luminária reconhecida"
+                    self.onRecognizedTap?()
                 } else {
-                    self.recognizedThisSession = true
+                    let tagID = self.identifier(for: tag)
                     UserDefaults.standard.set(tagID, forKey: self.linkedTagKey)
                     self.linkedTagID = tagID
                     self.isLinked = true
