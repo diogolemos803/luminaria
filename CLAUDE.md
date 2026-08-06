@@ -44,14 +44,27 @@ depende de CI num runner macOS na nuvem (GitHub Actions) e de sideload via AltSt
   dispara e toca o som é o próprio iOS.
 - `Luminaria/SleepRoutineStore.swift` — `AlarmSoundOption` (enum com os 4 sons
   disponíveis), `SleepRoutine` (nome + horário do despertador + horário de desligar Modo
-  Noturno + som escolhido) e `SleepRoutineStore` (`ObservableObject`, lista dinâmica de
-  rotinas persistida como JSON no `UserDefaults`, com `activeRoutineID` marcando qual
-  está em uso). Migra automaticamente, na primeira execução após essa mudança, os
-  valores antigos soltos em `@AppStorage` (`alarmHour` etc.) pra uma rotina "Minha
-  rotina", preservando o que o usuário já tinha configurado.
-- `Luminaria/SleepRoutinesView.swift` — `SleepRoutinesView` (lista de rotinas: ativar,
-  excluir, criar) e `RoutineEditView` (nome, horários, escolha de som com botão
-  "Testar" pra ouvir a prévia sem precisar armar nada).
+  Noturno + som escolhido + `appSelection: FamilyActivitySelection`, os apps bloqueados
+  DESSA rotina — cada rotina tem a própria lista, não é mais um bloqueio global) e
+  `SleepRoutineStore` (`ObservableObject`, lista dinâmica de rotinas persistida como
+  JSON no `UserDefaults`, com `activeRoutineID` marcando qual está em uso, e
+  `setActive(id:)` pra trocar). Migra automaticamente, na primeira execução após essa
+  mudança, os valores antigos soltos em `@AppStorage` (`alarmHour` etc.) pra uma
+  rotina "Minha rotina", preservando o que o usuário já tinha configurado.
+  `SleepRoutine.init(from:)` é escrito à mão (`encode(to:)` continua sintetizado) só
+  pra tratar `appSelection` como opcional na leitura — rotinas salvas antes da
+  mudança pra bloqueio por rotina não têm essa chave no JSON, e o decode sintetizado
+  exigiria ela sempre, resetando as rotinas do usuário; decodifica pra
+  `FamilyActivitySelection()` vazia quando ausente, mesmo espírito da migração já
+  feita pra `AlarmSoundOption`.
+- `Luminaria/SleepRoutinesView.swift` — `SleepRoutinesView` (lista de rotinas: ativar
+  via swipe, excluir, criar; subtítulo de cada linha mostra a contagem de apps
+  bloqueados quando > 0) e `RoutineEditView` (nome, horários, escolha de som com botão
+  "Testar" pra ouvir a prévia sem precisar armar nada, `NavigationLink` pro
+  `AppBlockingView` dessa rotina, e um botão "Tornar rotina ativa" visível — antes só
+  dava pra trocar a rotina ativa via swipe escondido em `SleepRoutinesView`, sem
+  nenhuma affordance visual; o swipe continua existindo como atalho extra, não foi
+  removido).
 - `Luminaria/HelpView.swift` — instruções de configuração do Atalho "Dormir sem celular"
   (antes era `ShortcutSetupView`, embutida em `ContentView.swift`) + o passo a passo de
   "desligar Modo Noturno de manhã" + um checklist novo pra quando o despertador não
@@ -77,33 +90,46 @@ depende de CI num runner macOS na nuvem (GitHub Actions) e de sideload via AltSt
   do `NFCManager` (ex.: hardware sem suporte a NFC) ficava totalmente silencioso, dando
   a impressão de botão quebrado (achado testando no device físico via TestFlight).
 - `Luminaria/ScreenTimeManager.swift` (só no `main`) — bloqueia apps/categorias/sites
-  escolhidos pelo usuário enquanto o modo noite estiver ativo, usando a Screen Time
-  API da Apple (`FamilyControls`/`ManagedSettings`) — a mesma base que apps como
-  Brick/Opal usam. Singleton (`ScreenTimeManager.shared`) no mesmo estilo do
-  `AlarmManager`: `@Published var selection: FamilyActivitySelection` (persistida
-  como JSON — o tipo já é `Codable` nativamente) e `@Published private(set) var
-  isShieldActive` **persistido e restaurado no `init()`**, exatamente como o estado
-  armado do `AlarmManager` — sem isso, se o processo morresse com o bloqueio ativo (o
-  `ManagedSettingsStore` continua valendo mesmo com o app fechado), o app reabriria
-  mostrando "Living mode" com os apps ainda travados e nenhum caminho de código pra
-  desarmar. `applyShield()`/`removeShield()` chamados no mesmo instante em que o
-  Atalho e o despertador já disparam/desarmam (`onRecognizedTap` e o ramo de desarmar
-  de `toggleNightMode()`), reaproveitando o ciclo de vida existente em vez de inventar
-  um padrão de interação novo. Por privacidade, o app NUNCA sabe quais apps foram
-  escolhidos — só tokens opacos (dá pra saber quantos, não quais).
+  enquanto o modo noite estiver ativo, usando a Screen Time API da Apple
+  (`FamilyControls`/`ManagedSettings`) — a mesma base que apps como Brick/Opal usam.
+  Singleton (`ScreenTimeManager.shared`) no mesmo estilo do `AlarmManager`.
+  **Bloqueio é por rotina, não mais global**: `applyShield(selection:)` recebe a
+  `FamilyActivitySelection` da rotina ativa no momento do reconhecimento NFC (ver
+  `SleepRoutineStore` abaixo), em vez de ler um `@Published var selection` próprio —
+  removido junto com `updateSelection(_:)`/`totalSelectedCount`. `@Published
+  private(set) var isShieldActive` continua **persistido e restaurado no `init()`**,
+  exatamente como o estado armado do `AlarmManager` — sem isso, se o processo morresse
+  com o bloqueio ativo (o `ManagedSettingsStore` continua valendo mesmo com o app
+  fechado), o app reabriria mostrando "Living mode" com os apps ainda travados e
+  nenhum caminho de código pra desarmar. Como a seleção em si não é mais guardada
+  pelo manager, um novo `lastAppliedCount` (também persistido) grava só a contagem
+  aplicada no `applyShield` mais recente, pra `removeShield()` conseguir registrar o
+  relatório com o número certo mesmo se o processo tiver morrido e relançado entre o
+  armar e o desarmar. `applyShield(selection:)`/`removeShield()` chamados no mesmo
+  instante em que o Atalho e o despertador já disparam/desarmam (`onRecognizedTap` e
+  o ramo de desarmar de `toggleNightMode()`), reaproveitando o ciclo de vida existente
+  em vez de inventar um padrão de interação novo. Por privacidade, o app NUNCA sabe
+  quais apps foram escolhidos — só tokens opacos (dá pra saber quantos, não quais).
 - `Luminaria/AppBlockingView.swift` (só no `main`) — apresenta o `FamilyActivityPicker`
   do sistema (via `.familyActivityPicker(isPresented:selection:)`), chip de status de
-  autorização (mesmo padrão do status de notificação em `HelpView`), acessível via
-  `NavigationLink` de dentro de `SettingsView` (mesmo padrão de `SleepRoutinesView` —
-  não `.sheet`, pra não reintroduzir a classe de bug que o `fullScreenCover` do
-  despertador já teve com apresentações modais concorrentes).
+  autorização (mesmo padrão do status de notificação em `HelpView`). Recebe a seleção
+  como `@Binding var selection: FamilyActivitySelection` (não lê/escreve mais um
+  estado global do `ScreenTimeManager`) — acessível de dentro de `RoutineEditView`
+  (`AppBlockingView(screenTimeManager: .shared, selection: $routine.appSelection)`),
+  editando a seleção local da rotina em edição, só persistida quando a rotina é salva
+  (mesmo padrão já usado pros outros campos de `RoutineEditView`). Deixou de existir
+  como item solto em `SettingsView` — bloqueio de apps agora só faz sentido no
+  contexto de uma rotina específica.
 - `Luminaria/SleepReportStore.swift` / `SleepReportView.swift` (só no `main`) — mesmo
   padrão de `SleepRoutineStore`: histórico de sessões de bloqueio (`SleepReportEntry`:
   data, quantidade de apps, duração), persistido como JSON no `UserDefaults`, gravado
   por `ScreenTimeManager.removeShield()` ao desarmar. **Não guarda contagem de
   notificações/ligações bloqueadas** — isso não é tecnicamente possível (ver Decisões
   abaixo) — só o que dá pra medir de verdade: quantos apps ficaram bloqueados e por
-  quanto tempo.
+  quanto tempo. `SleepReportView` tem um filtro de período (`Último dia` / `Últimos 7
+  dias` / `Último mês` / `Tudo`, `enum ReportDateFilter` privado ao arquivo) — filtra
+  só a exibição (`store.entries.filter { $0.date >= cutoff }`), não apaga nem
+  modifica o histórico salvo; `.all` é o padrão inicial (mostra tudo, sem corte).
 - `Luminaria/silence_loop.wav` / `Luminaria/alarm_tone.wav` — sons originais (sirene
   clássica), gerados programaticamente. `Luminaria/alarm_alvorada.wav` — tom puro
   (arpejo pentatônico ascendente), mantido. `Luminaria/alarm_ondas.wav` /
@@ -804,6 +830,19 @@ O usuário perguntou sobre viabilidade de controlar a luminária de verdade via 
   notificação (widgets não são notificações, o Foco não tem poder sobre eles) — mesma
   categoria de risco da `ShieldActionExtension` (target novo no Xcode, não um arquivo
   no target existente), então também fica pra quando houver sessão real de Xcode.
+- **2026-08-06**: implementada a mudança estrutural combinada e adiada em 2026-08-05
+  ("mantém essa memória de mudança, mas não vamos atualizar por enquanto"): bloqueio
+  de apps deixou de ser global e virou por rotina (`SleepRoutine.appSelection`,
+  `ScreenTimeManager.applyShield(selection:)`, `AppBlockingView` recebendo
+  `@Binding`), com botão visível "Tornar rotina ativa" em `RoutineEditView` (o swipe
+  em `SleepRoutinesView` continua existindo como atalho extra). Também adicionado
+  filtro de período no relatório de sono (`ReportDateFilter`: Último dia / Últimos 7
+  dias / Último mês / Tudo) — só filtra a exibição, não apaga o histórico salvo. Ver
+  detalhes técnicos nas entradas de `SleepRoutineStore.swift`/`ScreenTimeManager.swift`/
+  `AppBlockingView.swift`/`SleepReportStore.swift` em Arquitetura acima. Visual das
+  telas secundárias mantido como estava (pedido explícito do usuário) — o redesign
+  neubrutalista discutido em paralelo continua só como prototype aprovado, não
+  implementado em Swift.
 
 ## Como retomar em outro computador
 

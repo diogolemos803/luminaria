@@ -17,7 +17,7 @@ struct SleepRoutinesView: View {
                     ThemedRow(
                         theme: theme,
                         title: routine.name,
-                        subtitle: String(format: "%02d:%02d · %@", routine.alarmHour, routine.alarmMinute, routine.soundOption.displayName),
+                        subtitle: Self.subtitle(for: routine),
                         leading: {
                             if routine.id == store.activeRoutineID {
                                 ActiveDot(theme: theme)
@@ -81,6 +81,15 @@ struct SleepRoutinesView: View {
             RoutineEditView(store: store, routine: routine, isNew: true)
                 .environment(\.isNightModeArmed, isNightModeArmed)
         }
+    }
+
+    private static func subtitle(for routine: SleepRoutine) -> String {
+        let base = String(format: "%02d:%02d · %@", routine.alarmHour, routine.alarmMinute, routine.soundOption.displayName)
+        let count = routine.appSelection.applicationTokens.count
+            + routine.appSelection.categoryTokens.count
+            + routine.appSelection.webDomainTokens.count
+        guard count > 0 else { return base }
+        return base + " · \(count) app\(count == 1 ? "" : "s")"
     }
 }
 
@@ -194,6 +203,30 @@ struct RoutineEditView: View {
                             .buttonStyle(.plain)
                         }
 
+                        ThemedCard(title: "Bloqueio de apps", theme: theme) {
+                            NavigationLink {
+                                AppBlockingView(screenTimeManager: ScreenTimeManager.shared, selection: $routine.appSelection)
+                            } label: {
+                                ThemedRow(
+                                    theme: theme,
+                                    title: "Apps bloqueados nesta rotina",
+                                    subtitle: appBlockingSubtitle,
+                                    leading: { IconBadge(systemName: "shield.lefthalf.filled", theme: theme) },
+                                    accessory: {
+                                        Image(systemName: "chevron.right")
+                                            .font(.caption.weight(.semibold))
+                                            .foregroundStyle(theme.inkMuted.opacity(0.7))
+                                    }
+                                )
+                            }
+                        }
+
+                        if !isNew && routine.id != store.activeRoutineID {
+                            FullPillButton(title: "Tornar rotina ativa", theme: theme) {
+                                store.setActive(id: routine.id)
+                            }
+                        }
+
                         if !isNew {
                             GhostDangerButton(title: "Excluir rotina", theme: theme) {
                                 store.remove(id: routine.id)
@@ -232,6 +265,13 @@ struct RoutineEditView: View {
                 }
             }
         }
+    }
+
+    private var appBlockingSubtitle: String {
+        let count = routine.appSelection.applicationTokens.count
+            + routine.appSelection.categoryTokens.count
+            + routine.appSelection.webDomainTokens.count
+        return count == 0 ? "Nenhum app escolhido" : "\(count) selecionado\(count == 1 ? "" : "s")"
     }
 
     private func soundSwatch(for option: AlarmSoundOption) -> some View {

@@ -17,7 +17,6 @@ final class ScreenTimeManager: ObservableObject {
     static let shared = ScreenTimeManager()
 
     @Published var isAuthorized: Bool?
-    @Published var selection: FamilyActivitySelection
     /// Persistido e restaurado no `init()` — sem isso, se o processo morrer com o
     /// bloqueio ativo (o `ManagedSettingsStore` continua valendo mesmo com o app
     /// fechado), o app reabriria mostrando "Living mode" sem nenhum caminho de
@@ -27,26 +26,26 @@ final class ScreenTimeManager: ObservableObject {
 
     private let store = ManagedSettingsStore()
     private var shieldEngagedAt: Date?
+    /// Quantidade de apps/categorias/sites aplicados no `applyShield` mais recente —
+    /// persistida separado (não a seleção inteira) só pra `removeShield` conseguir
+    /// registrar o relatório com o número certo mesmo se o processo tiver morrido e
+    /// relançado entre o armar e o desarmar.
+    private var lastAppliedCount: Int
 
-    private static let selectionKey = "com.luminaria.screenTime.selection"
     private static let shieldActiveKey = "com.luminaria.screenTime.shieldActive"
     private static let shieldEngagedAtKey = "com.luminaria.screenTime.shieldEngagedAt"
+    private static let lastAppliedCountKey = "com.luminaria.screenTime.lastAppliedCount"
 
     private init() {
         let defaults = UserDefaults.standard
-        if let data = defaults.data(forKey: Self.selectionKey),
-           let decoded = try? JSONDecoder().decode(FamilyActivitySelection.self, from: data) {
-            selection = decoded
-        } else {
-            selection = FamilyActivitySelection()
-        }
         isShieldActive = defaults.bool(forKey: Self.shieldActiveKey)
+        lastAppliedCount = defaults.integer(forKey: Self.lastAppliedCountKey)
         if defaults.object(forKey: Self.shieldEngagedAtKey) != nil {
             shieldEngagedAt = Date(timeIntervalSince1970: defaults.double(forKey: Self.shieldEngagedAtKey))
         }
-        if isShieldActive {
-            applyStoreSettings()
-        }
+        // Nota: o `ManagedSettingsStore` da Apple continua valendo sozinho entre
+        // lançamentos do processo (não precisa reaplicar aqui) — só o estado próprio
+        // do app (`isShieldActive`/duração/contagem) precisa ser restaurado.
     }
 
     /// Revalida junto do sistema — a autorização pode ser revogada nos Ajustes do
@@ -67,50 +66,37 @@ final class ScreenTimeManager: ObservableObject {
         }
     }
 
-    func updateSelection(_ newSelection: FamilyActivitySelection) {
-        selection = newSelection
-        if let data = try? JSONEncoder().encode(selection) {
-            UserDefaults.standard.set(data, forKey: Self.selectionKey)
-        }
-        if isShieldActive {
-            applyStoreSettings()
-        }
-    }
-
-    var totalSelectedCount: Int {
-        selection.applicationTokens.count + selection.categoryTokens.count + selection.webDomainTokens.count
-    }
-
     /// Chamado quando a luminária é reconhecida via NFC com o modo noite armado —
-    /// mesmo instante em que o Atalho e o despertador nativo também disparam.
-    func applyShield() {
-        applyStoreSettings()
-        isShieldActive = true
-        shieldEngagedAt = Date()
-        persistShieldState()
-    }
-
-    /// Chamado quando a pessoa desarma o modo noite pelo botão redondo.
-    func removeShield() {
-        store.clearAllSettings()
-        isShieldActive = false
-        let duration = shieldEngagedAt.map { Date().timeIntervalSince($0) } ?? 0
-        SleepReportStore.shared.recordSession(appCount: totalSelectedCount, duration: duration)
-        shieldEngagedAt = nil
-        persistShieldState()
-    }
-
-    private func applyStoreSettings() {
+    /// mesmo instante em que o Atalho e o despertador nativo também disparam. A
+    /// seleção vem da rotina ativa no momento (`SleepRoutine.appSelection`), não mais
+    /// de um estado global — cada rotina bloqueia seus próprios apps.
+    func applyShield(selection: FamilyActivitySelection) {
         store.shield.applications = selection.applicationTokens.isEmpty ? nil : selection.applicationTokens
         store.shield.applicationCategories = selection.categoryTokens.isEmpty
             ? nil
             : .specific(selection.categoryTokens)
         store.shield.webDomains = selection.webDomainTokens.isEmpty ? nil : selection.webDomainTokens
+        isShieldActive = true
+        shieldEngagedAt = Date()
+        lastAppliedCount = selection.applicationTokens.count + selection.categoryTokens.count + selection.webDomainTokens.count
+        persistShieldState()
+    }
+
+    /// Chamado quando a pessoa desarma o modo noite pelo botão redondo (ou quando o
+    /// despertador toca, ver `AlarmManager.triggerAlarm`).
+    func removeShield() {
+        store.clearAllSettings()
+        isShieldActive = false
+        let duration = shieldEngagedAt.map { Date().timeIntervalSince($0) } ?? 0
+        SleepReportStore.shared.recordSession(appCount: lastAppliedCount, duration: duration)
+        shieldEngagedAt = nil
+        persistShieldState()
     }
 
     private func persistShieldState() {
         let defaults = UserDefaults.standard
         defaults.set(isShieldActive, forKey: Self.shieldActiveKey)
+        defaults.set(lastAppliedCount, forKey: Self.lastAppliedCountKey)
         if let shieldEngagedAt {
             defaults.set(shieldEngagedAt.timeIntervalSince1970, forKey: Self.shieldEngagedAtKey)
         } else {

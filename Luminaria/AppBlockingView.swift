@@ -1,8 +1,12 @@
 import SwiftUI
 import FamilyControls
 
+/// Escolhe os apps bloqueados de UMA rotina específica — recebe a seleção como
+/// `Binding` (não lê/escreve num estado global), pra encaixar no mesmo padrão de
+/// "edita local, só persiste quando salvar a rotina" já usado em `RoutineEditView`.
 struct AppBlockingView: View {
     @ObservedObject var screenTimeManager: ScreenTimeManager
+    @Binding var selection: FamilyActivitySelection
     @Environment(\.isNightModeArmed) private var isNightModeArmed
     @State private var isPickerPresented = false
 
@@ -36,7 +40,7 @@ struct AppBlockingView: View {
                         }
                     }
 
-                    ThemedCard(title: "Apps bloqueados no modo noite", theme: theme) {
+                    ThemedCard(title: "Apps bloqueados nesta rotina", theme: theme) {
                         Button {
                             isPickerPresented = true
                         } label: {
@@ -52,7 +56,7 @@ struct AppBlockingView: View {
                         .disabled(screenTimeManager.isAuthorized != true)
                     }
 
-                    Text("Por privacidade, a Apple não deixa o Luminária saber quais apps você escolheu — só quantos. Enquanto o modo noite estiver ativo (depois de reconhecer a luminária via NFC), os apps escolhidos ficam bloqueados de verdade, com a própria tela de bloqueio do iOS.")
+                    Text("Por privacidade, a Apple não deixa o Luminária saber quais apps você escolheu — só quantos. Enquanto o modo noite estiver ativo com ESTA rotina marcada como ativa (depois de reconhecer a luminária via NFC), os apps escolhidos aqui ficam bloqueados de verdade, com a própria tela de bloqueio do iOS. Cada rotina tem sua própria lista.")
                         .font(.luminaria(.caption))
                         .foregroundStyle(theme.inkMuted)
                 }
@@ -66,13 +70,7 @@ struct AppBlockingView: View {
         .toolbarBackground(.visible, for: .navigationBar)
         .toolbarColorScheme(isNightModeArmed ? .dark : .light, for: .navigationBar)
         .tint(theme.accent)
-        .familyActivityPicker(
-            isPresented: $isPickerPresented,
-            selection: Binding(
-                get: { screenTimeManager.selection },
-                set: { screenTimeManager.updateSelection($0) }
-            )
-        )
+        .familyActivityPicker(isPresented: $isPickerPresented, selection: $selection)
         .onAppear {
             screenTimeManager.refreshAuthorizationStatus()
         }
@@ -87,7 +85,7 @@ struct AppBlockingView: View {
     }
 
     private var selectionSummary: String {
-        let count = screenTimeManager.totalSelectedCount
+        let count = selection.applicationTokens.count + selection.categoryTokens.count + selection.webDomainTokens.count
         if count == 0 { return "Nenhum app escolhido" }
         return "\(count) selecionado\(count == 1 ? "" : "s")"
     }

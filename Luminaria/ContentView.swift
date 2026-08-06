@@ -87,7 +87,7 @@ struct ContentView: View {
                     guard isNightModeArmed, let routine = routineStore.activeRoutine else { return }
                     ShortcutManager.shared.runSleepShortcut()
                     alarmManager.armAlarm(hour: routine.alarmHour, minute: routine.alarmMinute, soundFileName: routine.soundOption.fileName)
-                    screenTimeManager.applyShield()
+                    screenTimeManager.applyShield(selection: routine.appSelection)
                 }
                 // Sem isso, cancelar a leitura, deixar dar timeout (~60s do CoreNFC) ou
                 // encostar a tag errada deixava o app preso em "Zleepy mode" sem nada
@@ -255,20 +255,6 @@ struct SettingsView: View {
                             }
                         }
 
-                        ThemedCard(title: "Bloqueio de apps", theme: theme) {
-                            NavigationLink {
-                                AppBlockingView(screenTimeManager: screenTimeManager)
-                            } label: {
-                                ThemedRow(
-                                    theme: theme,
-                                    title: "Apps bloqueados no modo noite",
-                                    subtitle: blockingSubtitle,
-                                    leading: { IconBadge(systemName: "shield.lefthalf.filled", theme: theme) },
-                                    accessory: { chevron }
-                                )
-                            }
-                        }
-
                         ThemedCard(title: "Relatório", theme: theme) {
                             NavigationLink {
                                 SleepReportView(store: sleepReportStore)
@@ -336,11 +322,6 @@ struct SettingsView: View {
         Image(systemName: "chevron.right")
             .font(.caption.weight(.semibold))
             .foregroundStyle(theme.inkMuted.opacity(0.7))
-    }
-
-    private var blockingSubtitle: String {
-        let count = screenTimeManager.totalSelectedCount
-        return count == 0 ? "Nenhum app escolhido" : "\(count) selecionado\(count == 1 ? "" : "s")"
     }
 }
 

@@ -1,4 +1,5 @@
 import Foundation
+import FamilyControls
 
 /// Som do despertador escolhido pela rotina. `fileName` é o nome do recurso .wav
 /// no bundle (sem extensão), usado tanto pelo player em loop quanto pelo som
@@ -71,6 +72,10 @@ struct SleepRoutine: Identifiable, Codable, Equatable {
     var nightShiftOffHour: Int
     var nightShiftOffMinute: Int
     var soundOption: AlarmSoundOption
+    /// Apps/categorias/sites bloqueados quando ESSA rotina estiver ativa e o modo
+    /// noite for armado — cada rotina tem a sua própria seleção, não é mais uma
+    /// única lista global compartilhada por todas.
+    var appSelection: FamilyActivitySelection
 
     init(
         id: UUID = UUID(),
@@ -79,7 +84,8 @@ struct SleepRoutine: Identifiable, Codable, Equatable {
         alarmMinute: Int = 0,
         nightShiftOffHour: Int = 7,
         nightShiftOffMinute: Int = 30,
-        soundOption: AlarmSoundOption = .oceanWaves
+        soundOption: AlarmSoundOption = .oceanWaves,
+        appSelection: FamilyActivitySelection = FamilyActivitySelection()
     ) {
         self.id = id
         self.name = name
@@ -88,6 +94,32 @@ struct SleepRoutine: Identifiable, Codable, Equatable {
         self.nightShiftOffHour = nightShiftOffHour
         self.nightShiftOffMinute = nightShiftOffMinute
         self.soundOption = soundOption
+        self.appSelection = appSelection
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id, name, alarmHour, alarmMinute, nightShiftOffHour, nightShiftOffMinute, soundOption, appSelection
+    }
+
+    /// `init(from:)` escrito à mão só pra tratar `appSelection` como opcional na
+    /// leitura — rotinas salvas antes dessa mudança não têm essa chave no JSON, e o
+    /// decode sintetizado exigiria ela sempre, resetando as rotinas do usuário. Mesmo
+    /// espírito da migração já feita pra `AlarmSoundOption`. `encode(to:)` continua
+    /// sintetizado automaticamente (não precisou escrever à mão).
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        alarmHour = try container.decode(Int.self, forKey: .alarmHour)
+        alarmMinute = try container.decode(Int.self, forKey: .alarmMinute)
+        nightShiftOffHour = try container.decode(Int.self, forKey: .nightShiftOffHour)
+        nightShiftOffMinute = try container.decode(Int.self, forKey: .nightShiftOffMinute)
+        soundOption = try container.decode(AlarmSoundOption.self, forKey: .soundOption)
+        if let decoded = (try? container.decodeIfPresent(FamilyActivitySelection.self, forKey: .appSelection)) ?? nil {
+            appSelection = decoded
+        } else {
+            appSelection = FamilyActivitySelection()
+        }
     }
 }
 
