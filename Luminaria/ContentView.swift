@@ -96,6 +96,13 @@ struct ContentView: View {
                 nfcManager.onScanEndedWithoutMatch = {
                     isNightModeArmed = false
                 }
+                // O desbloqueio de apps em si já acontece dentro de AlarmManager
+                // (funciona mesmo com o app suspenso) — isso aqui só sincroniza o botão
+                // redondo de volta pra "Living mode" quando o app está em primeiro plano
+                // na hora que o despertador dispara.
+                alarmManager.onAlarmFired = {
+                    isNightModeArmed = false
+                }
             }
             .onChange(of: scenePhase) { newPhase in
                 if newPhase == .active {

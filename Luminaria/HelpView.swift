@@ -53,7 +53,7 @@ struct HelpView: View {
 
                         sectionHeading("Bloqueio de apps e relatório de sono")
 
-                        Text("Enquanto o modo noite estiver ativo e a luminária for reconhecida via NFC, os apps que você escolher em Configurações → Bloqueio de apps ficam bloqueados de verdade pelo próprio iOS, até você desarmar pelo botão. Por privacidade, a Apple não deixa o Luminária saber QUAIS apps foram escolhidos — só quantos. E não existe nenhuma forma, pra nenhum app, de contar quantas notificações ou ligações foram bloqueadas — isso simplesmente não é exposto pela Apple. O relatório mostra só o que dá pra medir de verdade: quantos apps ficaram bloqueados e por quanto tempo.")
+                        Text("Enquanto o modo noite estiver ativo e a luminária for reconhecida via NFC, os apps que você escolher em Configurações → Bloqueio de apps ficam bloqueados de verdade pelo próprio iOS — até você desarmar pelo botão OU até o despertador da rotina ativa tocar, o que vier primeiro. Por privacidade, a Apple não deixa o Luminária saber QUAIS apps foram escolhidos — só quantos. E não existe nenhuma forma, pra nenhum app, de contar quantas notificações ou ligações foram bloqueadas — isso simplesmente não é exposto pela Apple. O relatório mostra só o que dá pra medir de verdade: quantos apps ficaram bloqueados e por quanto tempo.")
                             .font(.luminaria(.subheadline))
                             .foregroundStyle(theme.inkMuted)
 

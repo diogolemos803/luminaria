@@ -21,6 +21,11 @@ final class AlarmManager: NSObject, ObservableObject {
     /// `nil` enquanto a permissão ainda não foi pedida/respondida. Exposto pra tela de
     /// Ajuda poder avisar quando o usuário negou notificações (antes isso falhava calado).
     @Published var notificationsAuthorized: Bool?
+    /// Chamado sempre que o despertador dispara de verdade (`triggerAlarm`). Usado só pra
+    /// sincronizar `isNightModeArmed` na UI quando o app está em primeiro plano — o
+    /// desbloqueio de apps em si acontece direto em `triggerAlarm`, sem depender desse
+    /// callback, já que o alarme pode disparar com o app em segundo plano/suspenso.
+    var onAlarmFired: (() -> Void)?
 
     private var silentPlayer: AVAudioPlayer?
     private var alarmPlayer: AVAudioPlayer?
@@ -203,6 +208,13 @@ final class AlarmManager: NSObject, ObservableObject {
         guard !isAlarmRinging else { return }
         isAlarmRinging = true
         stopSilentLoop()
+        // Bloqueio de apps dura só até o despertador tocar, não exige desarmar
+        // manualmente pelo botão — pedido do usuário: "só até a hora que toca o
+        // despertador". Chamado direto aqui (não via `onAlarmFired`) porque o alarme
+        // pode disparar com o app em segundo plano/suspenso, sem `ContentView` vivo pra
+        // reagir a um closure.
+        ScreenTimeManager.shared.removeShield()
+        onAlarmFired?()
         guard let url = Bundle.main.url(forResource: soundFileName, withExtension: "wav") else { return }
         alarmPlayer = try? AVAudioPlayer(contentsOf: url)
         alarmPlayer?.numberOfLoops = -1

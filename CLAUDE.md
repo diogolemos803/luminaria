@@ -613,6 +613,16 @@ implementada, mas fica registrada como ideia intermediária caso valha revisitar
    pedir a entitlement dessa extension separadamente (bundle ID próprio) em
    developer.apple.com.
 
+- **Bloqueio de apps agora também termina sozinho quando o despertador toca** (pedido
+  do usuário, 2026-08-05: "só quero bloquear até a hora que toca o despertador") — antes
+  só desarmava tocando no botão redondo. `AlarmManager.triggerAlarm()` chama
+  `ScreenTimeManager.shared.removeShield()` direto (não via closure), porque o alarme
+  pode disparar com o app suspenso/em segundo plano, sem `ContentView` vivo. Novo
+  `AlarmManager.onAlarmFired` só sincroniza `isNightModeArmed` de volta pra `false` na
+  UI quando o app está em primeiro plano no momento do disparo. Não precisou de nenhum
+  campo de configuração novo — a hora do despertador já é por rotina
+  (`SleepRoutine.alarmHour/alarmMinute`), só faltava ligar o desbloqueio a ela.
+
 ## Ideia futura, ainda não iniciada: controle Bluetooth da luminária física
 
 O usuário perguntou sobre viabilidade de controlar a luminária de verdade via Bluetooth
