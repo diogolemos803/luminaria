@@ -125,6 +125,24 @@ depende de CI num runner macOS na nuvem (GitHub Actions) e de sideload via AltSt
   círculo branco sobre fundo cream, imitando o botão principal em miniatura. É
   provisório — feito só pra não travar o primeiro build no Codemagic/TestFlight,
   substituir por um ícone de verdade quando houver um definido.
+- `LuminariaWidget/` (só no `main`) — **target novo no Xcode** (Widget Extension,
+  `com.luminaria.app.LuminariaWidgetExtension`), primeira vez que este projeto ganha um
+  target além do app principal. `LuminariaWidgetBundle.swift` (`@main WidgetBundle`) +
+  `AlarmWidget.swift` (por enquanto só esqueleto estático — `TimelineProvider`/`Widget`/
+  view mínimos, sem dado real ainda, só pra validar que o target novo compila e embute
+  certo no app; a funcionalidade de verdade — mostrar o próximo despertador via App
+  Group compartilhado com `AlarmManager`, e um link `luminaria://` que abre o app pra
+  parar o alarme — entra num commit seguinte). Motivo de existir: contornar o Foco/Não
+  Perturbe filtrando a notificação do despertador — widgets não são notificações, o
+  Foco não tem poder sobre eles. Decisão de arquitetura: o widget usa `.widgetURL(...)`
+  (link comum, iOS 16+), não um botão interativo via App Intent (iOS 17+) — parar o
+  alarme de verdade exige rodar código no processo do app principal de qualquer jeito
+  (o áudio toca lá), e um App Intent com `openAppWhenRun = false` rodaria isolado no
+  processo da própria extension, sem efeito nenhum no som tocando no app; com
+  `openAppWhenRun = true` ele já abre o app mesmo, oferecendo o mesmo resultado que um
+  link simples com bem menos risco de comportamento sensível à versão do iOS. Ver
+  pendência abaixo sobre os passos externos (App Group, App ID novo, provisioning
+  profiles) ainda necessários antes de testar de verdade.
 - `design/luminaria_prototipo.html` — protótipo HTML aprovado do botão, referência visual
   do checkpoint (`v1`). Não é o app de verdade, é só pra revisar visual sem precisar de
   Mac — publicado também como Artifact no claude.ai durante o desenvolvimento.
@@ -622,6 +640,38 @@ implementada, mas fica registrada como ideia intermediária caso valha revisitar
   UI quando o app está em primeiro plano no momento do disparo. Não precisou de nenhum
   campo de configuração novo — a hora do despertador já é por rotina
   (`SleepRoutine.alarmHour/alarmMinute`), só faltava ligar o desbloqueio a ela.
+
+## ⚠️ Pendências do widget de Tela Bloqueada (não esquecer)
+
+Rollout combinado em 2 commits, pra pegar erro de `pbxproj`/compilação de graça no
+`build.yml` antes de gastar minutos do Codemagic (ver `LuminariaWidget/` em
+Arquitetura acima pro porquê da decisão de usar link em vez de botão interativo):
+
+1. **Commit 1 (feito)**: só o esqueleto mecânico do target novo — compila e embute,
+   sem dado real, sem App Group, sem `AppTheme.swift` compartilhado.
+2. **Commit 2 (falta fazer)**: `AppTheme.swift` compartilhado com a extension (só pelo
+   `Font.luminaria` — cores customizadas da `ModeTheme` são ignoradas pelo material
+   "vibrante" do sistema em widgets de Tela Bloqueada, limitação da Apple, não do
+   código), App Group `group.com.luminaria.app` nas duas entitlements
+   (`Luminaria.entitlements` E `LuminariaWidget/LuminariaWidget.entitlements`), hooks
+   em `AlarmManager.persistArmedState()`/`clearPersistedState()` escrevendo o estado
+   compartilhado + `WidgetCenter.shared.reloadTimelines()`, UI real do widget lendo
+   esse estado, `#available(iOS 17, *)` com `containerBackground(for: .widget)` e
+   fallback `.background()` pra baixo disso (sem isso o widget quebra silenciosamente
+   em iOS 17+, sem erro de build).
+3. **Só depois dos 2 commits com `build.yml` verde**, passos externos (fora do meu
+   controle, guiados um a um como já foi feito hoje pra Family Controls): criar o App
+   Group em developer.apple.com; registrar o App ID novo
+   `com.luminaria.app.LuminariaWidgetExtension` com App Groups habilitado; habilitar
+   App Groups no App ID existente `com.luminaria.app` também (mesmo grupo); regenerar
+   o provisioning profile de distribuição do app principal (de novo — capability
+   nova); criar um provisioning profile novo pro App ID da extension; subir os dois no
+   Codemagic. **`codemagic.yaml` não precisa mudar** — um `bundle_identifier` já casa
+   automaticamente com qualquer `bundle_identifier.*` (a extension é filho direto do
+   app).
+4. Teste real só depois disso: adicionar o widget na Tela Bloqueada manualmente (passo
+   único, como o Atalho), confirmar que mostra o horário certo e que tocar nele abre o
+   app direto na tela de "Parar" com o alarme tocando — mesmo com um Foco ativo.
 
 ## Ideia futura, ainda não iniciada: controle Bluetooth da luminária física
 

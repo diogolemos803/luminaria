@@ -31,7 +31,34 @@
 		AAAAAAAAAAAAAAAAAAAAAA3E /* AppBlockingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA3D /* AppBlockingView.swift */; };
 		AAAAAAAAAAAAAAAAAAAAAA40 /* SleepReportStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA3F /* SleepReportStore.swift */; };
 		AAAAAAAAAAAAAAAAAAAAAA42 /* SleepReportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA41 /* SleepReportView.swift */; };
+		AAAAAAAAAAAAAAAAAAAAAA48 /* LuminariaWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA47 /* LuminariaWidgetBundle.swift */; };
+		AAAAAAAAAAAAAAAAAAAAAA4A /* AlarmWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA49 /* AlarmWidget.swift */; };
+		AAAAAAAAAAAAAAAAAAAAAA52 /* LuminariaWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA4D /* LuminariaWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		AAAAAAAAAAAAAAAAAAAAAA4F /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = AAAAAAAAAAAAAAAAAAAAAA01 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = AAAAAAAAAAAAAAAAAAAAAA4E;
+			remoteInfo = LuminariaWidgetExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		AAAAAAAAAAAAAAAAAAAAAA51 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				AAAAAAAAAAAAAAAAAAAAAA52 /* LuminariaWidgetExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		AAAAAAAAAAAAAAAAAAAAAA0C /* LuminariaApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LuminariaApp.swift; sourceTree = "<group>"; };
@@ -61,6 +88,11 @@
 		AAAAAAAAAAAAAAAAAAAAAA3D /* AppBlockingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppBlockingView.swift; sourceTree = "<group>"; };
 		AAAAAAAAAAAAAAAAAAAAAA3F /* SleepReportStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepReportStore.swift; sourceTree = "<group>"; };
 		AAAAAAAAAAAAAAAAAAAAAA41 /* SleepReportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepReportView.swift; sourceTree = "<group>"; };
+		AAAAAAAAAAAAAAAAAAAAAA47 /* LuminariaWidgetBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LuminariaWidgetBundle.swift; sourceTree = "<group>"; };
+		AAAAAAAAAAAAAAAAAAAAAA49 /* AlarmWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlarmWidget.swift; sourceTree = "<group>"; };
+		AAAAAAAAAAAAAAAAAAAAAA4B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		AAAAAAAAAAAAAAAAAAAAAA4C /* LuminariaWidget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = LuminariaWidget.entitlements; sourceTree = "<group>"; };
+		AAAAAAAAAAAAAAAAAAAAAA4D /* LuminariaWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = LuminariaWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -74,6 +106,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		AAAAAAAAAAAAAAAAAAAAAA53 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -81,6 +120,7 @@
 			isa = PBXGroup;
 			children = (
 				AAAAAAAAAAAAAAAAAAAAAA0B /* Luminaria */,
+				AAAAAAAAAAAAAAAAAAAAAA56 /* LuminariaWidget */,
 				AAAAAAAAAAAAAAAAAAAAAA1C /* Frameworks */,
 				AAAAAAAAAAAAAAAAAAAAAA0A /* Products */,
 			);
@@ -90,6 +130,7 @@
 			isa = PBXGroup;
 			children = (
 				AAAAAAAAAAAAAAAAAAAAAA12 /* Luminaria.app */,
+				AAAAAAAAAAAAAAAAAAAAAA4D /* LuminariaWidgetExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -134,6 +175,17 @@
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
+		AAAAAAAAAAAAAAAAAAAAAA56 /* LuminariaWidget */ = {
+			isa = PBXGroup;
+			children = (
+				AAAAAAAAAAAAAAAAAAAAAA47 /* LuminariaWidgetBundle.swift */,
+				AAAAAAAAAAAAAAAAAAAAAA49 /* AlarmWidget.swift */,
+				AAAAAAAAAAAAAAAAAAAAAA4B /* Info.plist */,
+				AAAAAAAAAAAAAAAAAAAAAA4C /* LuminariaWidget.entitlements */,
+			);
+			path = LuminariaWidget;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -144,15 +196,34 @@
 				AAAAAAAAAAAAAAAAAAAAAA17 /* Sources */,
 				AAAAAAAAAAAAAAAAAAAAAA18 /* Frameworks */,
 				AAAAAAAAAAAAAAAAAAAAAA19 /* Resources */,
+				AAAAAAAAAAAAAAAAAAAAAA51 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				AAAAAAAAAAAAAAAAAAAAAA50 /* PBXTargetDependency */,
 			);
 			name = Luminaria;
 			productName = Luminaria;
 			productReference = AAAAAAAAAAAAAAAAAAAAAA12 /* Luminaria.app */;
 			productType = "com.apple.product-type.application";
+		};
+		AAAAAAAAAAAAAAAAAAAAAA4E /* LuminariaWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AAAAAAAAAAAAAAAAAAAAAA59 /* Build configuration list for PBXNativeTarget "LuminariaWidgetExtension" */;
+			buildPhases = (
+				AAAAAAAAAAAAAAAAAAAAAA55 /* Sources */,
+				AAAAAAAAAAAAAAAAAAAAAA53 /* Frameworks */,
+				AAAAAAAAAAAAAAAAAAAAAA54 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = LuminariaWidgetExtension;
+			productName = LuminariaWidgetExtension;
+			productReference = AAAAAAAAAAAAAAAAAAAAAA4D /* LuminariaWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -165,6 +236,9 @@
 				LastUpgradeCheck = 1500;
 				TargetAttributes = {
 					AAAAAAAAAAAAAAAAAAAAAA02 = {
+						CreatedOnToolsVersion = 15.0;
+					};
+					AAAAAAAAAAAAAAAAAAAAAA4E = {
 						CreatedOnToolsVersion = 15.0;
 					};
 				};
@@ -183,6 +257,7 @@
 			projectRoot = "";
 			targets = (
 				AAAAAAAAAAAAAAAAAAAAAA02 /* Luminaria */,
+				AAAAAAAAAAAAAAAAAAAAAA4E /* LuminariaWidgetExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -199,6 +274,13 @@
 				AAAAAAAAAAAAAAAAAAAAAA34 /* alarm_ondas.wav in Resources */,
 				AAAAAAAAAAAAAAAAAAAAAA36 /* alarm_chuva.wav in Resources */,
 				AAAAAAAAAAAAAAAAAAAAAA38 /* alarm_passaros.wav in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AAAAAAAAAAAAAAAAAAAAAA54 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -226,7 +308,24 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		AAAAAAAAAAAAAAAAAAAAAA55 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AAAAAAAAAAAAAAAAAAAAAA48 /* LuminariaWidgetBundle.swift in Sources */,
+				AAAAAAAAAAAAAAAAAAAAAA4A /* AlarmWidget.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		AAAAAAAAAAAAAAAAAAAAAA50 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = AAAAAAAAAAAAAAAAAAAAAA4E /* LuminariaWidgetExtension */;
+			targetProxy = AAAAAAAAAAAAAAAAAAAAAA4F /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		AAAAAAAAAAAAAAAAAAAAAA05 /* Debug */ = {
@@ -329,6 +428,52 @@
 			};
 			name = Release;
 		};
+		AAAAAAAAAAAAAAAAAAAAAA57 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = LuminariaWidget/LuminariaWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = LuminariaWidget/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.luminaria.app.LuminariaWidgetExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		AAAAAAAAAAAAAAAAAAAAAA58 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = LuminariaWidget/LuminariaWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = LuminariaWidget/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.luminaria.app.LuminariaWidgetExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -346,6 +491,15 @@
 			buildConfigurations = (
 				AAAAAAAAAAAAAAAAAAAAAA07 /* Debug */,
 				AAAAAAAAAAAAAAAAAAAAAA08 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		AAAAAAAAAAAAAAAAAAAAAA59 /* Build configuration list for PBXNativeTarget "LuminariaWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AAAAAAAAAAAAAAAAAAAAAA57 /* Debug */,
+				AAAAAAAAAAAAAAAAAAAAAA58 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
