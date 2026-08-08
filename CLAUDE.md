@@ -41,7 +41,11 @@ depende de CI num runner macOS na nuvem (GitHub Actions) e de sideload via AltSt
   escolhido na rotina ativa, em loop, até a pessoa abrir o app e tocar "Parar". A
   notificação local de reforço usa esse MESMO som customizado (antes usava o som padrão
   do sistema) — é ela quem garante o alarme mesmo com o processo suspenso, já que quem a
-  dispara e toca o som é o próprio iOS.
+  dispara e toca o som é o próprio iOS. Agenda uma SEGUNDA notificação idêntica ~60s
+  depois da primeira (`notificationID2`), rede de segurança extra pro caso raro da
+  primeira falhar em soar — o horário da segunda é calculado via `Calendar.date(byAdding:
+  .second, value: 60, to:)`, não soma manual de minuto (evitando gerar um `minute: 60`
+  inválido em alarmes no último minuto da hora/dia).
 - `Luminaria/SleepRoutineStore.swift` — `AlarmSoundOption` (enum com os 4 sons
   disponíveis), `SleepRoutine` (nome + horário do despertador + horário de desligar Modo
   Noturno + som escolhido + `appSelection: FamilyActivitySelection`, os apps bloqueados
@@ -56,15 +60,28 @@ depende de CI num runner macOS na nuvem (GitHub Actions) e de sideload via AltSt
   mudança pra bloqueio por rotina não têm essa chave no JSON, e o decode sintetizado
   exigiria ela sempre, resetando as rotinas do usuário; decodifica pra
   `FamilyActivitySelection()` vazia quando ausente, mesmo espírito da migração já
-  feita pra `AlarmSoundOption`.
+  feita pra `AlarmSoundOption`. Também tem `autoActivateWeekday`/`autoActivateWeekend`/
+  `autoActivateEventKeyword` (rotina automática por calendário, ver
+  `SleepRoutineStore.resolveAutoActivateRoutine` abaixo), mesma migração opcional no
+  decode. `SleepRoutineStore` também espelha as rotinas (sem `appSelection` — ver
+  Decisões) no iCloud Key-Value Storage via um DTO privado `SyncableRoutine`, só pra
+  sobreviver a apagar/reinstalar o app; `UserDefaults.standard` continua sendo a fonte
+  principal em uso normal. Tem `eventStore: EKEventStore`,
+  `resolveAutoActivateRoutine() async -> UUID?` (chamado uma única vez, no instante de
+  armar o modo noite em `ContentView.toggleNightMode`, nunca em segundo plano — prioridade
+  palavra-chave de evento > fim de semana > dia de semana, `nil` se nada configurado/
+  autorizado) e `requestCalendarAccess`/`refreshCalendarAuthorizationStatus` (autorização
+  só pedida por ação explícita numa tela, nunca na hora de armar).
 - `Luminaria/SleepRoutinesView.swift` — `SleepRoutinesView` (lista de rotinas: ativar
   via swipe, excluir, criar; subtítulo de cada linha mostra a contagem de apps
-  bloqueados quando > 0) e `RoutineEditView` (nome, horários, escolha de som com botão
-  "Testar" pra ouvir a prévia sem precisar armar nada, `NavigationLink` pro
-  `AppBlockingView` dessa rotina, e um botão "Tornar rotina ativa" visível — antes só
-  dava pra trocar a rotina ativa via swipe escondido em `SleepRoutinesView`, sem
-  nenhuma affordance visual; o swipe continua existindo como atalho extra, não foi
-  removido).
+  bloqueados quando > 0; card no topo "Rotina automática por calendário" com chip de
+  status de autorização, mesmo padrão do `AppBlockingView`) e `RoutineEditView` (nome,
+  horários, escolha de som com botão "Testar" pra ouvir a prévia sem precisar armar
+  nada, `NavigationLink` pro `AppBlockingView` dessa rotina, seção "Ativar
+  automaticamente quando" com toggles de dia de semana/fim de semana + campo de
+  palavra-chave de evento, e um botão "Tornar rotina ativa" visível — antes só dava pra
+  trocar a rotina ativa via swipe escondido em `SleepRoutinesView`, sem nenhuma
+  affordance visual; o swipe continua existindo como atalho extra, não foi removido).
 - `Luminaria/HelpView.swift` — instruções de configuração do Atalho "Dormir sem celular"
   (antes era `ShortcutSetupView`, embutida em `ContentView.swift`) + o passo a passo de
   "desligar Modo Noturno de manhã" + um checklist novo pra quando o despertador não
@@ -110,6 +127,13 @@ depende de CI num runner macOS na nuvem (GitHub Actions) e de sideload via AltSt
   o ramo de desarmar de `toggleNightMode()`), reaproveitando o ciclo de vida existente
   em vez de inventar um padrão de interação novo. Por privacidade, o app NUNCA sabe
   quais apps foram escolhidos — só tokens opacos (dá pra saber quantos, não quais).
+  `emergencyPassesRemaining` (2 por sessão de bloqueio, não um limite mensal — reseta
+  dentro de `applyShield`) + `useEmergencyPass()`: libera os apps na hora sem esperar o
+  despertador, pra emergências reais. NÃO chama `disarmAlarm`/`stopScanning` — só o
+  bloqueio de apps termina cedo, o despertador continua armado normalmente (a intenção é
+  "preciso do celular livre agora", não "cancelar a noite"). Botão correspondente em
+  `ContentView` só aparece com `isNightModeArmed && isShieldActive`, sem tocar no botão
+  redondo nem no texto "Living/Zleepy mode".
 - `Luminaria/AppBlockingView.swift` (só no `main`) — apresenta o `FamilyActivityPicker`
   do sistema (via `.familyActivityPicker(isPresented:selection:)`), chip de status de
   autorização (mesmo padrão do status de notificação em `HelpView`). Recebe a seleção
@@ -130,6 +154,8 @@ depende de CI num runner macOS na nuvem (GitHub Actions) e de sideload via AltSt
   dias` / `Último mês` / `Tudo`, `enum ReportDateFilter` privado ao arquivo) — filtra
   só a exibição (`store.entries.filter { $0.date >= cutoff }`), não apaga nem
   modifica o histórico salvo; `.all` é o padrão inicial (mostra tudo, sem corte).
+  Também espelha `entries` no iCloud Key-Value Storage (backup contra apagar/reinstalar
+  o app) — sem DTO, já que `SleepReportEntry` não tem token nenhum pra excluir.
 - `Luminaria/silence_loop.wav` / `Luminaria/alarm_tone.wav` — sons originais (sirene
   clássica), gerados programaticamente. `Luminaria/alarm_alvorada.wav` — tom puro
   (arpejo pentatônico ascendente), mantido. `Luminaria/alarm_ondas.wav` /
@@ -603,6 +629,75 @@ Fluxo usado pra testar de verdade, todo do Windows:
   Manager do Windows já cuida da autenticação (abre navegador se precisar). Downloads de
   artifacts de Actions, porém, **exigem autenticação e não dão pra baixar via curl sem
   login** — isso o usuário precisa fazer manualmente pelo navegador.
+- **Roadmap de funcionalidades (documento externo, agosto de 2026) revisado antes de
+  implementar** — usuário pediu feedback sobre um roadmap comparando o app com
+  concorrentes (Hatch, Loftie, Brick) antes de decidir o que construir. Dos 5 itens do
+  pacote "P0" do documento, 2 não exigiram código nenhum: "contatos liberados no Foco"
+  não é uma API que o app possa acionar (vira só mais um passo de texto na `HelpView`,
+  já que o usuário configura isso manualmente em Ajustes → Foco → Pessoas — mesma
+  natureza do passo já existente ali pra permitir o próprio app); "fluxo de substituição
+  de tag NFC" já estava resolvido por uma simplificação anterior (`NFCManager` não
+  compara mais ID de tag depois de vinculado — qualquer tag reconhecida já funciona).
+  Implementados de verdade: passes de emergência, segunda notificação de reforço do
+  despertador, rotina automática por calendário, backup no iCloud (esse último sugerido
+  como lacuna real, não estava no documento original). Ficou deliberadamente de fora:
+  Android (P2 do roadmap, decisão estrutural de investimento, não item de sprint).
+- **Passe de emergência não desarma o despertador nem a sessão NFC** — decisão de
+  produto explícita: a intenção é "preciso do celular livre agora por uma emergência
+  real", não "cancelar a noite inteira". `useEmergencyPass()` só chama `removeShield()`
+  (libera os apps), deixa o resto do modo noite intacto. `isNightModeArmed` na
+  `ContentView` também não muda por causa disso — a tela continua no tema escuro; o
+  botão de passe some sozinho porque `isShieldActive` vira `false`. 2 passes por SESSÃO
+  de bloqueio (reseta a cada `applyShield` novo), não um limite mensal.
+- **Bug potencial evitado antes de ir pra produção: segunda notificação de reforço do
+  despertador quase causava avanço duplo de `nextFireDate`** — ao adicionar uma segunda
+  notificação ~60s depois da primeira (`AlarmManager.scheduleBackupNotification`),
+  percebido em revisão que se a pessoa não tocasse "Parar" dentro desses 60s, a segunda
+  notificação chamaria `fireScheduledAlarm` de novo enquanto `isAlarmRinging` já era
+  `true`, avançando `nextFireDate` um dia A MAIS do que devia. Fix: guarda `!isAlarmRinging`
+  no topo de `fireScheduledAlarm` — não quebra o caso de "Parar" tocado direto da
+  notificação com o app suspenso (`handleStopFromNotification`), porque nesse cenário
+  `isAlarmRinging` ainda é `false` (o loop de alarme nunca chegou a rodar de verdade).
+- **`NotificationCenter.addObserver(_:selector:...)` não serve pra `SleepRoutineStore`/
+  `SleepReportStore`** (usado pra reagir a `NSUbiquitousKeyValueStore.
+  didChangeExternallyNotification` do backup no iCloud) — essa variante do
+  `NotificationCenter` exige que o alvo herde de `NSObject` (usa `#selector`, dispatch via
+  runtime do Objective-C), e essas duas classes são `ObservableObject` puro, sem herdar de
+  `NSObject` (diferente de `NFCManager`/`AlarmManager`, que herdam por outro motivo — ver
+  `NSObject, ObservableObject` nelas). Resolvido com a variante de closure
+  (`addObserver(forName:object:queue:using:)`), que não exige isso.
+- **Backup no iCloud não inclui `appSelection` de propósito** — a portabilidade dos
+  tokens opacos do `FamilyActivitySelection` (`ApplicationToken`/etc.) entre apagar e
+  reinstalar o app (ou entre devices diferentes) não está confirmada pela documentação da
+  Apple; em vez de alegar que funciona sem testar, o backup (`SyncableRoutine`, DTO
+  privado em `SleepRoutineStore.swift`) espelha só nome/horários/som/gatilhos de
+  calendário. Depois de restaurar via iCloud, os apps bloqueados de cada rotina precisam
+  ser escolhidos de novo — documentado também numa frase da `HelpView`/memória do projeto.
+  `NSUbiquitousKeyValueStore` é assíncrono (`synchronize()` é só um sinal, não garantia) —
+  por isso o "seed" no cold launch tem uma segunda via, o listener de
+  `didChangeExternallyNotification`, pro caso do valor do iCloud chegar alguns segundos
+  depois do `load()` síncrono já ter rodado. Duas guardas protegem contra sobrescrever
+  dado bom: `hasUserMadeLocalChanges` (usuário já mexeu em algo nesse lançamento) e, só em
+  `SleepRoutineStore` (que sempre tem pelo menos uma rotina placeholder, nunca fica
+  vazio de verdade — `SleepReportStore` pode usar `entries.isEmpty` direto),
+  `isFreshInstallPlaceholder` (o que está carregado agora é só o placeholder "Minha
+  rotina" de instalação nova, não dado real).
+- **`EKAuthorizationStatus.authorized` e `.fullAccess` (iOS 17+) compartilham o mesmo
+  `rawValue`** — por isso `SleepRoutineStore.refreshCalendarAuthorizationStatus()`
+  compara só contra `.authorized` (disponível desde sempre, sem exigir `#available`) e
+  isso também cobre concessão de acesso total num device rodando iOS 17+, sem precisar
+  nomear `.fullAccess` (que exigiria `#available(iOS 17, *)` só pra referenciar o caso do
+  enum). Só o método de PEDIR acesso (`requestCalendarAccess`) precisa mesmo do branch
+  `#available` (`requestFullAccessToEvents` vs. `requestAccess(to:)`), já que ali é uma
+  API nova de verdade, não só um alias de enum.
+- **Rotina automática por calendário resolvida uma única vez, no instante de armar, não
+  em segundo plano** — mesma lição já aprendida com o NFC (sessão de leitura expira em
+  ~60s, sem garantia de execução contínua): em vez de tentar rodar isso como um daemon
+  de fundo, `SleepRoutineStore.resolveAutoActivateRoutine()` é chamado dentro de
+  `ContentView.toggleNightMode()`, ANTES de `nfcManager.beginScanning()` (dentro de um
+  `Task { @MainActor in ... }`, sem condição de corrida — `beginScanning()` só roda
+  depois do `await` terminar). A consulta ao EventKit em si roda numa fila de fundo via
+  `withCheckedContinuation`, pra não travar a UI no toque do botão redondo.
 
 ## ⚠️ Pendência arquitetural importante (não esquecer)
 
@@ -703,6 +798,21 @@ Arquitetura acima pro porquê da decisão de usar link em vez de botão interati
 4. Teste real só depois disso: adicionar o widget na Tela Bloqueada manualmente (passo
    único, como o Atalho), confirmar que mostra o horário certo e que tocar nele abre o
    app direto na tela de "Parar" com o alarme tocando — mesmo com um Foco ativo.
+
+## ⚠️ Pendência do backup no iCloud (não esquecer)
+
+`com.apple.developer.ubiquity-kvstore-identifier` já foi adicionado em
+`Luminaria.entitlements`, mas isso sozinho não ativa nada — mesma mecânica de toda
+capability nova neste projeto (Family Controls, App Groups do widget): falta habilitar
+"iCloud" + "Key-value storage" no App ID `com.luminaria.app` em developer.apple.com e
+regenerar o provisioning profile de distribuição no Codemagic antes do próximo build
+assinado. Até lá, o código compila normalmente (a API não exige a entitlement pra
+compilar) mas o espelhamento no `NSUbiquitousKeyValueStore` não funciona de verdade num
+device — os apps continuam salvando certo em `UserDefaults.standard`, só o backup em si
+que fica inerte. Teste real só depois disso: criar rotinas/registrar sessões de sono,
+apagar e reinstalar o app, confirmar que nome/horário/som das rotinas e o histórico do
+relatório voltam sozinhos (os apps escolhidos por rotina precisam ser re-selecionados —
+ver Decisões acima sobre por que `appSelection` fica de fora do backup).
 
 ## Ideia futura, ainda não iniciada: controle Bluetooth da luminária física
 
@@ -843,6 +953,27 @@ O usuário perguntou sobre viabilidade de controlar a luminária de verdade via 
   telas secundárias mantido como estava (pedido explícito do usuário) — o redesign
   neubrutalista discutido em paralelo continua só como prototype aprovado, não
   implementado em Swift.
+- **2026-08-06 (mesmo dia, mais tarde)**: usuário trouxe um roadmap externo comparando
+  o app com concorrentes (Hatch, Loftie, Brick); depois de eu revisar e dar feedback
+  (ver Decisões acima pro detalhe de quais itens eram superestimados/subestimados),
+  implementado o pacote P0 do roadmap mais backup no iCloud (sugestão própria, não
+  estava no documento): passes de emergência (2 por sessão de bloqueio, libera os apps
+  sem cancelar o despertador — `ScreenTimeManager.useEmergencyPass()`), segunda
+  notificação de reforço do despertador ~60s depois da primeira (com fix de
+  idempotência pra não avançar `nextFireDate` em dobro), rotina automática por
+  calendário (dia de semana/fim de semana/palavra-chave de evento, resolvida uma única
+  vez no instante de armar — não em segundo plano, `SleepRoutineStore.
+  resolveAutoActivateRoutine()`), e backup no iCloud Key-Value Storage de rotinas
+  (sem `appSelection`) e do relatório de sono, pra sobreviver a apagar/reinstalar o
+  app. Dois itens do roadmap não precisaram de código (contatos liberados no Foco virou
+  texto na `HelpView`; substituição de tag NFC já estava resolvida por uma
+  simplificação anterior) — só documentação. Android (P2 do roadmap) ficou de fora,
+  por pedido explícito do usuário. Nenhum arquivo Swift novo, então sem edição de
+  `project.pbxproj` nesta rodada — só `import EventKit` (confirmado funcionando sem
+  linkagem explícita, mesmo padrão empírico de `AVFoundation`/`UserNotifications`/
+  `Combine`/`WidgetKit` já usados no projeto). Pendente: habilitar a capability de
+  iCloud Key-Value Storage no App ID e regenerar o provisioning profile de distribuição
+  antes do próximo build assinado (ver pendência específica acima).
 
 ## Como retomar em outro computador
 

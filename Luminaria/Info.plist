@@ -28,6 +28,10 @@
     </array>
     <key>NFCReaderUsageDescription</key>
     <string>Precisamos usar o NFC para reconhecer a sua luminária ao encostar o iPhone nela.</string>
+    <key>NSCalendarsUsageDescription</key>
+    <string>Usamos o Calendário só para trocar automaticamente de rotina de sono (ex.: detectar viagem ou fim de semana), se você ativar isso.</string>
+    <key>NSCalendarsFullAccessUsageDescription</key>
+    <string>Usamos o Calendário só para trocar automaticamente de rotina de sono (ex.: detectar viagem ou fim de semana), se você ativar isso.</string>
     <key>LSApplicationQueriesSchemes</key>
     <array>
         <string>shortcuts</string>

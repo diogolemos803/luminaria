@@ -10,6 +10,13 @@ struct SleepRoutinesView: View {
 
     var body: some View {
         List {
+            Section {
+                calendarAutoActivateCard
+                    .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
+            }
+
             ForEach(store.routines) { routine in
                 Button {
                     routineToEdit = routine
@@ -81,6 +88,43 @@ struct SleepRoutinesView: View {
             RoutineEditView(store: store, routine: routine, isNew: true)
                 .environment(\.isNightModeArmed, isNightModeArmed)
         }
+        .onAppear {
+            store.refreshCalendarAuthorizationStatus()
+        }
+    }
+
+    private var calendarAutoActivateCard: some View {
+        ThemedCard(title: "Rotina automática por calendário", theme: theme) {
+            ThemedRow(
+                theme: theme,
+                title: calendarStatusText,
+                subtitle: "Ative por rotina em \"Ativar automaticamente quando\", ao editar cada uma",
+                leading: { IconBadge(systemName: "calendar", theme: theme) },
+                accessory: { EmptyView() }
+            )
+            if store.isCalendarAuthorized != true {
+                Button {
+                    store.requestCalendarAccess()
+                } label: {
+                    ThemedRow(
+                        theme: theme,
+                        showsDivider: true,
+                        title: "Autorizar Calendário",
+                        leading: { IconBadge(systemName: "checkmark.circle", theme: theme) },
+                        accessory: { EmptyView() }
+                    )
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
+    private var calendarStatusText: String {
+        switch store.isCalendarAuthorized {
+        case true: return "Autorizado"
+        case false: return "Não autorizado"
+        default: return "Ainda não solicitado"
+        }
     }
 
     private static func subtitle(for routine: SleepRoutine) -> String {
@@ -126,6 +170,15 @@ struct RoutineEditView: View {
                 let comps = Calendar.current.dateComponents([.hour, .minute], from: newValue)
                 routine.nightShiftOffHour = comps.hour ?? 7
                 routine.nightShiftOffMinute = comps.minute ?? 30
+            }
+        )
+    }
+
+    private var eventKeywordBinding: Binding<String> {
+        Binding(
+            get: { routine.autoActivateEventKeyword ?? "" },
+            set: { newValue in
+                routine.autoActivateEventKeyword = newValue.isEmpty ? nil : newValue
             }
         )
     }
@@ -220,6 +273,52 @@ struct RoutineEditView: View {
                                 )
                             }
                         }
+
+                        ThemedCard(title: "Ativar automaticamente quando", theme: theme) {
+                            HStack {
+                                Text("Dias de semana")
+                                    .font(.luminaria(.subheadline, weight: .medium))
+                                    .foregroundStyle(theme.ink)
+                                Spacer()
+                                Toggle("", isOn: $routine.autoActivateWeekday)
+                                    .labelsHidden()
+                                    .tint(theme.accent)
+                            }
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 9)
+
+                            Rectangle()
+                                .fill(theme.hairline)
+                                .frame(height: 1)
+                                .padding(.leading, 10)
+
+                            HStack {
+                                Text("Fins de semana")
+                                    .font(.luminaria(.subheadline, weight: .medium))
+                                    .foregroundStyle(theme.ink)
+                                Spacer()
+                                Toggle("", isOn: $routine.autoActivateWeekend)
+                                    .labelsHidden()
+                                    .tint(theme.accent)
+                            }
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 9)
+
+                            Rectangle()
+                                .fill(theme.hairline)
+                                .frame(height: 1)
+                                .padding(.leading, 10)
+
+                            TextField("Ou evento no Calendário contendo (ex.: Viagem)", text: eventKeywordBinding)
+                                .font(.luminaria(.subheadline))
+                                .foregroundStyle(theme.ink)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 11)
+                        }
+
+                        Text("Precisa de \"Rotina automática por calendário\" autorizado na tela anterior. Quando mais de uma rotina bate, a palavra-chave de evento ganha de fim de semana, que ganha de dia de semana.")
+                            .font(.luminaria(.caption))
+                            .foregroundStyle(theme.inkMuted)
 
                         if !isNew && routine.id != store.activeRoutineID {
                             FullPillButton(title: "Tornar rotina ativa", theme: theme) {

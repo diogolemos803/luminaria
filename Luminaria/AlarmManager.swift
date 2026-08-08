@@ -43,6 +43,9 @@ final class AlarmManager: NSObject, ObservableObject {
     private var nextFireDate: Date?
 
     private static let notificationID = "com.luminaria.alarm"
+    /// Segunda notificação de reforço, ~1 minuto depois da primeira — rede de
+    /// segurança extra pro caso raro da primeira falhar em soar (hiccup do sistema).
+    private static let notificationID2 = notificationID + ".backup2"
     private static let armedKey = "com.luminaria.alarm.armed"
     private static let hourKey = "com.luminaria.alarm.hour"
     private static let minuteKey = "com.luminaria.alarm.minute"
@@ -121,7 +124,7 @@ final class AlarmManager: NSObject, ObservableObject {
         stopAlarmSound()
         isAlarmRinging = false
         UNUserNotificationCenter.current()
-            .removePendingNotificationRequests(withIdentifiers: [Self.notificationID])
+            .removePendingNotificationRequests(withIdentifiers: [Self.notificationID, Self.notificationID2])
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
     }
 
@@ -199,6 +202,14 @@ final class AlarmManager: NSObject, ObservableObject {
     /// o app) — avança `nextFireDate` pro dia seguinte, pra permitir repetir diariamente
     /// enquanto continuar armado, sem disparar de novo no mesmo dia depois de "Parar".
     private func fireScheduledAlarm(soundFileName: String) {
+        // Idempotência: com a segunda notificação de reforço (~60s depois da
+        // primeira), se a pessoa ainda não tiver tocado "Parar", ela chegaria aqui
+        // de novo enquanto `isAlarmRinging` já é `true` — sem essa guarda,
+        // `nextFireDate` avançaria um dia A MAIS do que devia. Não quebra o caso de
+        // "Parar" tocado direto da notificação com o app suspenso (handleStopFrom
+        // Notification): nesse cenário `isAlarmRinging` ainda é `false` porque o
+        // loop de alarme nunca chegou a rodar, então a guarda não bloqueia nada.
+        guard !isAlarmRinging else { return }
         if var fireDate = nextFireDate {
             let calendar = Calendar.current
             // Avança em loop, não só +1 dia: se o app ficou dias sem abrir enquanto
@@ -255,7 +266,7 @@ final class AlarmManager: NSObject, ObservableObject {
 
     private func scheduleBackupNotification(hour: Int, minute: Int, soundFileName: String) {
         let center = UNUserNotificationCenter.current()
-        center.removePendingNotificationRequests(withIdentifiers: [Self.notificationID])
+        center.removePendingNotificationRequests(withIdentifiers: [Self.notificationID, Self.notificationID2])
 
         let content = UNMutableNotificationContent()
         content.title = "Despertador"
@@ -270,6 +281,17 @@ final class AlarmManager: NSObject, ObservableObject {
         let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: true)
         let request = UNNotificationRequest(identifier: Self.notificationID, content: content, trigger: trigger)
         center.add(request)
+
+        // Segunda notificação idêntica, 60s depois — usa `Calendar` pra somar o
+        // minuto (não soma manual), senão um alarme em :59 geraria `minute: 60`,
+        // um `DateComponents` inválido que o trigger simplesmente não dispararia.
+        let calendar = Calendar.current
+        let baseDate = calendar.date(from: dateComponents) ?? Date()
+        let backupDate = calendar.date(byAdding: .second, value: 60, to: baseDate) ?? baseDate
+        let backupComponents = calendar.dateComponents([.hour, .minute], from: backupDate)
+        let backupTrigger = UNCalendarNotificationTrigger(dateMatching: backupComponents, repeats: true)
+        let backupRequest = UNNotificationRequest(identifier: Self.notificationID2, content: content, trigger: backupTrigger)
+        center.add(backupRequest)
     }
 
     private func persistArmedState() {
@@ -347,7 +369,7 @@ extension AlarmManager: UNUserNotificationCenterDelegate {
         willPresent notification: UNNotification,
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
-        if notification.request.identifier == Self.notificationID {
+        if [Self.notificationID, Self.notificationID2].contains(notification.request.identifier) {
             handleAlarmNotificationFired()
         }
         completionHandler([.banner, .sound, .list])
@@ -358,7 +380,7 @@ extension AlarmManager: UNUserNotificationCenterDelegate {
         didReceive response: UNNotificationResponse,
         withCompletionHandler completionHandler: @escaping () -> Void
     ) {
-        if response.notification.request.identifier == Self.notificationID {
+        if [Self.notificationID, Self.notificationID2].contains(response.notification.request.identifier) {
             if response.actionIdentifier == Self.stopActionID {
                 handleStopFromNotification()
             } else {

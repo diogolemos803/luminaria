@@ -52,6 +52,22 @@ struct ContentView: View {
                             .foregroundStyle(isNightModeArmed ? inkSleep : inkAwake)
                             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
                             .padding(.bottom, 40)
+
+                        // Só aparece com o bloqueio de apps realmente ativo — nunca no
+                        // Living mode, nunca antes da luminária ser reconhecida. Não
+                        // mexe no botão redondo nem no texto "Living/Zleepy mode" acima.
+                        if isNightModeArmed && screenTimeManager.isShieldActive {
+                            Button {
+                                _ = screenTimeManager.useEmergencyPass()
+                            } label: {
+                                Text("Passe de emergência (\(screenTimeManager.emergencyPassesRemaining) restantes)")
+                                    .font(.caption)
+                                    .foregroundStyle(inkSleep)
+                            }
+                            .disabled(screenTimeManager.emergencyPassesRemaining == 0)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+                            .padding(.bottom, 16)
+                        }
                     }
                     .animation(.easeInOut(duration: 0.5), value: isNightModeArmed)
                     .animation(.spring(response: 0.25, dampingFraction: 0.55), value: isPressed)
@@ -135,7 +151,16 @@ struct ContentView: View {
         }
         isNightModeArmed.toggle()
         if isNightModeArmed {
-            nfcManager.beginScanning()
+            // Resolve a rotina automática por calendário (se configurada) ANTES de
+            // começar a escutar NFC — `beginScanning()` só roda depois do `await`
+            // terminar, então não tem corrida entre trocar a rotina ativa e
+            // reconhecer a tag com a rotina errada ainda selecionada.
+            Task { @MainActor in
+                if let autoRoutineID = await routineStore.resolveAutoActivateRoutine() {
+                    routineStore.setActive(id: autoRoutineID)
+                }
+                nfcManager.beginScanning()
+            }
         } else {
             nfcManager.stopScanning()
             alarmManager.disarmAlarm()
@@ -230,6 +255,13 @@ struct SettingsView: View {
                                 }
                                 .buttonStyle(.plain)
                             }
+                        }
+
+                        if nfcManager.isLinked {
+                            Text("Perdeu ou trocou a luminária física? Não precisa desvincular nada — depois do primeiro vínculo, qualquer tag NFC reconhecida já funciona.")
+                                .font(.luminaria(.caption))
+                                .foregroundStyle(theme.inkMuted)
+                                .padding(.horizontal, 10)
                         }
 
                         ThemedCard(title: "Rotina de sono", theme: theme) {
