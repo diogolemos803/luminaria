@@ -100,10 +100,22 @@ struct ContentView: View {
                     isNightModeArmed = true
                 }
                 nfcManager.onRecognizedTap = {
-                    guard isNightModeArmed, let routine = routineStore.activeRoutine else { return }
-                    ShortcutManager.shared.runSleepShortcut()
-                    alarmManager.armAlarm(hour: routine.alarmHour, minute: routine.alarmMinute, soundFileName: routine.soundOption.fileName)
-                    screenTimeManager.applyShield(selection: routine.appSelection)
+                    guard isNightModeArmed else { return }
+                    // Resolve a rotina automática por calendário só AGORA, no instante
+                    // em que a luminária é reconhecida de verdade — pedido explícito do
+                    // usuário: antes isso rodava no toque do botão, o que trocava a
+                    // rotina ativa mesmo se a pessoa cancelasse a leitura NFC depois,
+                    // dando a impressão de que a troca automática "ficava ligada o dia
+                    // inteiro" em vez de só valer pra noite em que a tag é lida.
+                    Task { @MainActor in
+                        if let autoRoutineID = await routineStore.resolveAutoActivateRoutine() {
+                            routineStore.setActive(id: autoRoutineID)
+                        }
+                        guard let routine = routineStore.activeRoutine else { return }
+                        ShortcutManager.shared.runSleepShortcut()
+                        alarmManager.armAlarm(hour: routine.alarmHour, minute: routine.alarmMinute, soundFileName: routine.soundOption.fileName)
+                        screenTimeManager.applyShield(selection: routine.appSelection)
+                    }
                 }
                 // Sem isso, cancelar a leitura, deixar dar timeout (~60s do CoreNFC) ou
                 // encostar a tag errada deixava o app preso em "Zleepy mode" sem nada
@@ -151,16 +163,7 @@ struct ContentView: View {
         }
         isNightModeArmed.toggle()
         if isNightModeArmed {
-            // Resolve a rotina automática por calendário (se configurada) ANTES de
-            // começar a escutar NFC — `beginScanning()` só roda depois do `await`
-            // terminar, então não tem corrida entre trocar a rotina ativa e
-            // reconhecer a tag com a rotina errada ainda selecionada.
-            Task { @MainActor in
-                if let autoRoutineID = await routineStore.resolveAutoActivateRoutine() {
-                    routineStore.setActive(id: autoRoutineID)
-                }
-                nfcManager.beginScanning()
-            }
+            nfcManager.beginScanning()
         } else {
             nfcManager.stopScanning()
             alarmManager.disarmAlarm()

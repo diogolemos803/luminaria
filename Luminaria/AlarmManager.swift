@@ -15,6 +15,11 @@ import WidgetKit
 /// Ressalva real: se a pessoa fechar o app manualmente (arrastar pra cima no seletor de
 /// apps) ou reiniciar o iPhone, o processo morre e o alarme não toca — mesma limitação de
 /// qualquer app de despertador de terceiros.
+///
+/// **É um despertador de UMA noite só, não recorrente**: tocar (ou tocar "Parar") desarma
+/// tudo de vez (`disarmAlarm()`), sem se reagendar sozinho pro dia seguinte — pedido
+/// explícito do usuário. Pra despertar de novo, precisa de um reconhecimento NFC novo
+/// naquela noite, que chama `armAlarm` do zero com a rotina ativa no momento.
 final class AlarmManager: NSObject, ObservableObject {
     static let shared = AlarmManager()
 
@@ -66,6 +71,20 @@ final class AlarmManager: NSObject, ObservableObject {
         super.init()
         registerNotificationCategories()
         restorePersistedState()
+        // Achado real testando no device: uma interrupção de áudio durante a noite
+        // (ligação, Siri, outro app tocando som) pausa o loop silencioso que mantém o
+        // app vivo em segundo plano — sem reagir a isso, a sessão fica parada pra
+        // sempre, o iOS acaba suspendendo o processo, e na hora do alarme só sobra a
+        // notificação (som único e curto, não em loop) — dá a impressão de "só toca
+        // quando eu abro pelo toque na notificação". `AlarmManager` já herda de
+        // `NSObject` (precisa pra `UNUserNotificationCenterDelegate`), então dá pra
+        // usar a variante de `#selector` do `NotificationCenter` sem problema.
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleAudioSessionInterruption(_:)),
+            name: AVAudioSession.interruptionNotification,
+            object: AVAudioSession.sharedInstance()
+        )
     }
 
     /// Pede `.timeSensitive` além de `.alert`/`.sound` — sem essa opção, marcar a
@@ -144,20 +163,60 @@ final class AlarmManager: NSObject, ObservableObject {
         previewPlayer?.play()
     }
 
-    /// Chamado quando a pessoa toca "Parar" na tela do alarme tocando.
+    /// Chamado quando a pessoa toca "Parar" na tela do alarme tocando. O despertador é
+    /// de UMA noite só, não um alarme recorrente: parar de tocar desarma tudo de vez
+    /// (`disarmAlarm()`), sem reagendar pro dia seguinte — pedido explícito do usuário,
+    /// que não queria o alarme continuando a tocar sozinho todo dia, independente de a
+    /// luminária ser lida de novo ou não. Pra despertar de novo, precisa de um
+    /// reconhecimento NFC novo naquela noite.
     func stopRingingAlarm() {
-        stopAlarmSound()
-        isAlarmRinging = false
-        if scheduledHour != nil {
-            startSilentLoop()
-        }
+        disarmAlarm()
     }
 
     /// Chamado quando o app volta a ficar ativo (ver `scenePhase` em `ContentView`) — cobre
     /// o caso de o horário já ter passado com o app suspenso e nem o timer interno nem o
-    /// delegate da notificação terem tido chance de rodar a tempo.
+    /// delegate da notificação terem tido chance de rodar a tempo. `checkAlarmTime()`
+    /// também reconfere se o player certo está mesmo tocando (ver `resumePlaybackIfNeeded`).
     func checkForMissedAlarm() {
         checkAlarmTime()
+    }
+
+    /// Reação a qualquer interrupção de áudio (ligação, Siri, outro app tocando som) — sem
+    /// isso, o loop silencioso que mantém o app vivo em segundo plano fica pausado pra
+    /// sempre depois da interrupção, o processo acaba sendo suspenso pelo iOS, e o alarme
+    /// de verdade (o loop tocando alto) nunca chega a soar — só a notificação de backup
+    /// (som único, curto) sobra. Ignora deliberadamente `AVAudioSessionInterruptionOptions
+    /// .shouldResume`: pra um despertador, é melhor tentar retomar sempre do que arriscar
+    /// perder o alarme por causa de uma sugestão do sistema.
+    @objc private func handleAudioSessionInterruption(_ notification: Notification) {
+        guard let typeValue = notification.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt,
+              let type = AVAudioSession.InterruptionType(rawValue: typeValue) else { return }
+        guard type == .ended else { return }
+        configureAudioSession()
+        // `checkAlarmTime()` já chama `resumePlaybackIfNeeded()` e reconfere se o
+        // horário do alarme foi atravessado pela própria interrupção (ex.: ligação que
+        // durou até depois do horário marcado) — não precisa duplicar aqui.
+        checkAlarmTime()
+    }
+
+    /// Garante que o player certo pro estado atual esteja de fato tocando — chamado tanto
+    /// pelo fim de uma interrupção quanto por `checkForMissedAlarm()`. Recria o player do
+    /// zero se por algum motivo ele não existir mais (nunca deveria acontecer, mas mais
+    /// seguro que assumir).
+    private func resumePlaybackIfNeeded() {
+        if isAlarmRinging {
+            if let alarmPlayer, !alarmPlayer.isPlaying {
+                alarmPlayer.play()
+            } else if alarmPlayer == nil, let soundFileName = scheduledSoundFileName {
+                startAlarmPlayer(soundFileName: soundFileName)
+            }
+        } else if scheduledHour != nil {
+            if let silentPlayer, !silentPlayer.isPlaying {
+                silentPlayer.play()
+            } else if silentPlayer == nil {
+                startSilentLoop()
+            }
+        }
     }
 
     private func configureAudioSession() {
@@ -190,38 +249,16 @@ final class AlarmManager: NSObject, ObservableObject {
     /// pro "atraso" — quando a checagem só roda bem depois do horário (app reaberto tarde,
     /// timer perdeu a janela). Uma comparação por igualdade de hora/minuto só pega o alarme
     /// dentro do minuto certo; passado esse minuto, nunca mais dispararia até o dia seguinte.
+    /// Também retoma o player certo a cada 15s (mesmo reforço do handler de interrupção) —
+    /// rede de segurança extra pro caso do loop silencioso ter parado por algum motivo que
+    /// não gerou notificação de interrupção nenhuma.
     private func checkAlarmTime() {
+        resumePlaybackIfNeeded()
         guard let fireDate = nextFireDate, let soundFileName = scheduledSoundFileName,
               !isAlarmRinging else { return }
         if Date() >= fireDate {
-            fireScheduledAlarm(soundFileName: soundFileName)
+            triggerAlarm(soundFileName: soundFileName)
         }
-    }
-
-    /// Alarme disparado pelo agendamento real (timer, notificação, ou checagem ao reabrir
-    /// o app) — avança `nextFireDate` pro dia seguinte, pra permitir repetir diariamente
-    /// enquanto continuar armado, sem disparar de novo no mesmo dia depois de "Parar".
-    private func fireScheduledAlarm(soundFileName: String) {
-        // Idempotência: com a segunda notificação de reforço (~60s depois da
-        // primeira), se a pessoa ainda não tiver tocado "Parar", ela chegaria aqui
-        // de novo enquanto `isAlarmRinging` já é `true` — sem essa guarda,
-        // `nextFireDate` avançaria um dia A MAIS do que devia. Não quebra o caso de
-        // "Parar" tocado direto da notificação com o app suspenso (handleStopFrom
-        // Notification): nesse cenário `isAlarmRinging` ainda é `false` porque o
-        // loop de alarme nunca chegou a rodar, então a guarda não bloqueia nada.
-        guard !isAlarmRinging else { return }
-        if var fireDate = nextFireDate {
-            let calendar = Calendar.current
-            // Avança em loop, não só +1 dia: se o app ficou dias sem abrir enquanto
-            // armado, uma única adição poderia deixar a próxima data ainda no passado,
-            // disparando de novo em sequência assim que "Parar" fosse tocado.
-            repeat {
-                fireDate = calendar.date(byAdding: .day, value: 1, to: fireDate) ?? fireDate.addingTimeInterval(86400)
-            } while fireDate <= Date()
-            nextFireDate = fireDate
-            persistArmedState()
-        }
-        triggerAlarm(soundFileName: soundFileName)
     }
 
     private func triggerAlarm(soundFileName: String) {
@@ -235,6 +272,10 @@ final class AlarmManager: NSObject, ObservableObject {
         // reagir a um closure.
         ScreenTimeManager.shared.removeShield()
         onAlarmFired?()
+        startAlarmPlayer(soundFileName: soundFileName)
+    }
+
+    private func startAlarmPlayer(soundFileName: String) {
         guard let url = Bundle.main.url(forResource: soundFileName, withExtension: "wav") else { return }
         alarmPlayer = try? AVAudioPlayer(contentsOf: url)
         alarmPlayer?.numberOfLoops = -1
@@ -275,21 +316,26 @@ final class AlarmManager: NSObject, ObservableObject {
         content.interruptionLevel = .timeSensitive
         content.categoryIdentifier = Self.alarmCategoryID
 
-        var dateComponents = DateComponents()
-        dateComponents.hour = hour
-        dateComponents.minute = minute
-        let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: true)
+        // `repeats: false` — o despertador é de uma noite só (ver `stopRingingAlarm`).
+        // Data completa (ano/mês/dia/hora/minuto), não só hora/minuto: com `repeats:
+        // false`, um `DateComponents` incompleto deixaria o sistema decidir sozinho "hoje
+        // ou amanhã" com base na hora atual — ambíguo perto da virada de meia-noite (ex.:
+        // agendar às 22h pra um alarme às 23h59 já cai certo, mas calcular o BACKUP, 1
+        // minuto depois, à meia-noite, poderia resolver pra "hoje" em vez de "amanhã" se
+        // calculado incompleto). Reaproveita `nextOccurrence`, que já resolve isso certo.
+        let calendar = Calendar.current
+        let fireDate = Self.nextOccurrence(hour: hour, minute: minute, after: Date())
+        let dateComponents = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: fireDate)
+        let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: false)
         let request = UNNotificationRequest(identifier: Self.notificationID, content: content, trigger: trigger)
         center.add(request)
 
         // Segunda notificação idêntica, 60s depois — usa `Calendar` pra somar o
         // minuto (não soma manual), senão um alarme em :59 geraria `minute: 60`,
         // um `DateComponents` inválido que o trigger simplesmente não dispararia.
-        let calendar = Calendar.current
-        let baseDate = calendar.date(from: dateComponents) ?? Date()
-        let backupDate = calendar.date(byAdding: .second, value: 60, to: baseDate) ?? baseDate
-        let backupComponents = calendar.dateComponents([.hour, .minute], from: backupDate)
-        let backupTrigger = UNCalendarNotificationTrigger(dateMatching: backupComponents, repeats: true)
+        let backupDate = calendar.date(byAdding: .second, value: 60, to: fireDate) ?? fireDate
+        let backupComponents = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: backupDate)
+        let backupTrigger = UNCalendarNotificationTrigger(dateMatching: backupComponents, repeats: false)
         let backupRequest = UNNotificationRequest(identifier: Self.notificationID2, content: content, trigger: backupTrigger)
         center.add(backupRequest)
     }
@@ -309,11 +355,12 @@ final class AlarmManager: NSObject, ObservableObject {
         updateWidgetState(isArmed: false, nextFireDate: nil)
     }
 
-    /// Ponto único chamado tanto por `persistArmedState()` (armar e reagendar após cada
-    /// disparo) quanto por `clearPersistedState()` (desarmar) — cobre os três casos reais
-    /// (`armAlarm`, `disarmAlarm`, `fireScheduledAlarm`) sem duplicar a chamada em cada um.
-    /// Escreve num App Group separado da persistência normal acima, só pra
-    /// `LuminariaWidgetExtension` conseguir ler (processos/sandboxes diferentes).
+    /// Ponto único chamado tanto por `persistArmedState()` (armar) quanto por
+    /// `clearPersistedState()` (desarmar, inclusive quando o próprio despertador toca e
+    /// se desarma sozinho — ver `stopRingingAlarm`) — cobre os casos reais (`armAlarm`,
+    /// `disarmAlarm`) sem duplicar a chamada em cada um. Escreve num App Group separado
+    /// da persistência normal acima, só pra `LuminariaWidgetExtension` conseguir ler
+    /// (processos/sandboxes diferentes).
     private func updateWidgetState(isArmed: Bool, nextFireDate: Date?) {
         guard let sharedDefaults = UserDefaults(suiteName: Self.widgetSuiteName) else { return }
         sharedDefaults.set(isArmed, forKey: Self.widgetArmedKey)
@@ -348,16 +395,17 @@ final class AlarmManager: NSObject, ObservableObject {
     /// aparecer. A própria entrega da notificação já significa que é hora do alarme.
     private func handleAlarmNotificationFired() {
         guard let soundFileName = scheduledSoundFileName else { return }
-        fireScheduledAlarm(soundFileName: soundFileName)
+        triggerAlarm(soundFileName: soundFileName)
     }
 
-    /// Botão "Parar" tocado direto na notificação, sem abrir o app. Passa pelo mesmo
-    /// `fireScheduledAlarm` antes de parar — garante que `nextFireDate` avança pro dia
-    /// seguinte mesmo se o app estivesse suspenso e o loop de alarme nunca tivesse
-    /// chegado a tocar de verdade (só o som da própria notificação rodou).
+    /// Botão "Parar" tocado direto na notificação, sem abrir o app. Chama `triggerAlarm`
+    /// antes de `stopRingingAlarm()` — garante que o bloqueio de apps é liberado mesmo se
+    /// o app estivesse suspenso e o loop de alarme nunca tivesse chegado a tocar de
+    /// verdade (só o som da própria notificação rodou); `triggerAlarm` é idempotente
+    /// (`guard !isAlarmRinging`), então não faz nada se já estiver tocando.
     private func handleStopFromNotification() {
         if let soundFileName = scheduledSoundFileName {
-            fireScheduledAlarm(soundFileName: soundFileName)
+            triggerAlarm(soundFileName: soundFileName)
         }
         stopRingingAlarm()
     }

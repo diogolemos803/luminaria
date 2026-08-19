@@ -43,9 +43,18 @@ depende de CI num runner macOS na nuvem (GitHub Actions) e de sideload via AltSt
   do sistema) — é ela quem garante o alarme mesmo com o processo suspenso, já que quem a
   dispara e toca o som é o próprio iOS. Agenda uma SEGUNDA notificação idêntica ~60s
   depois da primeira (`notificationID2`), rede de segurança extra pro caso raro da
-  primeira falhar em soar — o horário da segunda é calculado via `Calendar.date(byAdding:
-  .second, value: 60, to:)`, não soma manual de minuto (evitando gerar um `minute: 60`
-  inválido em alarmes no último minuto da hora/dia).
+  primeira falhar em soar — data completa (ano/mês/dia/hora/minuto) calculada via
+  `nextOccurrence`/`Calendar.date(byAdding: .second, value: 60, to:)`, não soma manual de
+  minuto nem `DateComponents` incompleto (evita ambiguidade "hoje ou amanhã" perto da
+  virada de meia-noite). **Despertador de UMA noite só, não recorrente**: tocar (ou tocar
+  "Parar") chama `disarmAlarm()` de vez — não reagenda pro dia seguinte sozinho (nem
+  internamente, nem a notificação, que usa `repeats: false`); pra despertar de novo,
+  precisa de um reconhecimento NFC novo naquela noite. `resumePlaybackIfNeeded()` reforça
+  o player certo (loop silencioso ou alarme já tocando) em três pontos — fim de uma
+  interrupção de áudio (`AVAudioSession.interruptionNotification`, observado desde o
+  `init()`), o `Timer` de 15s, e `checkForMissedAlarm()` — pra cobrir o caso do loop
+  silencioso parar de tocar (ligação, Siri, outro app com som) sem depender de só um desses
+  gatilhos.
 - `Luminaria/SleepRoutineStore.swift` — `AlarmSoundOption` (enum com os 4 sons
   disponíveis), `SleepRoutine` (nome + horário do despertador + horário de desligar Modo
   Noturno + som escolhido + `appSelection: FamilyActivitySelection`, os apps bloqueados
@@ -67,11 +76,12 @@ depende de CI num runner macOS na nuvem (GitHub Actions) e de sideload via AltSt
   Decisões) no iCloud Key-Value Storage via um DTO privado `SyncableRoutine`, só pra
   sobreviver a apagar/reinstalar o app; `UserDefaults.standard` continua sendo a fonte
   principal em uso normal. Tem `eventStore: EKEventStore`,
-  `resolveAutoActivateRoutine() async -> UUID?` (chamado uma única vez, no instante de
-  armar o modo noite em `ContentView.toggleNightMode`, nunca em segundo plano — prioridade
-  palavra-chave de evento > fim de semana > dia de semana, `nil` se nada configurado/
-  autorizado) e `requestCalendarAccess`/`refreshCalendarAuthorizationStatus` (autorização
-  só pedida por ação explícita numa tela, nunca na hora de armar).
+  `resolveAutoActivateRoutine() async -> UUID?` (chamado uma única vez, dentro de
+  `nfcManager.onRecognizedTap` em `ContentView` — no instante em que a luminária é
+  reconhecida de verdade, NÃO no toque do botão redondo; nunca em segundo plano —
+  prioridade palavra-chave de evento > fim de semana > dia de semana, `nil` se nada
+  configurado/autorizado) e `requestCalendarAccess`/`refreshCalendarAuthorizationStatus`
+  (autorização só pedida por ação explícita numa tela, nunca na hora de armar).
 - `Luminaria/SleepRoutinesView.swift` — `SleepRoutinesView` (lista de rotinas: ativar
   via swipe, excluir, criar; subtítulo de cada linha mostra a contagem de apps
   bloqueados quando > 0; card no topo "Rotina automática por calendário" com chip de
@@ -690,14 +700,52 @@ Fluxo usado pra testar de verdade, todo do Windows:
   enum). Só o método de PEDIR acesso (`requestCalendarAccess`) precisa mesmo do branch
   `#available` (`requestFullAccessToEvents` vs. `requestAccess(to:)`), já que ali é uma
   API nova de verdade, não só um alias de enum.
-- **Rotina automática por calendário resolvida uma única vez, no instante de armar, não
-  em segundo plano** — mesma lição já aprendida com o NFC (sessão de leitura expira em
-  ~60s, sem garantia de execução contínua): em vez de tentar rodar isso como um daemon
-  de fundo, `SleepRoutineStore.resolveAutoActivateRoutine()` é chamado dentro de
-  `ContentView.toggleNightMode()`, ANTES de `nfcManager.beginScanning()` (dentro de um
-  `Task { @MainActor in ... }`, sem condição de corrida — `beginScanning()` só roda
-  depois do `await` terminar). A consulta ao EventKit em si roda numa fila de fundo via
-  `withCheckedContinuation`, pra não travar a UI no toque do botão redondo.
+- **Rotina automática por calendário resolvida uma única vez, no reconhecimento da
+  luminária, não no toque do botão nem em segundo plano** — mesma lição já aprendida com
+  o NFC (sessão de leitura expira em ~60s, sem garantia de execução contínua). Primeira
+  versão chamava `resolveAutoActivateRoutine()` dentro de `toggleNightMode()` (no toque
+  do botão) — bug real achado testando no device: isso trocava a rotina ativa mesmo se a
+  pessoa cancelasse a leitura NFC depois, dando a impressão de "trocar sozinha o dia
+  inteiro". Corrigido movendo a chamada pra dentro de `nfcManager.onRecognizedTap` (ver
+  `ContentView.swift`), dentro de um `Task { @MainActor in ... }` — só troca a rotina
+  ativa quando a tag é reconhecida de verdade, imediatamente antes de armar o alarme e
+  aplicar o bloqueio de apps com a rotina (possivelmente já trocada) certa. A consulta ao
+  EventKit em si roda numa fila de fundo via `withCheckedContinuation`, pra não travar a
+  UI no instante do reconhecimento.
+- **Despertador é de UMA noite só, não recorrente — mudança de arquitetura pedida
+  explicitamente pelo usuário** ("quando tu vai deitar, liga o modo, lê o NFC, está
+  ativada a rotina pra aquela noite até a manhã seguinte, e não todas as manhãs"). Antes,
+  `fireScheduledAlarm` avançava `nextFireDate` pro dia seguinte a cada disparo e nunca
+  desarmava de verdade — o despertador virava recorrente diário por baixo dos panos,
+  mesmo com a UI voltando pra "Living mode" depois de tocar, sem nenhum jeito de
+  desarmar isso pelo botão (que, já desarmado na UI, só arma de novo). Corrigido:
+  `stopRingingAlarm()` chama `disarmAlarm()` direto, sem reagendar; `fireScheduledAlarm`
+  foi removido (o código ficou mais simples sem a lógica de avançar data); as
+  notificações passaram de `repeats: true` pra `repeats: false` com data completa
+  fixada (ano/mês/dia/hora/minuto, não só hora/minuto — um `repeats: false` incompleto
+  deixaria o sistema decidir sozinho "hoje ou amanhã", ambíguo perto da meia-noite).
+- **Bug real achado testando no device, ainda sob investigação: despertador não tocava
+  de verdade em segundo plano, só depois de tocar na notificação e abrir o app** —
+  confirmado com o usuário que o iPhone estava no modo mudo durante o teste, o que
+  explica o SOM DA NOTIFICAÇÃO ficar em silêncio (comportamento esperado — som de
+  notificação normal respeita o botão físico de silencioso; só "Alertas Críticos",
+  entitlement separada que não temos, ignora), mas NÃO explica por que o alarme de
+  verdade (`AVAudioPlayer` categoria `.playback`, que por padrão IGNORA o botão de
+  silencioso) também não tocou sozinho — indício de que o processo em segundo plano não
+  estava realmente vivo/tocando na hora certa, não um problema do botão de silencioso em
+  si. Sem log de device via Xcode (não temos Mac), não dá pra confirmar 100% a causa
+  raiz — mitigação aplicada: `AlarmManager` passou a observar
+  `AVAudioSession.interruptionNotification` e retomar o player certo
+  (`resumePlaybackIfNeeded()`) sempre que uma interrupção de áudio termina (ligação,
+  Siri, outro app com som), ignorando de propósito
+  `AVAudioSessionInterruptionOptions.shouldResume` — melhor tentar retomar sempre do que
+  arriscar perder o alarme. O mesmo reforço passou a rodar em TRÊS pontos, não só um: fim
+  de interrupção, o `Timer` interno de 15s, e `checkForMissedAlarm()`
+  (`scenePhase == .active`) — rede de segurança tripla pro caso do loop parar por um
+  motivo que não gera notificação de interrupção nenhuma. Se persistir, os próximos
+  suspeitos são Ajustes → Geral → Atualização em Segundo Plano (desabilitado pro app) e
+  Modo de Baixo Consumo ativo — nenhum dos dois é bug de código, são configurações do
+  próprio iPhone que restringem execução em segundo plano.
 
 ## ⚠️ Pendência arquitetural importante (não esquecer)
 
@@ -974,6 +1022,54 @@ O usuário perguntou sobre viabilidade de controlar a luminária de verdade via 
   `Combine`/`WidgetKit` já usados no projeto). Pendente: habilitar a capability de
   iCloud Key-Value Storage no App ID e regenerar o provisioning profile de distribuição
   antes do próximo build assinado (ver pendência específica acima).
+- **2026-08-07**: três bugs/mudanças reais achados testando o pacote P0 num device físico
+  (dois relatos do usuário, ida e volta pra confirmar o entendimento certo antes de mexer
+  no código, já que a segunda descrição inicial foi mal-interpretada por mim numa primeira
+  tentativa — ver abaixo):
+  1. Bug real corrigido: **rotina automática por calendário trocava a rotina ativa no
+     toque do botão, não no reconhecimento da luminária** — dava a impressão de "ficar
+     ativada o dia inteiro" mesmo sem a pessoa chegar a encostar a tag.
+     `resolveAutoActivateRoutine()` movido de `ContentView.toggleNightMode()` pra dentro
+     de `nfcManager.onRecognizedTap` — só resolve/troca a rotina no instante em que a
+     luminária é reconhecida de verdade, não mais ao simplesmente armar.
+  2. **Mudança de arquitetura real, não só bug**: o que o usuário descreveu depois como
+     "a rotina fica tocando todo dia" NÃO era sobre qual rotina é escolhida (item 1
+     acima) — era sobre o despertador em si nunca desarmar de verdade.
+     `fireScheduledAlarm` avançava `nextFireDate` pro dia seguinte a cada disparo e
+     `persistArmedState()` continuava com `armedKey = true` pra sempre, então o
+     despertador virava recorrente diário por baixo dos panos mesmo com a UI mostrando
+     "Living mode" depois de tocar uma vez — sem nenhum jeito de desarmar isso pelo botão
+     (que, já em "Living mode", só arma de novo, não desarma nada). Corrigido: despertador
+     agora é de UMA noite só — `stopRingingAlarm()` chama `disarmAlarm()` direto (sem
+     reagendar), `fireScheduledAlarm` foi removido (código simplificado, sem a lógica de
+     avançar data), e as notificações passaram de `repeats: true` pra `repeats: false`
+     com data completa fixada (não só hora/minuto — evita ambiguidade de "hoje ou amanhã"
+     que um `repeats: false` incompleto teria perto da meia-noite). Pra despertar de novo,
+     precisa de reconhecimento NFC novo naquela noite — exatamente o fluxo pedido: "quando
+     tu vai deitar, liga o modo, lê o NFC, está ativada a rotina pra aquela noite até a
+     manhã seguinte, e não todas as manhãs".
+  3. Bug real, ainda sob investigação: **despertador não tocava de verdade em segundo
+     plano, só depois de tocar na notificação e abrir o app**. Confirmado com o usuário
+     que o iPhone estava no modo mudo durante o teste — isso explica por que o SOM DA
+     NOTIFICAÇÃO ficou em silêncio (esperado: som de notificação normal respeita o botão
+     físico de silencioso, só "Alertas Críticos" — entitlement separada, não temos —
+     ignora), mas NÃO explica por que o alarme de verdade (o `AVAudioPlayer` categoria
+     `.playback`, que por padrão ignora o botão de silencioso) também não tocou sozinho
+     — isso é indício de que o processo em segundo plano não estava realmente vivo/
+     tocando áudio na hora certa, não um problema do botão de silencioso em si. Mitigação
+     aplicada (sem conseguir confirmar 100% a causa raiz sem log de device via Xcode, que
+     não temos): `AlarmManager` passou a observar
+     `AVAudioSession.interruptionNotification` e retomar o player certo (loop silencioso
+     ou alarme já tocando) sempre que uma interrupção de áudio termina (ligação, Siri,
+     outro app com som), ignorando de propósito `AVAudioSessionInterruptionOptions
+     .shouldResume` — melhor tentar retomar sempre do que arriscar perder o alarme. Esse
+     mesmo reforço (`resumePlaybackIfNeeded()`) também roda a cada 15s no `Timer` interno
+     e em `checkForMissedAlarm()` (`scenePhase == .active`), não só no fim de uma
+     interrupção — rede de segurança tripla pro caso do loop parar por um motivo que não
+     gera notificação de interrupção nenhuma. Se o problema persistir no próximo teste,
+     próximo passo é conferir Ajustes → Geral → Atualização em Segundo Plano (Luminária
+     habilitado) e desativar o Modo de Baixo Consumo durante o teste, antes de suspeitar
+     de mais algum bug de código.
 
 ## Como retomar em outro computador
 
