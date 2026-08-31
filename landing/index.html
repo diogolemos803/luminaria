@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Zleepy Lamp: durma sem pegar no celular</title>
+<meta name="description" content="zleepy lamp: a luminária de madeira maciça com dock nfc que ativa o não perturbe do seu iphone e emite luz âmbar/vermelha, sem azul, pra preparar o sono.">
+<meta name="theme-color" content="#FAFAF8">
+
+<link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32.png">
+<link rel="icon" type="image/png" sizes="512x512" href="img/favicon-512.png">
+<link rel="apple-touch-icon" href="img/apple-touch-icon.png">
+
+<!-- pré-visualização ao compartilhar o link (whatsapp, instagram, etc.) -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="Zleepy Lamp: durma sem pegar no celular">
+<meta property="og:description" content="a luminária de madeira maciça com dock nfc que ativa o não perturbe do seu iphone e emite luz âmbar/vermelha, sem azul, pra preparar o sono.">
+<!-- TODO: og:image e og:url precisam ser url absoluta — trocar pelo domínio
+     final quando publicar (ex: https://zleepylamp.com.br). redes sociais não
+     seguem caminho relativo pra gerar a prévia do link. quando tiver uma
+     foto de capa dedicada (1200x630), trocar por ela — por ora usa a foto
+     do produto que já existe. -->
+<meta property="og:image" content="https://zleepy-lamp.vercel.app/img/lamp-end.png">
+<meta property="og:url" content="https://zleepy-lamp.vercel.app">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Zleepy Lamp: durma sem pegar no celular">
+<meta name="twitter:description" content="a luminária de madeira maciça com dock nfc que ativa o não perturbe do seu iphone e emite luz âmbar/vermelha, sem azul, pra preparar o sono.">
+<meta name="twitter:image" content="https://zleepy-lamp.vercel.app/img/lamp-end.png">
+
+<link rel="stylesheet" href="css/style.css">
+<script>
+  // o hero usa scroll-scrubbing dentro de uma seção sticky: a barra e o
+  // texto sempre aparecem "grudados" no topo da viewport, não importa o
+  // quão fundo a página esteja rolada dentro dessa seção. Se o navegador
+  // restaura a posição de rolagem de uma visita anterior (comum no Safari
+  // do iPhone), a página abre parecendo estar no topo mas já mostrando o
+  // fim da transição — desligamos a restauração automática pra sempre
+  // abrir do zero.
+  if ("scrollRestoration" in history) {
+    history.scrollRestoration = "manual";
+  }
+</script>
+</head>
+<body>
+
+<a href="#hero" class="skip-link">pular para o conteúdo</a>
+
+<!-- ========== banner de consentimento lgpd ========== -->
+<div id="consentBanner" class="consent-banner" role="dialog" aria-live="polite" aria-label="preferências de cookies" hidden>
+  <p>usamos cookies essenciais para o site funcionar. cookies não essenciais (como analytics) só são ativados com a sua permissão. <a href="#footer" class="consent-link">saiba mais</a></p>
+  <div class="consent-actions">
+    <button type="button" id="consentReject" class="btn-ghost">recusar não essenciais</button>
+    <button type="button" id="consentAccept" class="btn-amber small">aceitar todos</button>
+  </div>
+</div>
+
+<!-- ========== barra fixa ========== -->
+<header class="topbar" id="topbar">
+  <a href="#hero" class="logo"><img src="img/logo.png" alt="Zleepy Lamp" class="logo-img"></a>
+  <nav aria-label="principal">
+    <a href="#preorder" class="btn-amber small">pré-reservar</a>
+  </nav>
+</header>
+
+<main>
+
+  <!-- ========== 0. hero — transição por scroll entre duas imagens ========== -->
+  <section id="hero" class="hero-section" aria-label="apresentação do produto">
+    <div class="hero-stage" id="heroStage">
+
+      <div class="hero-visual" id="heroVisual" aria-hidden="true">
+        <img src="img/lamp-start.png" alt="" class="hero-img hero-img-start" id="heroImgStart">
+        <img src="img/lamp-end.png" alt="" class="hero-img hero-img-end" id="heroImgEnd">
+      </div>
+
+      <div class="hero-copy">
+        <p class="eyebrow">o objeto que encerra o dia</p>
+        <h1>durma sem pegar no celular</h1>
+        <a href="#preorder" class="btn-amber">pré-reservar</a>
+      </div>
+
+      <div class="hero-card glass" id="heroCard" data-bracket="0">
+        <p class="hero-card-kicker">o objeto</p>
+        <h3 class="hero-card-title">madeira maciça</h3>
+        <p class="hero-card-text">torneada à mão, sem plástico, sem tela, sem brilho de notificação. um objeto, não um gadget.</p>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ========== 1. o falso vilão (única seção com azul) ========== -->
+  <section id="falso-vilao" class="act act-villain-false" aria-label="o falso vilão">
+    <div class="act-bg" id="villainBg" aria-hidden="true"></div>
+    <div class="act-inner">
+      <div class="glass card-narrow">
+        <h2>o falso vilão</h2>
+        <p class="act-lead">todo mundo já ouviu: “é a luz azul da tela que atrapalha o sono”. não é bem assim.</p>
+        <p>a luz azul suprime a melatonina, sim, mas em doses e horários específicos. o problema real raramente é só o comprimento de onda. é o hábito inteiro em volta da tela.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== 2. o vilão real ========== -->
+  <section id="vilao-real" class="act act-villain-true">
+    <div class="act-inner act-inner-split">
+      <div class="phone-illustration" aria-hidden="true">
+        <div class="phone-body">
+          <div class="phone-glow"></div>
+        </div>
+        <div class="phone-pulse"></div>
+      </div>
+      <div class="glass card-narrow">
+        <h2>o vilão real</h2>
+        <p class="act-lead">o aparelho perto atrapalha mesmo desligado.</p>
+        <p>pesquisadores da university of texas at austin (ward et al., 2017) mostraram que a simples presença do celular por perto, mesmo com a tela apagada e virado pra baixo, já consome parte da sua capacidade de atenção. o corpo sabe que ele está ali. e não relaxa de verdade enquanto souber.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== 3. o custo ========== -->
+  <section id="custo" class="act act-cost">
+    <div class="act-inner">
+      <h2 class="center">o custo</h2>
+      <div class="stats-grid">
+        <div class="glass stat-card">
+          <p class="stat-number" data-target="90" data-suffix=" min">0</p>
+          <p class="stat-label">a mais pro cérebro desligar depois de uma tela antes de dormir</p>
+        </div>
+        <div class="glass stat-card">
+          <p class="stat-number" data-target="23" data-suffix="%">0</p>
+          <p class="stat-label">menos sono profundo em noites com tela até tarde</p>
+        </div>
+        <div class="glass stat-card">
+          <p class="stat-number" data-target="4" data-suffix="h">0</p>
+          <p class="stat-label">de tela por dia que muita gente carrega até a cama, todo santo dia</p>
+        </div>
+      </div>
+      <p class="stats-footnote">*estimativas aproximadas, baseadas em pesquisas públicas sobre sono, luz e uso de telas. não substituem orientação médica.</p>
+    </div>
+  </section>
+
+  <!-- ========== 4. a absolvição ========== -->
+  <section id="absolvicao" class="act act-absolution">
+    <div class="act-inner center">
+      <p class="absolution-line">você não falhou.</p>
+      <p class="absolution-body">o problema nunca foi força de vontade. foi um objeto no lugar errado, fazendo o trabalho errado, do seu lado, a noite inteira.</p>
+      <p class="absolution-body absolution-emphasis">zleepy lamp não é mais uma regra pra você cumprir. é o objeto que cumpre por você.</p>
+    </div>
+  </section>
+
+  <!-- ========== 5. o objeto — beleza pura ========== -->
+  <section id="objeto" class="act act-object">
+    <div class="act-inner">
+      <div class="glass card-wide object-card">
+        <div class="object-visual" aria-hidden="true">
+          <div class="object-lamp">
+            <div class="object-lamp-glow"></div>
+            <div class="object-lamp-dock"></div>
+          </div>
+          <div class="object-shadow"></div>
+        </div>
+        <div class="object-copy">
+          <p class="eyebrow">a primeira vez que você vê ela inteira</p>
+          <h2>o objeto</h2>
+          <p>madeira maciça de reflorestamento, torneada e lixada à mão. sem tela, sem app pra abrir, sem luz branca de notificação. só o objeto e o ritual em volta dele.</p>
+          <div class="proofs">
+            <div class="proof">
+              <p class="proof-title">o ritual</p>
+              <p class="proof-text">encoste o celular no dock. o nfc dispara o não perturbe sozinho.</p>
+            </div>
+            <div class="proof">
+              <p class="proof-title">a luz</p>
+              <p class="proof-text">âmbar e vermelho puro. zero azul. a luz que avisa o corpo: pode desacelerar.</p>
+            </div>
+            <div class="proof">
+              <p class="proof-title">o objeto</p>
+              <p class="proof-text">madeira maciça, feita pra durar, não pra ser trocada a cada dois anos.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== 6. especificações ========== -->
+  <section id="specs" class="act act-specs">
+    <div class="act-inner">
+      <h2 class="center">os detalhes</h2>
+      <div class="specs-list">
+        <details class="glass spec-item">
+          <summary>madeira</summary>
+          <div class="spec-body">freijó maciço de reflorestamento certificado, acabamento em óleo natural. cada peça tem veios levemente únicos.</div>
+        </details>
+        <details class="glass spec-item">
+          <summary>dimensões</summary>
+          <div class="spec-body">Ø 14 cm × 22 cm de altura. peso aproximado de 900 g.</div>
+        </details>
+        <details class="glass spec-item">
+          <summary>dock &amp; nfc</summary>
+          <div class="spec-body">leitor nfc passivo embutido, compatível com iphone 7 ou superior (nfc de fundo). funciona com a maioria das capas; capas muito espessas podem exigir remoção.</div>
+        </details>
+        <details class="glass spec-item">
+          <summary>luz</summary>
+          <div class="spec-body">temperatura de cor entre 2000k e 2700k (âmbar/vermelho), sem componente azul no espectro. três níveis de intensidade, led de longa duração.</div>
+        </details>
+        <details class="glass spec-item">
+          <summary>energia</summary>
+          <div class="spec-body">alimentação via cabo usb-c incluso, consumo baixo. sem bateria interna: pensada pra ficar sempre ligada na tomada, como um abajur.</div>
+        </details>
+        <details class="glass spec-item">
+          <summary>conectividade</summary>
+          <div class="spec-body">apenas nfc. sem wi-fi, sem bluetooth, sem app coletando dados. privacidade por design.</div>
+        </details>
+        <details class="glass spec-item">
+          <summary>garantia</summary>
+          <div class="spec-body">12 meses contra defeitos de fabricação.</div>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== 7. pré-venda ========== -->
+  <section id="preorder" class="act act-preorder">
+    <div class="act-inner">
+      <div class="glass card-wide preorder-card">
+        <p class="eyebrow center">primeira leva</p>
+        <h2 class="center">50 unidades por r$499</h2>
+        <p class="preorder-lead center">produção artesanal, em lotes pequenos. quando essa leva esgota, a próxima só sai depois da fabricação.</p>
+
+        <div class="scarcity">
+          <div class="scarcity-bar"><div class="scarcity-fill" id="scarcityFill" style="width:0%"></div></div>
+          <p class="scarcity-label"><span id="scarcityCount">0</span> de 50 unidades já reservadas</p>
+        </div>
+
+        <form id="preorderForm" class="preorder-form" novalidate>
+          <label for="preorderName" class="field-label">nome completo</label>
+          <input type="text" id="preorderName" name="name" class="field-input" placeholder="seu nome" required autocomplete="name">
+
+          <label for="preorderEmail" class="field-label">seu e-mail</label>
+          <input type="email" id="preorderEmail" name="email" class="field-input" placeholder="voce@email.com" required autocomplete="email" spellcheck="false">
+
+          <div class="field-row">
+            <div>
+              <label for="preorderPhone" class="field-label">telefone (com ddd)</label>
+              <input type="tel" id="preorderPhone" name="phone" class="field-input" placeholder="(11) 91234-5678" required autocomplete="tel">
+            </div>
+            <div>
+              <label for="preorderCpf" class="field-label">cpf</label>
+              <input type="text" id="preorderCpf" name="cpf" class="field-input" placeholder="000.000.000-00" required autocomplete="off" inputmode="numeric" spellcheck="false">
+            </div>
+          </div>
+
+          <fieldset class="payment-methods">
+            <legend class="field-label">forma de pagamento</legend>
+            <label class="payment-option payment-option-pix">
+              <input type="radio" name="payment" value="pix" checked>
+              <span class="payment-option-body">
+                <span class="payment-option-name">pix</span>
+                <span class="payment-option-tag">à vista, confirmação na hora</span>
+              </span>
+            </label>
+            <label class="payment-option">
+              <input type="radio" name="payment" value="cartao">
+              <span class="payment-option-body">
+                <span class="payment-option-name">cartão de crédito</span>
+                <span class="payment-option-tag">em até 6x</span>
+              </span>
+            </label>
+            <label class="payment-option">
+              <input type="radio" name="payment" value="boleto">
+              <span class="payment-option-body">
+                <span class="payment-option-name">boleto</span>
+                <span class="payment-option-tag">compensação em até 3 dias úteis</span>
+              </span>
+            </label>
+          </fieldset>
+
+          <!-- campos de cartão só aparecem com "cartão de crédito" selecionado.
+               os dados sensíveis (número/cvv) são tokenizados no navegador pelo
+               script da appmax antes de qualquer envio — ver comentário em
+               main.js sobre o placeholder de tokenização. -->
+          <fieldset class="card-fields" id="cardFields" hidden data-appmax-checkout>
+            <label for="cardNumber" class="field-label">número do cartão</label>
+            <input type="text" id="cardNumber" class="field-input" placeholder="0000 0000 0000 0000" inputmode="numeric" autocomplete="cc-number" spellcheck="false" data-appmax-form-element="number">
+
+            <div class="field-row">
+              <div>
+                <label for="cardExpMonth" class="field-label">validade</label>
+                <div class="field-row">
+                  <input type="text" id="cardExpMonth" class="field-input" placeholder="mm" inputmode="numeric" maxlength="2" autocomplete="cc-exp-month" data-appmax-form-element="expiration_month">
+                  <input type="text" id="cardExpYear" class="field-input" placeholder="aa" inputmode="numeric" maxlength="2" autocomplete="cc-exp-year" data-appmax-form-element="expiration_year">
+                </div>
+              </div>
+              <div>
+                <label for="cardCvv" class="field-label">cvv</label>
+                <input type="text" id="cardCvv" class="field-input" placeholder="000" inputmode="numeric" maxlength="4" autocomplete="cc-csc" data-appmax-form-element="cvv">
+              </div>
+            </div>
+
+            <label for="cardInstallments" class="field-label">parcelas</label>
+            <select id="cardInstallments" class="field-input">
+              <option value="1">1x de r$499,00 sem juros</option>
+              <option value="2">2x de r$249,50 sem juros</option>
+              <option value="3">3x de r$166,33 sem juros</option>
+              <option value="6">6x de r$83,17 sem juros</option>
+            </select>
+          </fieldset>
+
+          <button type="submit" class="btn-amber full" id="preorderSubmit">reservar minha zleepy lamp</button>
+          <p class="preorder-note">pagamento processado com segurança pela appmax. nada é cobrado sem a sua confirmação.</p>
+          <p class="preorder-status" id="preorderStatus" role="status" aria-live="polite"></p>
+          <div class="preorder-result" id="preorderResult" hidden></div>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== 8. faq ========== -->
+  <section id="faq" class="act act-faq">
+    <div class="act-inner">
+      <h2 class="center">antes de perguntar no direct</h2>
+      <div class="specs-list">
+        <details class="glass spec-item">
+          <summary>a luz âmbar realmente ajuda a dormir?</summary>
+          <div class="spec-body">luz de comprimento de onda mais longo (âmbar/vermelho) suprime menos a melatonina do que luz branca ou azul rica em comprimentos curtos. isso é bem documentado na literatura de cronobiologia. dito isso, a luz é uma parte de um hábito maior, não é mágica sozinha.</div>
+        </details>
+        <details class="glass spec-item">
+          <summary>preciso trocar de celular?</summary>
+          <div class="spec-body">não. o dock funciona com qualquer iphone com nfc (7 ou superior). hoje o app é focado em ios. suporte a android está no radar, mas ainda não tem previsão.</div>
+        </details>
+        <details class="glass spec-item">
+          <summary>e se eu esquecer de encostar o celular?</summary>
+          <div class="spec-body">nada de errado acontece. a luz continua funcionando normalmente como abajur; só o não perturbe automático não é ativado naquela noite. sem culpa, sem alarme.</div>
+        </details>
+        <details class="glass spec-item">
+          <summary>a luz apaga sozinha?</summary>
+          <div class="spec-body">sim, os três níveis de intensidade podem ser configurados com desligamento automático depois de um tempo.</div>
+        </details>
+        <details class="glass spec-item">
+          <summary>quando chega?</summary>
+          <div class="spec-body">estamos finalizando a produção da primeira leva. o prazo estimado de entrega é informado no e-mail de confirmação da reserva.</div>
+        </details>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ========== 9. rodapé ========== -->
+<footer id="footer" class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <img src="img/logo.png" alt="Zleepy Lamp" class="logo-img footer-logo-img">
+      <p class="footer-tagline">o objeto que encerra o dia.</p>
+    </div>
+    <div class="footer-contact">
+      <p class="footer-heading">contato</p>
+      <p><a href="mailto:contato@zleepylamp.com.br">contato@zleepylamp.com.br</a></p>
+      <p><a href="https://wa.me/5500000000000" target="_blank" rel="noopener">whatsapp (a definir)</a></p>
+    </div>
+    <div class="footer-social">
+      <p class="footer-heading">redes</p>
+      <!-- TODO: sem perfil ainda — trocar o span por <a href="..."> assim que existir. -->
+      <p><span class="link-pending" title="em breve">instagram</span></p>
+      <p><span class="link-pending" title="em breve">tiktok</span></p>
+    </div>
+    <div class="footer-legal">
+      <p class="footer-heading">legal</p>
+      <p>zleepy lamp comércio de produtos ltda.</p>
+      <p>cnpj 00.000.000/0001-00 (a definir)</p>
+      <!-- TODO: página de política de privacidade ainda não existe. -->
+      <p><span class="link-pending" title="em breve">política de privacidade (lgpd)</span></p>
+      <p><a href="#footer" id="footerCookiePrefs">preferências de cookies</a></p>
+    </div>
+  </div>
+</footer>
+
+<script src="js/main.js" defer></script>
+</body>
+</html>
