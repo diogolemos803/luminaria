@@ -6,6 +6,10 @@ struct ContentView: View {
     @StateObject private var routineStore = SleepRoutineStore()
     @StateObject private var screenTimeManager = ScreenTimeManager.shared
     @StateObject private var sleepReportStore = SleepReportStore.shared
+    // `@ObservedObject`, não `@StateObject`: é um singleton compartilhado (dono do
+    // ciclo de vida é ele mesmo, `ContentView` só observa) — usado hoje só pelo
+    // indicador de debug do crescimento (ver `soveeMainScreen`).
+    @ObservedObject private var growthTracker = NightSessionActivityTracker.shared
     @Environment(\.scenePhase) private var scenePhase
     @State private var isNightModeArmed = false
     @State private var isPressed = false
@@ -148,10 +152,21 @@ struct ContentView: View {
     /// cor única sobre fundo transparente, dá pra recolorir sem precisar de arte
     /// nova. Sombra bem mais suave que a versão antiga (25% preto/24pt) — pedido do
     /// brief de evitar UI agressiva, um "ritual calmo" não pede sombra dura.
+    ///
+    /// Ajustes de cor pedidos depois de ver o primeiro protótipo: ícone de dia fica
+    /// grafite (`SoveeColor.carvao`) direto, não o acento terracota; fundo de dia
+    /// ganha um brilho de "nascer do sol" (ver `soveeDayGlow`); acento de noite virou
+    /// azul de luar (`SoveeColor.noiteAzul`, ver `ModeTheme.zleepy`) em vez do sage
+    /// original — a sombra do botão à noite já estava aprovada, não mudou.
     private var soveeMainScreen: some View {
         let theme = ModeTheme.current(armed: isNightModeArmed)
         return ZStack {
-            theme.stage.ignoresSafeArea()
+            if isNightModeArmed {
+                theme.stage.ignoresSafeArea()
+            } else {
+                Color.white.ignoresSafeArea()
+                soveeDayGlow.ignoresSafeArea()
+            }
 
             Button(action: toggleNightMode) {
                 Image(isNightModeArmed ? "LogoSono" : "LogoAcordado")
@@ -160,7 +175,7 @@ struct ContentView: View {
                     .scaledToFit()
                     .padding(9)
                     .frame(width: 220, height: 220)
-                    .foregroundStyle(theme.accent)
+                    .foregroundStyle(isNightModeArmed ? theme.accent : SoveeColor.carvao)
                     .background(theme.card)
                     .clipShape(Circle())
                     .shadow(color: theme.ink.opacity(0.12), radius: 18, x: 0, y: 8)
@@ -194,10 +209,41 @@ struct ContentView: View {
                 .disabled(screenTimeManager.emergencyPassesRemaining == 0)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
                 .padding(.bottom, 16)
+
+                // Indicador TEMPORÁRIO de debug pro sistema de crescimento (item 2c/
+                // 3b) — ainda não tem metáfora visual final escolhida (maré/lua/
+                // brasa), então isso só existe pra dar pra ver/testar que o
+                // progresso reseta ao reabrir o app ou usar um passe de emergência.
+                // Trocar por um dos visuais sugeridos quando a metáfora for
+                // escolhida — remover esse texto nessa hora.
+                Text("Crescimento (debug): \(Int(growthTracker.growthProgress * 100))%")
+                    .font(.soveeBody(.caption2))
+                    .foregroundStyle(theme.inkMuted.opacity(0.7))
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                    .padding(.top, 60)
             }
         }
         .animation(.easeInOut(duration: 0.6), value: isNightModeArmed)
         .animation(.spring(response: 0.3, dampingFraction: 0.65), value: isPressed)
+    }
+
+    /// Brilho de "nascer do sol" no fundo do modo dia — pedido específico depois de
+    /// ver o protótipo: degradê bem suave de amarelo claro (creme, já da paleta) pra
+    /// branco, de baixo pra cima, com aparência circular só o suficiente pra sugerir
+    /// um sol nascendo, mas alongado o bastante pra não ser lido como um círculo
+    /// completo. Técnica: `RadialGradient` centrado exatamente na borda inferior
+    /// (`.bottom`) — isso já corta o círculo pela metade, só a parte de cima fica
+    /// visível na tela — depois esticado no eixo Y a partir da própria borda inferior,
+    /// o que alonga esse meio-círculo pra cima e é o que dá a sensação de
+    /// alongamento em vez de um brilho circular óbvio.
+    private var soveeDayGlow: some View {
+        RadialGradient(
+            colors: [SoveeColor.creme.opacity(0.85), SoveeColor.creme.opacity(0)],
+            center: .bottom,
+            startRadius: 0,
+            endRadius: 260
+        )
+        .scaleEffect(x: 1, y: 2.4, anchor: .bottom)
     }
 
     /// Tela principal ANTIGA (Zleepy Lamp) — preservada byte a byte, sem nenhuma

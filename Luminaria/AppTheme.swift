@@ -12,13 +12,19 @@ enum SoveeColor {
     static let floresta = Color(red: 0.255, green: 0.486, blue: 0.353)
     static let creme = Color(red: 0.992, green: 0.973, blue: 0.780)
     static let carvao = Color(red: 0.267, green: 0.267, blue: 0.267)
+
+    /// **Não faz parte da paleta oficial do brief** — adicionado a pedido do usuário
+    /// depois de ver o protótipo ("a sombra do modo noite ficou exemplar, só mude o
+    /// verde [sage] pra um azul"). Um azul de luar suave, acento único do modo noite.
+    static let noiteAzul = Color(red: 0.518, green: 0.631, blue: 0.784)
 }
 
 /// Paleta compartilhada das telas secundárias (Configurações, Rotinas, Ajuda) e, desde
 /// o rebrand visual SOVEE, também da tela principal (`ContentView`). O acento muda de
-/// temperatura com o modo — terracota quente de dia, sage calmo à noite — mesma lógica
-/// de antes (o produto é uma luminária, o destaque muda junto com o modo), só que
-/// recalibrado pra paleta SOVEE.
+/// temperatura com o modo — terracota quente de dia, azul de luar (`SoveeColor.
+/// noiteAzul`, fora da paleta oficial, ajuste pedido pelo usuário) calmo à noite —
+/// mesma lógica de antes (o produto é uma luminária, o destaque muda junto com o
+/// modo), só que recalibrado pra paleta SOVEE.
 ///
 /// `.legacyLiving`/`.legacyZleepy` preservam a paleta âmbar/periwinkle da identidade
 /// anterior (Zleepy Lamp) — não usados por padrão em lugar nenhum, existem só como
@@ -55,8 +61,8 @@ struct ModeTheme {
         ink: SoveeColor.creme,
         inkMuted: Color(red: 0.65, green: 0.64, blue: 0.60),
         hairline: Color.white.opacity(0.08),
-        accent: SoveeColor.sage,
-        accentWash: SoveeColor.sage.opacity(0.16),
+        accent: SoveeColor.noiteAzul,
+        accentWash: SoveeColor.noiteAzul.opacity(0.16),
         accentForeground: SoveeColor.carvao,
         danger: Color(red: 0.82, green: 0.50, blue: 0.42),
         dangerWash: Color(red: 0.82, green: 0.50, blue: 0.42).opacity(0.12)

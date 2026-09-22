@@ -26,10 +26,16 @@ depende de CI num runner macOS na nuvem (GitHub Actions) e de sideload via AltSt
   (paleta/tipografia SOVEE via `ModeTheme`, ícones `LogoAcordado`/`LogoSono` retintados
   via `.renderingMode(.template)` — são traços de cor única sobre fundo transparente,
   dá pra recolorir sem arte nova — tagline "hora de desligar." só no modo noite,
-  sombra bem mais suave que a versão antiga) e `legacyMainScreen` (identidade Zleepy
-  Lamp original, preservada byte a byte como opção de retorno — pedido explícito do
-  usuário: "crie uma nova, mas deixe no código uma opção de retorno"). O texto
-  "Living mode"/"Zleepy mode" (`modeName`) continua existindo só como
+  sombra bem mais suave que a versão antiga; ícone de dia é grafite fixo
+  [`SoveeColor.carvao`], não o acento terracota; fundo de dia usa `soveeDayGlow` —
+  ver Decisões abaixo pra por que) e `legacyMainScreen` (identidade Zleepy Lamp
+  original, preservada byte a byte como opção de retorno — pedido explícito do
+  usuário: "crie uma nova, mas deixe no código uma opção de retorno"). Tem também um
+  indicador TEMPORÁRIO de debug do `NightSessionActivityTracker.growthProgress`
+  (texto simples, "Crescimento (debug): N%") — só existe pra dar pra ver/testar o
+  reset sem metáfora visual final escolhida ainda; remover quando escolher a
+  metáfora (maré/lua/brasa). O texto "Living mode"/"Zleepy mode" (`modeName`)
+  continua existindo só como
   `accessibilityLabel` nas duas versões, não mais como texto visível na versão SOVEE.
 - `Luminaria/NFCManager.swift` — leitura NDEF via `CoreNFC` (`NFCNDEFReaderSession`).
   Salva o UID da primeira tag lida (vínculo) e reconhece a mesma tag depois. Sessão só
@@ -111,8 +117,9 @@ depende de CI num runner macOS na nuvem (GitHub Actions) e de sideload via AltSt
   desde o rebrand visual SOVEE, também pela tela principal (`ContentView`). **Rebrand
   visual SOVEE** (peach/sage/terracota/floresta/creme/carvão — `enum SoveeColor`,
   ponto único de conversão hex→RGB): `.living`/`.zleepy` agora usam essa paleta
-  (creme+terracota de dia, carvão+sage à noite) em vez do âmbar/periwinkle da
-  identidade Zleepy Lamp anterior — como TODA tela secundária já lia
+  (creme+terracota de dia, carvão+azul-de-luar à noite — ver ajuste de cor abaixo)
+  em vez do âmbar/periwinkle da identidade Zleepy Lamp anterior — como TODA tela
+  secundária já lia
   `ModeTheme.current(armed:)`, a troca de paleta se propaga sozinha pra
   `SettingsView`/`SleepRoutinesView`/`HelpView`/`AppBlockingView`/`SleepReportView`/
   `LockedView`/`AlarmRingingView` sem precisar editar cada uma. A paleta antiga
@@ -804,6 +811,33 @@ Fluxo usado pra testar de verdade, todo do Windows:
   central ENTRA no reskin (diferente de rodadas anteriores, onde ficava
   explicitamente congelado) — mas o usuário pediu pra manter uma opção de volta no
   código, daí `ContentView.useSoveeMainScreen` (ver Arquitetura acima).
+- **Ajustes de cor pedidos depois do primeiro protótipo SOVEE (2026-08-09)**:
+  1. Ícone do botão no modo dia volta a ser grafite fixo (`SoveeColor.carvao`) em vez
+     do acento terracota — só o ícone, o resto do modo dia (botões/chips nas telas
+     secundárias) continua usando terracota como acento, isso não foi pedido pra
+     mudar.
+  2. Fundo do modo dia ganhou `soveeMainScreen.soveeDayGlow`: um `RadialGradient` de
+     creme (já da paleta, é literalmente "amarelo claro") pra transparente,
+     centrado exatamente em `.bottom` (corta o círculo ao meio, só a metade de cima
+     fica visível) e esticado 2.4x no eixo Y a partir da borda inferior — o
+     esticamento é o que dá a aparência "alongada, não lida como círculo completo"
+     pedida ("nascer do sol" estilizado, não um círculo óbvio).
+  3. Acento do modo noite trocou de sage (verde) pra `SoveeColor.noiteAzul` — **essa
+     cor não faz parte da paleta oficial do brief**, foi adicionada especificamente
+     a pedido do usuário ("a sombra ficou exemplar, só mude o verde pra azul") — a
+     sombra do botão em si (`theme.ink.opacity(0.12)`) não mudou, já estava
+     aprovada; só o acento usado no ícone/chips do modo noite (que usava sage) virou
+     azul.
+- **Sistema de crescimento (item 2c) intencionalmente sem visual nenhum até esta
+  rodada — usuário perguntou por que não aparecia**: resposta é "por design", não
+  bug — o pedido original foi explícito ("não implemente a visualização final
+  ainda... deixe a lógica atrás de um protocolo que permita trocar só a camada
+  visual depois"), então `NightSessionActivityTracker` sempre rodou sem nenhuma UI
+  observando `growthProgress`. Adicionado um indicador TEMPORÁRIO de debug (texto
+  simples em `soveeMainScreen`, "Crescimento (debug): N%") só pra dar pra ver o
+  número mudando e resetar ao reabrir o app ou usar um passe de emergência — não é
+  a metáfora visual final (maré/lua/brasa, ainda não escolhida), é só pra
+  verificação visual enquanto isso.
 - **Item 3a (desligamento automático pelo horário) já estava parcialmente resolvido
   antes do brief SOVEE chegar**: o bloqueio de apps já desliga sozinho quando o
   despertador toca (`AlarmManager.triggerAlarm` → `ScreenTimeManager.removeShield`,
@@ -1208,6 +1242,17 @@ O usuário perguntou sobre viabilidade de controlar a luminária de verdade via 
     exatamente da mesma resposta técnica.
   - Dois arquivos novos (`GrowthEngine.swift`, `SocialModels.swift`) — únicas edições
     de `project.pbxproj` desta rodada, resto foi tudo em arquivos já existentes.
+- **2026-08-09 (mesmo dia, depois de ver o protótipo)**: ajustes de cor pedidos —
+  ícone do botão volta a ser grafite fixo no modo dia (não o acento terracota); fundo
+  do modo dia ganhou um brilho de "nascer do sol" (`soveeDayGlow`, `RadialGradient`
+  de creme centrado em `.bottom` e esticado no eixo Y); acento do modo noite trocou
+  de sage (verde) pra um azul de luar novo (`SoveeColor.noiteAzul`, fora da paleta
+  oficial, adicionado a pedido) — a sombra do botão à noite já estava aprovada, não
+  mudou. Também adicionado um indicador temporário de debug do
+  `NightSessionActivityTracker.growthProgress` (o usuário notou que o sistema de
+  crescimento do item 2c não aparecia em lugar nenhum — comportamento esperado, era
+  só lógica sem UI por pedido original, mas o debug deixa dar pra testar visualmente
+  o reset por reabrir o app/usar passe de emergência).
 
 ## Como retomar em outro computador
 
