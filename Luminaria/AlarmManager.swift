@@ -270,7 +270,7 @@ final class AlarmManager: NSObject, ObservableObject {
         // despertador". Chamado direto aqui (não via `onAlarmFired`) porque o alarme
         // pode disparar com o app em segundo plano/suspenso, sem `ContentView` vivo pra
         // reagir a um closure.
-        ScreenTimeManager.shared.removeShield()
+        ScreenTimeManager.shared.removeShield(reason: .alarmFired)
         onAlarmFired?()
         startAlarmPlayer(soundFileName: soundFileName)
     }

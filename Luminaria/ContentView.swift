@@ -136,6 +136,15 @@ struct ContentView: View {
                 if newPhase == .active {
                     alarmManager.checkForMissedAlarm()
                     screenTimeManager.refreshAuthorizationStatus()
+                    // Reabrir o app durante uma sessão de bloqueio ativa conta como
+                    // "tocou no celular" (ver GrowthEngine.swift) — zera o progresso
+                    // de crescimento e alimenta a métrica de maior sequência sem
+                    // tocar. Não existe API pública pra detectar um desbloqueio ou
+                    // toque em outro app, então essa é a aproximação real e honesta
+                    // (ver item 3b do resumo desta rodada).
+                    if screenTimeManager.isShieldActive {
+                        NightSessionActivityTracker.shared.registerTouchEvent()
+                    }
                 }
             }
             .onOpenURL { _ in
@@ -167,7 +176,7 @@ struct ContentView: View {
         } else {
             nfcManager.stopScanning()
             alarmManager.disarmAlarm()
-            screenTimeManager.removeShield()
+            screenTimeManager.removeShield(reason: .manualDisarm)
         }
     }
 }

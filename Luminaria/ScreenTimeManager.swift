@@ -96,16 +96,26 @@ final class ScreenTimeManager: ObservableObject {
         // chances por noite", contado a partir do mesmo instante em que o bloqueio
         // de verdade começa.
         emergencyPassesRemaining = Self.emergencyPassesPerSession
+        NightSessionActivityTracker.shared.sessionDidStart()
         persistShieldState()
     }
 
     /// Chamado quando a pessoa desarma o modo noite pelo botão redondo (ou quando o
-    /// despertador toca, ver `AlarmManager.triggerAlarm`).
-    func removeShield() {
+    /// despertador toca, ver `AlarmManager.triggerAlarm`, ou um passe de emergência é
+    /// usado, ver `useEmergencyPass`). `reason` alimenta `DetoxStats.
+    /// longestCleanDayStreak` (item 2b) — só sessões que terminam com `.alarmFired`
+    /// contam como "limpas".
+    func removeShield(reason: DetoxSessionEndReason) {
         store.clearAllSettings()
         isShieldActive = false
         let duration = shieldEngagedAt.map { Date().timeIntervalSince($0) } ?? 0
-        SleepReportStore.shared.recordSession(appCount: lastAppliedCount, duration: duration)
+        let longestUninterrupted = NightSessionActivityTracker.shared.sessionDidEnd()
+        SleepReportStore.shared.recordSession(
+            appCount: lastAppliedCount,
+            duration: duration,
+            endReason: reason,
+            longestUninterruptedSeconds: longestUninterrupted
+        )
         shieldEngagedAt = nil
         persistShieldState()
     }
@@ -116,10 +126,15 @@ final class ScreenTimeManager: ObservableObject {
     /// modo noite continua exatamente como estava. `isNightModeArmed` na
     /// `ContentView` também não muda por causa disso — a tela continua no tema
     /// escuro, só o botão de passe some sozinho (`isShieldActive` vira `false`).
+    ///
+    /// Também conta como um "toque" pro `NightSessionActivityTracker` (item 3b/2c) —
+    /// é uma das duas únicas ações reais e detectáveis que significam "a pessoa
+    /// mexeu no celular" durante a sessão.
     func useEmergencyPass() -> Bool {
         guard emergencyPassesRemaining > 0 else { return false }
         emergencyPassesRemaining -= 1
-        removeShield()
+        NightSessionActivityTracker.shared.registerTouchEvent()
+        removeShield(reason: .emergencyPass)
         return true
     }
 
