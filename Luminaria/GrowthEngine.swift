@@ -81,8 +81,9 @@ enum GrowthDestinations {
 final class NightSessionActivityTracker: ObservableObject {
     static let shared = NightSessionActivityTracker()
 
-    /// `.liftoff` é o momento da decolagem (transiente, dura `liftoffDuration` e
-    /// passa sozinho pra `.orbiting`). `.orbiting` é o estado de repouso da sessão —
+    /// `.liftoff` é o momento da decolagem (transiente — vira `.orbiting` quando a
+    /// própria cena visual chama `liftoffAnimationCompleted()`, ao terminar de
+    /// desenhar a subida). `.orbiting` é o estado de repouso da sessão —
     /// dura a noite inteira, sem "progresso" nenhum pra calcular (a viagem não avança
     /// mais em direção a um destino durante a noite; o destino só entra em cena no
     /// pouso, de manhã — ver `RocketLandingView` em `ContentView.swift`).
@@ -102,18 +103,23 @@ final class NightSessionActivityTracker: ObservableObject {
     private var longestGapThisSession: TimeInterval = 0
     private var isExploding = false
 
-    /// Duração da animação de decolagem antes de virar órbita — não é um número
-    /// crítico (não existe "chegada" pra perder), só precisa dar tempo da cena visual
-    /// (`LiftoffOrbitScene`) terminar a subida da Terra + foguete antes de virar o
-    /// loop de órbita.
-    private static let liftoffDuration: TimeInterval = 2.4
     /// Quanto tempo a animação de explosão fica visível antes da órbita voltar.
     private static let explosionDuration: TimeInterval = 1.4
 
     private init() {}
 
     /// Chamado por `ScreenTimeManager.applyShield` — início de uma sessão de bloqueio
-    /// nova.
+    /// nova. Repare que isso NÃO agenda sozinho a virada pra `.orbiting` — quem faz
+    /// isso é `liftoffAnimationCompleted()`, chamado pela própria cena visual
+    /// (`LiftoffOrbitScene`) quando a animação de decolagem dela termina de verdade.
+    /// Bug real corrigido: a primeira versão tinha um timer próprio aqui (contando a
+    /// partir do INÍCIO da sessão, antes até do botão redondo sumir da tela), correndo
+    /// em paralelo com a duração da animação visual da cena — como a cena só aparece
+    /// depois do botão descer (~1s depois), os dois relógios ficavam fora de sincronia
+    /// e a fase virava `.orbiting` ANTES da animação de subida visual terminar,
+    /// cortando a decolagem pela metade (relatado pelo usuário como "não teve
+    /// animação nenhuma"). Delegar o fim da decolagem pra quem está de fato desenhando
+    /// a decolagem elimina essa corrida de vez.
     func sessionDidStart() {
         let now = Date()
         sessionStartDate = now
@@ -121,10 +127,15 @@ final class NightSessionActivityTracker: ObservableObject {
         longestGapThisSession = 0
         isExploding = false
         phase = .liftoff
-        DispatchQueue.main.asyncAfter(deadline: .now() + Self.liftoffDuration) { [weak self] in
-            guard let self, self.sessionStartDate == now, !self.isExploding else { return }
-            self.phase = .orbiting
-        }
+    }
+
+    /// Chamado por `LiftoffOrbitScene` no exato instante em que a animação visual de
+    /// decolagem terminou de subir — só então a fase vira `.orbiting`. Guardas:
+    /// ignora se a sessão já terminou (`sessionStartDate == nil`) ou se um toque
+    /// aconteceu nesse meio-tempo (já explodiu, `phase != .liftoff`).
+    func liftoffAnimationCompleted() {
+        guard sessionStartDate != nil, phase == .liftoff else { return }
+        phase = .orbiting
     }
 
     /// Chamado por `ScreenTimeManager.removeShield` — fim da sessão (por qualquer
@@ -206,8 +217,12 @@ private struct LiftoffOrbitScene: View {
     @State private var showsSmoke = true
     @State private var orbitAngle: Double = -90
 
-    private static let liftoffVisualDuration: Double = 2.2
-    private static let smokeFadeDelay: Double = 1.3
+    // Duração generosa de propósito: a pessoa acabou de tirar os olhos da tela pra
+    // encostar o celular na tag, então precisa de uma folga real até olhar de volta
+    // pra tela — 2.2s tinha se mostrado curto demais num teste real (usuário relatou
+    // "não teve animação de decolagem").
+    private static let liftoffVisualDuration: Double = 3.6
+    private static let smokeFadeDelay: Double = 2.6
     private static let orbitPeriod: Double = 18
 
     var body: some View {
@@ -216,17 +231,17 @@ private struct LiftoffOrbitScene: View {
             let height = geo.size.height
             // Topo do quinto inferior — é aqui que o morro/base de lançamento vive.
             let groundY = height * 0.8
-            let padX = width * 0.56
-            let towerX = width * 0.26
-            let orbitCenter = CGPoint(x: width / 2, y: height * 0.36)
+            let padX = width * 0.54
+            let towerX = width * 0.24
+            let orbitCenter = CGPoint(x: width / 2, y: height * 0.34)
             let orbitRadiusX = width * 0.30
             let orbitRadiusY = height * 0.13
-            let padAltitudeY = groundY - height * 0.05
+            let padAltitudeY = groundY - height * 0.06
 
             ZStack {
                 starsLayer
 
-                GroundShape(groundY: groundY, bulge: height * 0.035)
+                GroundShape(groundY: groundY, bulge: height * 0.045)
                     .fill(
                         LinearGradient(
                             colors: [SoveeColor.floresta.opacity(0.55), SoveeColor.floresta.opacity(0.95)],
@@ -236,19 +251,19 @@ private struct LiftoffOrbitScene: View {
                     )
 
                 LaunchTowerShape()
-                    .stroke(SoveeColor.carvao.opacity(0.85), style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round))
-                    .frame(width: 22, height: height * 0.16)
-                    .position(x: towerX, y: groundY - height * 0.08)
+                    .stroke(SoveeColor.carvao.opacity(0.9), style: StrokeStyle(lineWidth: 3.5, lineCap: .round, lineJoin: .round))
+                    .frame(width: 30, height: height * 0.2)
+                    .position(x: towerX, y: groundY - height * 0.1)
 
-                HStack(spacing: 10) {
+                HStack(spacing: 12) {
                     RoundedRectangle(cornerRadius: 3, style: .continuous)
-                        .fill(SoveeColor.carvao.opacity(0.8))
-                        .frame(width: 26, height: 16)
+                        .fill(SoveeColor.carvao.opacity(0.85))
+                        .frame(width: 34, height: 20)
                     RoundedRectangle(cornerRadius: 3, style: .continuous)
-                        .fill(SoveeColor.carvao.opacity(0.7))
-                        .frame(width: 15, height: 22)
+                        .fill(SoveeColor.carvao.opacity(0.75))
+                        .frame(width: 20, height: 28)
                 }
-                .position(x: towerX + 34, y: groundY - 8)
+                .position(x: towerX + 42, y: groundY - 10)
 
                 // Selo do planeta-destino desbloqueado — só um lembrete visual de
                 // pra onde o pouso vai acontecer de manhã (ver `RocketLandingView`).
@@ -266,19 +281,21 @@ private struct LiftoffOrbitScene: View {
 
                 if showsSmoke && phase == .liftoff {
                     SmokeCluster()
-                        .position(x: padX, y: groundY - 6)
+                        .position(x: padX, y: groundY - 4)
                         .transition(.opacity)
                 }
 
                 switch phase {
                 case .liftoff:
+                    // `.scaleEffect`, não `.frame` — o ícone é desenhado com
+                    // dimensões fixas por dentro (`RocketIcon`), então só um `.frame`
+                    // maior não aumenta nada, apenas dá mais espaço vazio ao redor.
                     RocketWithFlame(showsFlame: true)
-                        .frame(width: 26, height: 58)
+                        .scaleEffect(1.6)
                         .position(x: padX, y: padAltitudeY - liftoffAltitude * (padAltitudeY - orbitCenter.y))
                         .transition(.opacity)
                 case .orbiting:
                     RocketWithFlame(showsFlame: false)
-                        .frame(width: 22, height: 40)
                         .rotationEffect(.degrees(orbitAngle + 90))
                         .position(
                             x: orbitCenter.x + CGFloat(cos(orbitAngle * .pi / 180)) * orbitRadiusX,
@@ -325,7 +342,10 @@ private struct LiftoffOrbitScene: View {
     /// Sincroniza a animação visual com a fase autoritativa do
     /// `NightSessionActivityTracker` — a cena não guarda seu próprio estado de
     /// "decolando vs orbitando", só reage ao que a fase diz agora (importante porque
-    /// a `View` pode ser recriada a qualquer momento pelo SwiftUI).
+    /// a `View` pode ser recriada a qualquer momento pelo SwiftUI). Quando a subida
+    /// termina, avisa o tracker (`liftoffAnimationCompleted()`) — é essa chamada, e
+    /// não um timer independente no tracker, que decide o momento exato de virar
+    /// `.orbiting` (ver comentário em `NightSessionActivityTracker.sessionDidStart`).
     private func syncWithPhase() {
         switch phase {
         case .liftoff:
@@ -338,6 +358,9 @@ private struct LiftoffOrbitScene: View {
                 withAnimation(.easeOut(duration: 0.6)) {
                     showsSmoke = false
                 }
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + Self.liftoffVisualDuration) {
+                NightSessionActivityTracker.shared.liftoffAnimationCompleted()
             }
         case .orbiting:
             showsSmoke = false
@@ -410,11 +433,13 @@ private struct SmokeCluster: View {
     }
 
     private static let puffs: [Puff] = [
-        Puff(dx: -30, dy: 4, size: 34, opacity: 0.55),
-        Puff(dx: -8, dy: 10, size: 44, opacity: 0.7),
-        Puff(dx: 18, dy: 6, size: 38, opacity: 0.6),
-        Puff(dx: 36, dy: 12, size: 30, opacity: 0.5),
-        Puff(dx: 4, dy: -6, size: 26, opacity: 0.5),
+        Puff(dx: -46, dy: 8, size: 52, opacity: 0.55),
+        Puff(dx: -14, dy: 16, size: 68, opacity: 0.72),
+        Puff(dx: 26, dy: 10, size: 58, opacity: 0.62),
+        Puff(dx: 54, dy: 18, size: 46, opacity: 0.5),
+        Puff(dx: 6, dy: -10, size: 40, opacity: 0.55),
+        Puff(dx: -30, dy: -6, size: 34, opacity: 0.4),
+        Puff(dx: 40, dy: -4, size: 32, opacity: 0.4),
     ]
 
     var body: some View {
@@ -487,8 +512,8 @@ private struct RocketWithFlame: View {
             if showsFlame {
                 FlameShape()
                     .fill(LinearGradient(colors: [.yellow, .orange], startPoint: .top, endPoint: .bottom))
-                    .frame(width: 14, height: flicker ? 26 : 18)
-                    .offset(y: -6)
+                    .frame(width: 20, height: flicker ? 38 : 26)
+                    .offset(y: -8)
                     .onAppear {
                         withAnimation(.easeInOut(duration: 0.18).repeatForever(autoreverses: true)) {
                             flicker = true
