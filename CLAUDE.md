@@ -17,11 +17,20 @@ depende de CI num runner macOS na nuvem (GitHub Actions) e de sideload via AltSt
   necessário pro caso do processo ser relançado do zero pelo toque na notificação do
   despertador (o `.onAppear` da SwiftUI roda tarde demais pra esse caso).
 - `Luminaria/ContentView.swift` — tela única: botão redondo central que arma/desarma o
-  modo noite (fundo claro/chumbo, ícone acordado/dormindo, texto "Living mode"/"Zleepy
-  mode"). Menu no canto superior direito (`SettingsView`) concentra: vincular/desvincular
-  NFC, gerenciar rotinas de sono (`SleepRoutinesView`), e um botão único "Ajuda"
-  (`HelpView`) com as instruções de configuração. Também define `AlarmRingingView` (tela
-  cheia mostrada quando o despertador está tocando).
+  modo noite. Menu no canto superior direito (`SettingsView`) concentra:
+  vincular/desvincular NFC, gerenciar rotinas de sono (`SleepRoutinesView`), e um botão
+  único "Ajuda" (`HelpView`) com as instruções de configuração. Também define
+  `AlarmRingingView` (tela cheia mostrada quando o despertador está tocando).
+  **Duas versões da tela principal**, alternadas por `Self.useSoveeMainScreen`
+  (interruptor de desenvolvimento, não uma preferência do usuário): `soveeMainScreen`
+  (paleta/tipografia SOVEE via `ModeTheme`, ícones `LogoAcordado`/`LogoSono` retintados
+  via `.renderingMode(.template)` — são traços de cor única sobre fundo transparente,
+  dá pra recolorir sem arte nova — tagline "hora de desligar." só no modo noite,
+  sombra bem mais suave que a versão antiga) e `legacyMainScreen` (identidade Zleepy
+  Lamp original, preservada byte a byte como opção de retorno — pedido explícito do
+  usuário: "crie uma nova, mas deixe no código uma opção de retorno"). O texto
+  "Living mode"/"Zleepy mode" (`modeName`) continua existindo só como
+  `accessibilityLabel` nas duas versões, não mais como texto visível na versão SOVEE.
 - `Luminaria/NFCManager.swift` — leitura NDEF via `CoreNFC` (`NFCNDEFReaderSession`).
   Salva o UID da primeira tag lida (vínculo) e reconhece a mesma tag depois. Sessão só
   fica ativa quando chamada explicitamente (`beginScanning()`), nunca em segundo plano.
@@ -96,17 +105,27 @@ depende de CI num runner macOS na nuvem (GitHub Actions) e de sideload via AltSt
   (antes era `ShortcutSetupView`, embutida em `ContentView.swift`) + o passo a passo de
   "desligar Modo Noturno de manhã" + um checklist novo pra quando o despertador não
   aparece na tela bloqueada (Ajustes → Notificações e Ajustes → Foco do iPhone).
-- `Luminaria/AppTheme.swift` — `ModeTheme` (paleta por modo: cream/branco no Living mode,
-  chumbo no Zleepy mode, acento âmbar de luminária acesa vs. periwinkle de luar) e os
-  componentes reutilizáveis (`ThemedCard`, `ThemedRow`, `IconBadge`, `ActiveDot`,
-  `FullPillButton`, `GhostDangerButton`) usados por `SettingsView`, `SleepRoutinesView` e
-  `HelpView` pra parecerem parte do mesmo app do botão redondo, não o Ajustes do iPhone.
-  Também define a `EnvironmentKey` `isNightModeArmed`, que propaga se o modo noite está
-  armado pras telas secundárias sem precisar passar o bool por parâmetro em cada `init`
-  — setada uma vez no `.sheet`/`.environment` de `ContentView`. **O botão redondo e o
-  texto "Living mode"/"Zleepy mode" da tela principal não usam nada disso** — ficam
-  exatamente como estavam antes, por pedido explícito do usuário (é a identidade da
-  marca, não deve mudar).
+- `Luminaria/AppTheme.swift` — `ModeTheme` (paleta por modo) e os componentes
+  reutilizáveis (`ThemedCard`, `ThemedRow`, `IconBadge`, `ActiveDot`, `FullPillButton`,
+  `GhostDangerButton`) usados por `SettingsView`, `SleepRoutinesView`, `HelpView` e,
+  desde o rebrand visual SOVEE, também pela tela principal (`ContentView`). **Rebrand
+  visual SOVEE** (peach/sage/terracota/floresta/creme/carvão — `enum SoveeColor`,
+  ponto único de conversão hex→RGB): `.living`/`.zleepy` agora usam essa paleta
+  (creme+terracota de dia, carvão+sage à noite) em vez do âmbar/periwinkle da
+  identidade Zleepy Lamp anterior — como TODA tela secundária já lia
+  `ModeTheme.current(armed:)`, a troca de paleta se propaga sozinha pra
+  `SettingsView`/`SleepRoutinesView`/`HelpView`/`AppBlockingView`/`SleepReportView`/
+  `LockedView`/`AlarmRingingView` sem precisar editar cada uma. A paleta antiga
+  continua existindo como `.legacyLiving`/`.legacyZleepy` — não usada em lugar
+  nenhum, só uma opção de volta rápida (pedido explícito do usuário). Também define
+  `Font.soveeDisplay`/`Font.soveeBody` (Neue Machina/DM Sans) — **os arquivos de
+  fonte reais ainda não existem no projeto** (não são baixados de fonte nenhuma sem
+  indicação do usuário), então esses helpers checam `UIFont(name:...)` e caem pro
+  sistema (serifada/`.default`) enquanto os arquivos não forem adicionados +
+  registrados em `Info.plist`/`project.pbxproj`. Também define a `EnvironmentKey`
+  `isNightModeArmed`, que propaga se o modo noite está armado pras telas secundárias
+  sem precisar passar o bool por parâmetro em cada `init` — setada uma vez no
+  `.sheet`/`.environment` de `ContentView`.
 - `Luminaria/LockedView.swift` (só no `main`) — tela mostrada por `ContentView` no
   lugar do botão redondo enquanto `!nfcManager.isLinked`. Pedido explícito do usuário:
   o app não deve fazer nada de útil (armar modo noite, bloquear apps) sem uma
@@ -166,6 +185,34 @@ depende de CI num runner macOS na nuvem (GitHub Actions) e de sideload via AltSt
   modifica o histórico salvo; `.all` é o padrão inicial (mostra tudo, sem corte).
   Também espelha `entries` no iCloud Key-Value Storage (backup contra apagar/reinstalar
   o app) — sem DTO, já que `SleepReportEntry` não tem token nenhum pra excluir.
+  `SleepReportEntry` ganhou `endReason: DetoxSessionEndReason` (`.alarmFired` /
+  `.manualDisarm` / `.emergencyPass` — alimenta `DetoxStats.longestCleanDayStreak`) e
+  `longestUninterruptedSeconds` (alimenta `DetoxStats.longestUninterruptedStreak`),
+  ambos com `init(from:)` manual decode-safe (mesmo padrão de sempre nesse projeto —
+  default otimista quando ausente, não falha o decode nem reseta o histórico).
+  `recordSession` ganhou os dois parâmetros novos correspondentes.
+- `Luminaria/GrowthEngine.swift` (novo, terreno pro item "sistema de crescimento" do
+  roadmap social/gamificação — sem visual final ainda, só o encaixe) — `protocol
+  GrowthVisualizing` (qualquer metáfora visual futura — maré, fase da lua, brasa —
+  implementa isso; a lógica de progresso nunca precisa saber qual metáfora está
+  sendo usada) e `NightSessionActivityTracker` (`ObservableObject` singleton):
+  `growthProgress: Double` 0...1, resetado por `registerTouchEvent()`. Também
+  alimenta a métrica "maior sequência sem tocar numa sessão" (`longestGapThisSession`,
+  devolvido por `sessionDidEnd()` pra virar `SleepReportEntry.
+  longestUninterruptedSeconds`). **Definição de "toque" usada**: reabrir o app OU usar
+  um passe de emergência durante uma sessão ativa — as duas únicas ações reais e
+  detectáveis (não existe API pública pra "qualquer toque na tela"/"desbloqueou o
+  celular" em segundo plano — ver Decisões abaixo pra investigação completa de
+  viabilidade). Conectado em `ScreenTimeManager.applyShield`/`removeShield`
+  (start/end de sessão) e em `ContentView.onChange(of: scenePhase)` (toque por
+  reabertura) + `ScreenTimeManager.useEmergencyPass` (toque por passe).
+- `Luminaria/SocialModels.swift` (novo, terreno pro item "amigos" e "ranking de
+  detox" — só modelos de dados, sem UI final nem rede) — `Friend`/`FriendInvite`/
+  `FriendInviteStatus` (`Codable` puro) e `protocol FriendsRepository` (qualquer
+  fonte de dados — local, CloudKit, backend próprio — implementa isso depois, a UI
+  programa contra o protocolo). `enum DetoxStats` com `longestCleanDayStreak(in:)` e
+  `longestUninterruptedStreak(in:)`, funções puras sobre `[SleepReportEntry]`, sem
+  estado próprio.
 - `Luminaria/silence_loop.wav` / `Luminaria/alarm_tone.wav` — sons originais (sirene
   clássica), gerados programaticamente. `Luminaria/alarm_alvorada.wav` — tom puro
   (arpejo pentatônico ascendente), mantido. `Luminaria/alarm_ondas.wav` /
@@ -746,6 +793,51 @@ Fluxo usado pra testar de verdade, todo do Windows:
   suspeitos são Ajustes → Geral → Atualização em Segundo Plano (desabilitado pro app) e
   Modo de Baixo Consumo ativo — nenhum dos dois é bug de código, são configurações do
   próprio iPhone que restringem execução em segundo plano.
+- **Brief "SOVEE" (agosto de 2026) — rebrand visual, não de bundle/produto**: usuário
+  trouxe um novo posicionamento de marca (luminária premium, paleta
+  peach/sage/terracota/floresta/creme/carvão, tipografia Neue Machina/DM Sans, tagline
+  "hora de desligar.") pedindo 4 frentes de trabalho (revisão de código + nova
+  interface, terreno social/gamificação, ciclo de vida do modo noite, bugs do
+  alarme). Confirmado com o usuário: é só identidade visual por agora — bundle ID
+  (`com.luminaria.app`), nome do produto e nomes internos de arquivo continuam
+  iguais, evitando mexer em certificados/App ID/TestFlight de novo. O botão redondo
+  central ENTRA no reskin (diferente de rodadas anteriores, onde ficava
+  explicitamente congelado) — mas o usuário pediu pra manter uma opção de volta no
+  código, daí `ContentView.useSoveeMainScreen` (ver Arquitetura acima).
+- **Item 3a (desligamento automático pelo horário) já estava parcialmente resolvido
+  antes do brief SOVEE chegar**: o bloqueio de apps já desliga sozinho quando o
+  despertador toca (`AlarmManager.triggerAlarm` → `ScreenTimeManager.removeShield`,
+  implementado numa rodada anterior). O que não desliga sozinho — e não tem como,
+  não é falta de código — é o Foco/Não Perturbe ativado pelo Atalho: a Apple não
+  oferece API pra um Atalho "esperar até de manhã" dentro da mesma execução, nem pra
+  um app terceiro desligar um Foco programaticamente. Por isso o `HelpView` já
+  orienta a criar uma Automação separada no app Atalhos — não dá pra fechar esse gap
+  com código, é limitação de plataforma permanente.
+- **Investigação de viabilidade do item 3b (reset por desbloqueio/toque) — não existe
+  API pública, e a alternativa foi implementada em vez disso**: não há forma de um
+  app terceiro detectar "tela desbloqueada" ou "qualquer toque" com o app em segundo
+  plano no iOS. `DeviceActivityMonitor` (framework `DeviceActivity`, irmão do
+  `FamilyControls` que já temos aprovado) monitora USO acumulado contra um limite
+  configurado numa extensão separada (mais um target novo no `pbxproj`, mesma classe
+  de risco do widget) — mas os eventos não são garantidos em tempo real (a Apple
+  documenta atraso/agrupamento possível), então não serve pra "reseta instantaneamente
+  no primeiro toque". `scenePhase` só cobre "reabriu ESTE app", não qualquer
+  desbloqueio ou uso de outro app. Decisão (confirmada com o usuário): já que os apps
+  ficam de fato bloqueados durante o modo noite, as duas únicas ações reais e
+  detectáveis que significam "a pessoa mexeu no celular" são reabrir o app ou usar um
+  passe de emergência — nenhuma API instável, captura o espírito do pedido sem
+  depender de nada que a Apple não garante. Implementado em
+  `NightSessionActivityTracker` (`GrowthEngine.swift`).
+- **Item 4 (despertador não toca sozinho / horário do alarme separado da rotina) —
+  usuário confirmou que os dois já foram testados na build mais recente e persistem,
+  mas o código não mostra uma causa óbvia**: `SleepRoutine.alarmHour`/`alarmMinute` já
+  é a única fonte de verdade usada por `AlarmManager.armAlarm` — não existe campo de
+  horário de alarme separado em lugar nenhum do app hoje (só existe
+  `armTestAlarm`/"agora + 60s" na branch `teste-gratis-sem-nfc`, que usa Codemagic/main
+  pra build assinada, então essa branch de teste foi descartada como causa). Usuário
+  não lembra se rodou um build NOVO no Codemagic depois do último push antes de
+  testar — pendente confirmar isso com um build fresco antes de investigar mais fundo
+  (ver pendência específica abaixo).
 
 ## ⚠️ Pendência arquitetural importante (não esquecer)
 
@@ -861,6 +953,19 @@ que fica inerte. Teste real só depois disso: criar rotinas/registrar sessões d
 apagar e reinstalar o app, confirmar que nome/horário/som das rotinas e o histórico do
 relatório voltam sozinhos (os apps escolhidos por rotina precisam ser re-selecionados —
 ver Decisões acima sobre por que `appSelection` fica de fora do backup).
+
+## ⚠️ Pendência do item 4 do brief SOVEE — verificar com build fresco (não esquecer)
+
+Usuário reportou (2026-08-09) que os dois bugs do alarme (não toca sozinho / horário
+separado da rotina) persistem numa build "mais recente" do TestFlight, mas não lembra
+se essa build foi gerada DEPOIS do último push (`2f69581`, correções de retomada de
+áudio + despertador de uma noite só) ou é uma build antiga ainda instalada. O código
+hoje não mostra causa nenhuma pro segundo bug (horário separado — `alarmHour`/
+`alarmMinute` da rotina já é a única fonte de verdade). Próximo passo, antes de
+investigar mais fundo às cegas: usuário deve rodar um build NOVO no Codemagic agora,
+instalar via TestFlight, e testar especificamente essa build (conferir o número em
+Ajustes → Geral → Armazenamento do iPhone → Luminária → Info do App, ou dentro do
+TestFlight) — só depois disso vale reabrir a investigação com mais profundidade.
 
 ## Ideia futura, ainda não iniciada: controle Bluetooth da luminária física
 
@@ -1070,6 +1175,39 @@ O usuário perguntou sobre viabilidade de controlar a luminária de verdade via 
      próximo passo é conferir Ajustes → Geral → Atualização em Segundo Plano (Luminária
      habilitado) e desativar o Modo de Baixo Consumo durante o teste, antes de suspeitar
      de mais algum bug de código.
+- **2026-08-09**: usuário trouxe o brief "SOVEE" (novo posicionamento de marca —
+  luminária premium, paleta peach/sage/terracota/floresta/creme/carvão, tipografia
+  Neue Machina/DM Sans) pedindo 4 frentes: revisão de código + nova interface,
+  terreno pra amigos/ranking de detox/sistema de crescimento, ciclo de vida do modo
+  noite (auto-desligar + reset por toque), e os 2 bugs do alarme. Segui o processo
+  pedido: li o codebase inteiro, resumi estado atual de cada item, esperei
+  confirmação antes de codar (nesse meio-tempo também descobri e corrigi de novo o
+  mesmo bug de branch errado no worktree — ver Convenções). Implementado nesta rodada
+  (itens 1, 2 e 3b — item 3a já estava resolvido, item 4 ficou pendente de um build
+  fresco pra reinvestigar):
+  - **Item 1**: rebrand visual SOVEE — `ModeTheme.living`/`.zleepy` recalibrados pra
+    paleta SOVEE (propaga sozinho pra todas as telas secundárias), paleta antiga
+    preservada como `.legacyLiving`/`.legacyZleepy`. Tela principal ganhou
+    `soveeMainScreen` (nova, com tagline "hora de desligar." só à noite) e
+    `legacyMainScreen` (antiga, preservada), alternadas por
+    `ContentView.useSoveeMainScreen` — opção de retorno pedida explicitamente pelo
+    usuário. `AlarmRingingView` também retocada pra paleta nova (era a tela mais
+    "protótipo" do app). `Font.soveeDisplay`/`soveeBody` com fallback honesto pro
+    sistema até os arquivos de Neue Machina/DM Sans existirem no projeto.
+  - **Item 2 (só arquitetura de dados, sem UI final, como pedido)**: `Friend`/
+    `FriendInvite`/`FriendsRepository` (protocolo, sem backend — não existe
+    autenticação nenhuma no app hoje, CloudKit é a recomendação quando isso for
+    construído de verdade); `DetoxStats.longestCleanDayStreak`/
+    `longestUninterruptedStreak`; `GrowthVisualizing` (protocolo pra metáfora visual
+    trocável — sugestões dadas: maré subindo, fase da lua, brasa) +
+    `NightSessionActivityTracker` (progresso 0...1).
+  - **Item 3b**: viabilidade investigada e reportada ao usuário (não existe API
+    pública pra "toque"/"desbloqueio" em segundo plano); implementada a alternativa
+    aprovada por ele (reset por reabrir o app OU usar passe de emergência), usando o
+    mesmo `NightSessionActivityTracker` do item 2 — os dois pedidos dependiam
+    exatamente da mesma resposta técnica.
+  - Dois arquivos novos (`GrowthEngine.swift`, `SocialModels.swift`) — únicas edições
+    de `project.pbxproj` desta rodada, resto foi tudo em arquivos já existentes.
 
 ## Como retomar em outro computador
 
@@ -1092,3 +1230,12 @@ Bonjour precisam ser reinstalados na máquina nova se for continuar testando via
   outra, resolvendo conflitos na seção "Teste sem NFC" quando aparecerem.
 - Sempre confirmar CI verde (`gh`/API do GitHub Actions) depois de cada push antes de
   considerar uma mudança concluída.
+- **Achado recorrente (aconteceu 2x na mesma sessão, agosto de 2026): o worktree às
+  vezes volta sozinho pro branch original do ambiente (`claude/luminaria-project-
+  setup-*`), sem nenhum trabalho da sessão, entre uma virada de contexto e outra —
+  provavelmente o harness reseta o worktree pro branch padrão dele em algum ponto.**
+  Sintoma: arquivos lidos de repente mostram uma versão bem mais antiga/simples do
+  que o esperado (ex.: `AlarmManager.swift` sem nenhuma das correções recentes).
+  Antes de desconfiar de código perdido: `git branch --show-current` — se não for
+  `main-features`, é isso; `git checkout main-features` resolve na hora (o trabalho
+  real nunca foi perdido, só o checkout ativo do worktree mudou).

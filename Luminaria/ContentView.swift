@@ -11,6 +11,15 @@ struct ContentView: View {
     @State private var isPressed = false
     @State private var showSettings = false
 
+    /// Alterna entre a tela principal nova (SOVEE) e a antiga (Zleepy Lamp) — pedido
+    /// explícito do usuário: "crie uma nova, mas deixe no código uma opção de
+    /// retorno". Não é uma preferência do usuário final, é um interruptor de
+    /// desenvolvimento — mude pra `false` aqui pra voltar à tela antiga inteira,
+    /// sem precisar reverter nenhum commit.
+    private static let useSoveeMainScreen = true
+
+    /// Cores da tela principal ANTIGA (Zleepy Lamp) — preservadas exatamente como
+    /// estavam, só usadas por `legacyMainScreen` quando `useSoveeMainScreen == false`.
     private let awakeBackground = Color(red: 0.957, green: 0.953, blue: 0.941)
     private let sleepBackground = Color(red: 0.129, green: 0.141, blue: 0.165)
     private let buttonAwakeFill = Color.white
@@ -24,53 +33,21 @@ struct ContentView: View {
         isNightModeArmed ? "Zleepy mode" : "Living mode"
     }
 
+    private var menuIconColor: Color {
+        Self.useSoveeMainScreen
+            ? ModeTheme.current(armed: isNightModeArmed).ink
+            : (isNightModeArmed ? menuIconSleep : menuIconAwake)
+    }
+
     var body: some View {
         NavigationStack {
             Group {
                 if nfcManager.isLinked {
-                    ZStack {
-                        (isNightModeArmed ? sleepBackground : awakeBackground)
-                            .ignoresSafeArea()
-
-                        Button(action: toggleNightMode) {
-                            Image(isNightModeArmed ? "LogoSono" : "LogoAcordado")
-                                .resizable()
-                                .scaledToFit()
-                                .padding(9)
-                                .frame(width: 220, height: 220)
-                                .background(isNightModeArmed ? buttonSleepFill : buttonAwakeFill)
-                                .clipShape(Circle())
-                                .shadow(color: .black.opacity(0.25), radius: 24, x: 0, y: 12)
-                        }
-                        .buttonStyle(.plain)
-                        .scaleEffect(isPressed ? 0.88 : 1.0)
-                        .accessibilityLabel(modeName)
-
-                        Text(modeName)
-                            .font(.footnote)
-                            .tracking(0.4)
-                            .foregroundStyle(isNightModeArmed ? inkSleep : inkAwake)
-                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-                            .padding(.bottom, 40)
-
-                        // Só aparece com o bloqueio de apps realmente ativo — nunca no
-                        // Living mode, nunca antes da luminária ser reconhecida. Não
-                        // mexe no botão redondo nem no texto "Living/Zleepy mode" acima.
-                        if isNightModeArmed && screenTimeManager.isShieldActive {
-                            Button {
-                                _ = screenTimeManager.useEmergencyPass()
-                            } label: {
-                                Text("Passe de emergência (\(screenTimeManager.emergencyPassesRemaining) restantes)")
-                                    .font(.caption)
-                                    .foregroundStyle(inkSleep)
-                            }
-                            .disabled(screenTimeManager.emergencyPassesRemaining == 0)
-                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-                            .padding(.bottom, 16)
-                        }
+                    if Self.useSoveeMainScreen {
+                        soveeMainScreen
+                    } else {
+                        legacyMainScreen
                     }
-                    .animation(.easeInOut(duration: 0.5), value: isNightModeArmed)
-                    .animation(.spring(response: 0.25, dampingFraction: 0.55), value: isPressed)
                 } else {
                     // Pedido explícito do usuário: o app não faz nada de útil (arma
                     // modo noite, bloqueia apps) sem uma luminária física vinculada.
@@ -83,7 +60,7 @@ struct ContentView: View {
                         showSettings = true
                     } label: {
                         Image(systemName: "line.3.horizontal")
-                            .foregroundStyle(isNightModeArmed ? menuIconSleep : menuIconAwake)
+                            .foregroundStyle(menuIconColor)
                     }
                 }
             }
@@ -165,6 +142,109 @@ struct ContentView: View {
         }
     }
 
+    /// Tela principal SOVEE — mesmo botão redondo (identidade central do produto,
+    /// intocada), com paleta/tipografia da marca. Ícones existentes (`LogoAcordado`/
+    /// `LogoSono`) são retintados via `.renderingMode(.template)` — são traços de
+    /// cor única sobre fundo transparente, dá pra recolorir sem precisar de arte
+    /// nova. Sombra bem mais suave que a versão antiga (25% preto/24pt) — pedido do
+    /// brief de evitar UI agressiva, um "ritual calmo" não pede sombra dura.
+    private var soveeMainScreen: some View {
+        let theme = ModeTheme.current(armed: isNightModeArmed)
+        return ZStack {
+            theme.stage.ignoresSafeArea()
+
+            Button(action: toggleNightMode) {
+                Image(isNightModeArmed ? "LogoSono" : "LogoAcordado")
+                    .renderingMode(.template)
+                    .resizable()
+                    .scaledToFit()
+                    .padding(9)
+                    .frame(width: 220, height: 220)
+                    .foregroundStyle(theme.accent)
+                    .background(theme.card)
+                    .clipShape(Circle())
+                    .shadow(color: theme.ink.opacity(0.12), radius: 18, x: 0, y: 8)
+            }
+            .buttonStyle(.plain)
+            .scaleEffect(isPressed ? 0.9 : 1.0)
+            .accessibilityLabel(modeName)
+
+            // Tagline da marca ("hora de desligar.") só no modo noite — é o
+            // momento que ela descreve (encerrar o dia). No modo dia, silêncio
+            // deliberado em vez de repetir uma legenda "Living mode" técnica.
+            if isNightModeArmed {
+                Text("hora de desligar.")
+                    .font(.soveeDisplay(size: 15, weight: .semibold))
+                    .tracking(0.5)
+                    .foregroundStyle(theme.ink.opacity(0.7))
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+                    .padding(.bottom, 40)
+            }
+
+            // Só aparece com o bloqueio de apps realmente ativo — nunca no modo dia,
+            // nunca antes da luminária ser reconhecida.
+            if isNightModeArmed && screenTimeManager.isShieldActive {
+                Button {
+                    _ = screenTimeManager.useEmergencyPass()
+                } label: {
+                    Text("Passe de emergência (\(screenTimeManager.emergencyPassesRemaining) restantes)")
+                        .font(.soveeBody(.caption))
+                        .foregroundStyle(theme.inkMuted)
+                }
+                .disabled(screenTimeManager.emergencyPassesRemaining == 0)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+                .padding(.bottom, 16)
+            }
+        }
+        .animation(.easeInOut(duration: 0.6), value: isNightModeArmed)
+        .animation(.spring(response: 0.3, dampingFraction: 0.65), value: isPressed)
+    }
+
+    /// Tela principal ANTIGA (Zleepy Lamp) — preservada byte a byte, sem nenhuma
+    /// mudança, como opção de retorno rápido (`Self.useSoveeMainScreen = false`).
+    private var legacyMainScreen: some View {
+        ZStack {
+            (isNightModeArmed ? sleepBackground : awakeBackground)
+                .ignoresSafeArea()
+
+            Button(action: toggleNightMode) {
+                Image(isNightModeArmed ? "LogoSono" : "LogoAcordado")
+                    .resizable()
+                    .scaledToFit()
+                    .padding(9)
+                    .frame(width: 220, height: 220)
+                    .background(isNightModeArmed ? buttonSleepFill : buttonAwakeFill)
+                    .clipShape(Circle())
+                    .shadow(color: .black.opacity(0.25), radius: 24, x: 0, y: 12)
+            }
+            .buttonStyle(.plain)
+            .scaleEffect(isPressed ? 0.88 : 1.0)
+            .accessibilityLabel(modeName)
+
+            Text(modeName)
+                .font(.footnote)
+                .tracking(0.4)
+                .foregroundStyle(isNightModeArmed ? inkSleep : inkAwake)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+                .padding(.bottom, 40)
+
+            if isNightModeArmed && screenTimeManager.isShieldActive {
+                Button {
+                    _ = screenTimeManager.useEmergencyPass()
+                } label: {
+                    Text("Passe de emergência (\(screenTimeManager.emergencyPassesRemaining) restantes)")
+                        .font(.caption)
+                        .foregroundStyle(inkSleep)
+                }
+                .disabled(screenTimeManager.emergencyPassesRemaining == 0)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+                .padding(.bottom, 16)
+            }
+        }
+        .animation(.easeInOut(duration: 0.5), value: isNightModeArmed)
+        .animation(.spring(response: 0.25, dampingFraction: 0.55), value: isPressed)
+    }
+
     private func toggleNightMode() {
         isPressed = true
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
@@ -181,29 +261,37 @@ struct ContentView: View {
     }
 }
 
+/// Tela mais "protótipo" do app antes desta rodada (fundo preto liso, botão vermelho
+/// padrão do sistema) — retocada pra usar a mesma paleta SOVEE do resto do app em vez
+/// de cores hardcoded, sem mudar a hierarquia/fluxo (ainda é: ícone, texto, botão
+/// grande de parar). Layout/microinteração mais elaborados ficam pra uma passada
+/// futura dedicada — essa mudança é só a paleta.
 struct AlarmRingingView: View {
     @ObservedObject var alarmManager: AlarmManager
 
+    private let theme = ModeTheme.zleepy
+
     var body: some View {
         ZStack {
-            Color.black.ignoresSafeArea()
+            theme.stage.ignoresSafeArea()
             VStack(spacing: 28) {
                 Image(systemName: "alarm.fill")
                     .font(.system(size: 64))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(theme.accent)
                 Text("Hora de acordar")
-                    .font(.title.bold())
-                    .foregroundStyle(.white)
+                    .font(.soveeDisplay(size: 28, weight: .bold))
+                    .foregroundStyle(theme.ink)
                 Button {
                     alarmManager.stopRingingAlarm()
                 } label: {
                     Text("Parar")
-                        .font(.title2.bold())
+                        .font(.soveeBody(.title2, weight: .bold))
                         .frame(maxWidth: .infinity)
                         .padding()
                 }
                 .buttonStyle(.borderedProminent)
-                .tint(.red)
+                .tint(theme.accent)
+                .foregroundStyle(theme.accentForeground)
                 .padding(.horizontal, 40)
             }
         }

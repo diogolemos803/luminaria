@@ -1,11 +1,29 @@
 import SwiftUI
+import UIKit
 
-/// Paleta compartilhada das telas secundárias (Configurações, Rotinas, Ajuda) — os mesmos
-/// tons cream/chumbo do botão principal (ver `ContentView`), só que estendidos pra cartões
-/// e badges circulares em vez da lista padrão do iOS. O acento muda de temperatura com o
-/// modo: âmbar de luminária acesa no Living mode, periwinkle de luar no Zleepy mode — o
-/// próprio produto é uma lâmpada, então o destaque muda de cor junto com o modo, em vez de
-/// ser uma cor de marca arbitrária.
+/// Paleta oficial da marca SOVEE — hex convertidos pra RGB 0...1 direto do brief
+/// (peach #FF9F66, sage #80A68E, terracota #DB8149, floresta #417C5A, creme #FDF8C7,
+/// carvão #444444). Ponto único de conversão — o resto do app referencia esses nomes,
+/// não hex/RGB espalhados.
+enum SoveeColor {
+    static let peach = Color(red: 1.0, green: 0.624, blue: 0.4)
+    static let sage = Color(red: 0.502, green: 0.651, blue: 0.557)
+    static let terracota = Color(red: 0.859, green: 0.506, blue: 0.286)
+    static let floresta = Color(red: 0.255, green: 0.486, blue: 0.353)
+    static let creme = Color(red: 0.992, green: 0.973, blue: 0.780)
+    static let carvao = Color(red: 0.267, green: 0.267, blue: 0.267)
+}
+
+/// Paleta compartilhada das telas secundárias (Configurações, Rotinas, Ajuda) e, desde
+/// o rebrand visual SOVEE, também da tela principal (`ContentView`). O acento muda de
+/// temperatura com o modo — terracota quente de dia, sage calmo à noite — mesma lógica
+/// de antes (o produto é uma luminária, o destaque muda junto com o modo), só que
+/// recalibrado pra paleta SOVEE.
+///
+/// `.legacyLiving`/`.legacyZleepy` preservam a paleta âmbar/periwinkle da identidade
+/// anterior (Zleepy Lamp) — não usados por padrão em lugar nenhum, existem só como
+/// caminho de volta rápido caso o visual SOVEE não seja aprovado (pedido explícito do
+/// usuário: "crie uma nova, mas deixe no código uma opção de retorno").
 struct ModeTheme {
     let stage: Color
     let card: Color
@@ -19,6 +37,34 @@ struct ModeTheme {
     let dangerWash: Color
 
     static let living = ModeTheme(
+        stage: SoveeColor.creme,
+        card: .white,
+        ink: SoveeColor.carvao,
+        inkMuted: Color(red: 0.55, green: 0.54, blue: 0.50),
+        hairline: Color.black.opacity(0.07),
+        accent: SoveeColor.terracota,
+        accentWash: SoveeColor.terracota.opacity(0.14),
+        accentForeground: .white,
+        danger: Color(red: 0.72, green: 0.34, blue: 0.24),
+        dangerWash: Color(red: 0.72, green: 0.34, blue: 0.24).opacity(0.10)
+    )
+
+    static let zleepy = ModeTheme(
+        stage: SoveeColor.carvao,
+        card: Color(red: 0.32, green: 0.32, blue: 0.32),
+        ink: SoveeColor.creme,
+        inkMuted: Color(red: 0.65, green: 0.64, blue: 0.60),
+        hairline: Color.white.opacity(0.08),
+        accent: SoveeColor.sage,
+        accentWash: SoveeColor.sage.opacity(0.16),
+        accentForeground: SoveeColor.carvao,
+        danger: Color(red: 0.82, green: 0.50, blue: 0.42),
+        dangerWash: Color(red: 0.82, green: 0.50, blue: 0.42).opacity(0.12)
+    )
+
+    /// Paleta Zleepy Lamp original — âmbar de luminária acesa / periwinkle de luar.
+    /// Só existe como caminho de volta; nada usa isso por padrão.
+    static let legacyLiving = ModeTheme(
         stage: Color(red: 0.957, green: 0.953, blue: 0.941),
         card: .white,
         ink: Color(red: 0.290, green: 0.282, blue: 0.267),
@@ -31,7 +77,7 @@ struct ModeTheme {
         dangerWash: Color(red: 0.694, green: 0.361, blue: 0.275).opacity(0.10)
     )
 
-    static let zleepy = ModeTheme(
+    static let legacyZleepy = ModeTheme(
         stage: Color(red: 0.129, green: 0.141, blue: 0.165),
         card: Color(red: 0.169, green: 0.184, blue: 0.216),
         ink: Color(red: 0.847, green: 0.855, blue: 0.878),
@@ -65,6 +111,46 @@ extension EnvironmentValues {
 extension Font {
     static func luminaria(_ style: Font.TextStyle, weight: Font.Weight = .regular) -> Font {
         .system(style, design: .rounded).weight(weight)
+    }
+
+    /// Fonte de destaque da marca SOVEE (Neue Machina) — usada em títulos grandes,
+    /// tagline ("hora de desligar."). **Os arquivos da fonte (.otf/.ttf) ainda não
+    /// estão no projeto** — não é possível baixar uma fonte licenciada de terceiros
+    /// sem indicação de fonte pelo usuário. Enquanto os arquivos não forem
+    /// adicionados (+ registrados em `Info.plist` `UIAppFonts` + `project.pbxproj`,
+    /// manual, sem Xcode), isso cai automaticamente pra uma serifada do sistema, que
+    /// aproxima o peso editorial de um display type sem fingir ser a fonte real.
+    static func soveeDisplay(size: CGFloat, weight: Font.Weight = .bold) -> Font {
+        guard UIFont(name: "NeueMachina-Bold", size: size) != nil else {
+            return .system(size: size, weight: weight, design: .serif)
+        }
+        return .custom("NeueMachina-Bold", size: size)
+    }
+
+    /// Fonte de corpo da marca SOVEE (DM Sans). Mesma ressalva do `soveeDisplay`
+    /// acima — cai pro sistema (design `.default`) até os arquivos da fonte
+    /// existirem no bundle. Usa `Font.custom(_:size:relativeTo:)` pra manter suporte
+    /// a Dynamic Type quando a fonte de verdade entrar.
+    static func soveeBody(_ style: Font.TextStyle, weight: Font.Weight = .regular) -> Font {
+        guard UIFont(name: "DMSans-Regular", size: 17) != nil else {
+            return .system(style, design: .default).weight(weight)
+        }
+        return .custom("DMSans-Regular", size: Self.baseSize(for: style), relativeTo: style)
+    }
+
+    private static func baseSize(for style: Font.TextStyle) -> CGFloat {
+        switch style {
+        case .largeTitle: return 34
+        case .title: return 28
+        case .title2: return 22
+        case .title3: return 20
+        case .headline, .body: return 17
+        case .subheadline, .callout: return 15
+        case .footnote: return 13
+        case .caption: return 12
+        case .caption2: return 11
+        default: return 17
+        }
     }
 }
 
