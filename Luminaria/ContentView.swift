@@ -193,12 +193,27 @@ struct ContentView: View {
             if isNightModeArmed {
                 theme.stage.ignoresSafeArea()
 
+                // Pedido do usuário: dá pra "puxar" a tela pra baixo durante a
+                // viagem e achar o botão redondo de novo, pra desligar o modo noite
+                // manualmente sem depender só do passe de emergência (que libera os
+                // apps mas não desarma a sessão). Duas "páginas" empilhadas num
+                // ScrollView, cada uma do tamanho exato da tela: a cena decorativa
+                // em cima, o botão de desligar embaixo.
                 if showsJourney {
-                    RocketGrowthVisual()
-                        .render(phase: growthTracker.phase, destination: destination, theme: theme)
-                        .ignoresSafeArea()
-                        .allowsHitTesting(false)
-                        .transition(.opacity)
+                    GeometryReader { proxy in
+                        ScrollView(.vertical, showsIndicators: false) {
+                            VStack(spacing: 0) {
+                                RocketGrowthVisual()
+                                    .render(phase: growthTracker.phase, destination: destination, theme: theme)
+                                    .frame(width: proxy.size.width, height: proxy.size.height)
+
+                                nightReturnPage(theme: theme)
+                                    .frame(width: proxy.size.width, height: proxy.size.height)
+                            }
+                        }
+                    }
+                    .ignoresSafeArea()
+                    .transition(.opacity)
                 }
             } else {
                 Color.white.ignoresSafeArea()
@@ -238,7 +253,8 @@ struct ContentView: View {
 
             // Só aparece com o bloqueio de apps realmente ativo — nunca no modo dia,
             // nunca antes da luminária ser reconhecida. Continua visível mesmo com o
-            // botão redondo escondido: é a única saída manual durante a viagem.
+            // botão redondo escondido: libera os apps sem desarmar a sessão (ver
+            // `nightReturnPage` pra desarmar de vez, rolando a tela pra baixo).
             if isNightModeArmed && screenTimeManager.isShieldActive {
                 Button {
                     _ = screenTimeManager.useEmergencyPass()
@@ -256,6 +272,39 @@ struct ContentView: View {
         .animation(.easeInOut(duration: 0.6), value: isNightModeArmed)
         .animation(.spring(response: 0.3, dampingFraction: 0.65), value: isPressed)
         .animation(.easeInOut(duration: 0.7), value: showsRoundButton)
+    }
+
+    /// Segunda "página" da viagem, só alcançável rolando a tela pra baixo — o mesmo
+    /// botão redondo de sempre (agora chamando `toggleNightMode`, que desarma direto
+    /// já que `isNightModeArmed` está `true`), pra quem quer desligar o modo noite
+    /// de vez, não só liberar os apps com o passe de emergência.
+    private func nightReturnPage(theme: ModeTheme) -> some View {
+        ZStack {
+            theme.stage
+            VStack(spacing: 18) {
+                Image(systemName: "chevron.up")
+                    .font(.title3)
+                    .foregroundStyle(theme.inkMuted.opacity(0.6))
+                Button(action: toggleNightMode) {
+                    Image("LogoSono")
+                        .renderingMode(.template)
+                        .resizable()
+                        .scaledToFit()
+                        .padding(9)
+                        .frame(width: 180, height: 180)
+                        .foregroundStyle(theme.accent)
+                        .background(theme.card)
+                        .clipShape(Circle())
+                        .shadow(color: theme.ink.opacity(0.12), radius: 18, x: 0, y: 8)
+                }
+                .buttonStyle(.plain)
+                Text("Puxe a tela pra cá pra desligar o modo noite")
+                    .font(.soveeBody(.footnote))
+                    .foregroundStyle(theme.inkMuted)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 40)
+            }
+        }
     }
 
     /// Brilho de "nascer do sol" no fundo do modo dia — pedido específico depois de
