@@ -14,6 +14,10 @@ struct ContentView: View {
     @State private var isNightModeArmed = false
     @State private var isPressed = false
     @State private var showSettings = false
+    // Controla a saída do botão redondo quando a viagem de foguete assume a tela —
+    // pedido explícito do usuário: "o botão fica 1s na tela e começa a descer até
+    // sumi[r]" depois que a luminária é reconhecida de verdade. Ver `soveeMainScreen`.
+    @State private var showsRoundButton = true
 
     /// Alterna entre a tela principal nova (SOVEE) e a antiga (Zleepy Lamp) — pedido
     /// explícito do usuário: "crie uma nova, mas deixe no código uma opção de
@@ -79,6 +83,11 @@ struct ContentView: View {
                 // com os apps ainda travados e nenhum jeito de desarmar pelo app.
                 if screenTimeManager.isShieldActive {
                     isNightModeArmed = true
+                    // O app pode ter sido reaberto no meio de uma sessão já em
+                    // andamento (o momento da decolagem já passou há muito tempo) —
+                    // nesse caso o botão já deve nascer escondido, sem repetir a
+                    // sequência de saída.
+                    showsRoundButton = false
                 }
                 nfcManager.onRecognizedTap = {
                     guard isNightModeArmed else { return }
@@ -161,48 +170,48 @@ struct ContentView: View {
     private var soveeMainScreen: some View {
         let theme = ModeTheme.current(armed: isNightModeArmed)
         // Mais distante já desbloqueado pela sequência ATUAL de dias limpos (não o
-        // recorde histórico — se a sequência já quebrou, a viagem de hoje reflete
+        // recorde histórico — se a sequência já quebrou, o pouso de amanhã reflete
         // isso). Ver `GrowthDestinations`/`DetoxStats.currentCleanDayStreak`.
         let destination = GrowthDestinations.furthestUnlocked(
             currentStreak: DetoxStats.currentCleanDayStreak(in: sleepReportStore.entries)
         )
+        // Só depois do botão já ter saído de cena — a decolagem assume a tela
+        // inteira no lugar dele, nunca por cima (ver `showsRoundButton`).
+        let showsJourney = isNightModeArmed && screenTimeManager.isShieldActive && !showsRoundButton
         return ZStack {
             if isNightModeArmed {
                 theme.stage.ignoresSafeArea()
 
-                // Viagem de foguete só com o bloqueio de apps realmente ativo (mesma
-                // condição do passe de emergência) — fica no topo da tela, bem acima
-                // do botão redondo, pra nunca sobrepor a identidade central do
-                // produto. `allowsHitTesting(false)`: é só decorativo, não deve
-                // roubar toques do botão nem de nada embaixo dele.
-                if screenTimeManager.isShieldActive {
+                if showsJourney {
                     RocketGrowthVisual()
                         .render(phase: growthTracker.phase, destination: destination, theme: theme)
-                        .frame(height: 240)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-                        .padding(.top, 24)
+                        .ignoresSafeArea()
                         .allowsHitTesting(false)
+                        .transition(.opacity)
                 }
             } else {
                 Color.white.ignoresSafeArea()
                 soveeDayGlow.ignoresSafeArea()
             }
 
-            Button(action: toggleNightMode) {
-                Image(isNightModeArmed ? "LogoSono" : "LogoAcordado")
-                    .renderingMode(.template)
-                    .resizable()
-                    .scaledToFit()
-                    .padding(9)
-                    .frame(width: 220, height: 220)
-                    .foregroundStyle(isNightModeArmed ? theme.accent : SoveeColor.carvao)
-                    .background(theme.card)
-                    .clipShape(Circle())
-                    .shadow(color: theme.ink.opacity(0.12), radius: 18, x: 0, y: 8)
+            if showsRoundButton {
+                Button(action: toggleNightMode) {
+                    Image(isNightModeArmed ? "LogoSono" : "LogoAcordado")
+                        .renderingMode(.template)
+                        .resizable()
+                        .scaledToFit()
+                        .padding(9)
+                        .frame(width: 220, height: 220)
+                        .foregroundStyle(isNightModeArmed ? theme.accent : SoveeColor.carvao)
+                        .background(theme.card)
+                        .clipShape(Circle())
+                        .shadow(color: theme.ink.opacity(0.12), radius: 18, x: 0, y: 8)
+                }
+                .buttonStyle(.plain)
+                .scaleEffect(isPressed ? 0.9 : 1.0)
+                .accessibilityLabel(modeName)
+                .transition(.asymmetric(insertion: .opacity, removal: .move(edge: .bottom).combined(with: .opacity)))
             }
-            .buttonStyle(.plain)
-            .scaleEffect(isPressed ? 0.9 : 1.0)
-            .accessibilityLabel(modeName)
 
             // Tagline da marca ("hora de desligar.") só no modo noite — é o
             // momento que ela descreve (encerrar o dia). No modo dia, silêncio
@@ -217,7 +226,8 @@ struct ContentView: View {
             }
 
             // Só aparece com o bloqueio de apps realmente ativo — nunca no modo dia,
-            // nunca antes da luminária ser reconhecida.
+            // nunca antes da luminária ser reconhecida. Continua visível mesmo com o
+            // botão redondo escondido: é a única saída manual durante a viagem.
             if isNightModeArmed && screenTimeManager.isShieldActive {
                 Button {
                     _ = screenTimeManager.useEmergencyPass()
@@ -233,6 +243,23 @@ struct ContentView: View {
         }
         .animation(.easeInOut(duration: 0.6), value: isNightModeArmed)
         .animation(.spring(response: 0.3, dampingFraction: 0.65), value: isPressed)
+        .animation(.easeInOut(duration: 0.7), value: showsRoundButton)
+        .onChange(of: screenTimeManager.isShieldActive) { active in
+            if active {
+                // Reconhecimento novo de tag: garante o botão visível por 1s antes
+                // de começar a descer — só então a cena de decolagem entra (ver
+                // `showsJourney` acima).
+                showsRoundButton = true
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                    guard screenTimeManager.isShieldActive else { return }
+                    showsRoundButton = false
+                }
+            } else {
+                // Sessão terminou (despertador, desarme manual ou passe de
+                // emergência) — o botão volta.
+                showsRoundButton = true
+            }
+        }
     }
 
     /// Brilho de "nascer do sol" no fundo do modo dia — pedido específico depois de
@@ -315,23 +342,37 @@ struct ContentView: View {
     }
 }
 
-/// Tela mais "protótipo" do app antes desta rodada (fundo preto liso, botão vermelho
-/// padrão do sistema) — retocada pra usar a mesma paleta SOVEE do resto do app em vez
-/// de cores hardcoded, sem mudar a hierarquia/fluxo (ainda é: ícone, texto, botão
-/// grande de parar). Layout/microinteração mais elaborados ficam pra uma passada
-/// futura dedicada — essa mudança é só a paleta.
+/// Tela do despertador tocando — mostra a animação de pouso (`RocketLandingView`,
+/// ver `GrowthEngine.swift`) antes do botão "Parar": a pessoa aguentou a noite
+/// inteira (chegar aqui já significa que `AlarmManager.triggerAlarm()` registrou a
+/// sessão como `.alarmFired`), então o foguete desce no planeta desbloqueado, o
+/// astronauta sai e crava a bandeira com o número de dias da sequência atual.
 struct AlarmRingingView: View {
     @ObservedObject var alarmManager: AlarmManager
+    @ObservedObject var sleepReportStore: SleepReportStore = .shared
 
     private let theme = ModeTheme.zleepy
+
+    private var destination: CelestialDestination {
+        GrowthDestinations.furthestUnlocked(
+            currentStreak: DetoxStats.currentCleanDayStreak(in: sleepReportStore.entries)
+        )
+    }
+
+    private var streakDays: Int {
+        DetoxStats.currentCleanDayStreak(in: sleepReportStore.entries)
+    }
 
     var body: some View {
         ZStack {
             theme.stage.ignoresSafeArea()
-            VStack(spacing: 28) {
-                Image(systemName: "alarm.fill")
-                    .font(.system(size: 64))
-                    .foregroundStyle(theme.accent)
+
+            RocketLandingView(destination: destination, streakDays: streakDays, theme: theme)
+                .ignoresSafeArea()
+                .allowsHitTesting(false)
+
+            VStack {
+                Spacer()
                 Text("Hora de acordar")
                     .font(.soveeDisplay(size: 28, weight: .bold))
                     .foregroundStyle(theme.ink)
@@ -347,6 +388,8 @@ struct AlarmRingingView: View {
                 .tint(theme.accent)
                 .foregroundStyle(theme.accentForeground)
                 .padding(.horizontal, 40)
+                .padding(.top, 12)
+                .padding(.bottom, 40)
             }
         }
     }
