@@ -230,18 +230,23 @@ private struct LiftoffOrbitScene: View {
             let width = geo.size.width
             let height = geo.size.height
             // Topo do quinto inferior — é aqui que o morro/base de lançamento vive.
-            let groundY = height * 0.8
-            let padX = width * 0.54
-            let towerX = width * 0.24
-            let orbitCenter = CGPoint(x: width / 2, y: height * 0.34)
+            let groundY = height * 0.78
+            let towerX = width * 0.32
+            let padX = width * 0.60
+            let towerHeight = height * 0.26
+            let towerBaseY = groundY + height * 0.01
+            // Repouso da órbita fica no meio da tela, não perto do topo — evita o
+            // "pontinho perdido num vazio enorme" da primeira tentativa. O foguete
+            // continua visualmente ligado à base de lançamento a noite inteira.
+            let orbitCenter = CGPoint(x: width / 2, y: height * 0.5)
             let orbitRadiusX = width * 0.30
-            let orbitRadiusY = height * 0.13
-            let padAltitudeY = groundY - height * 0.06
+            let orbitRadiusY = height * 0.11
+            let padAltitudeY = groundY - height * 0.11
 
             ZStack {
                 starsLayer
 
-                GroundShape(groundY: groundY, bulge: height * 0.045)
+                GroundShape(groundY: groundY, bulge: height * 0.05)
                     .fill(
                         LinearGradient(
                             colors: [SoveeColor.floresta.opacity(0.55), SoveeColor.floresta.opacity(0.95)],
@@ -251,19 +256,19 @@ private struct LiftoffOrbitScene: View {
                     )
 
                 LaunchTowerShape()
-                    .stroke(SoveeColor.carvao.opacity(0.9), style: StrokeStyle(lineWidth: 3.5, lineCap: .round, lineJoin: .round))
-                    .frame(width: 30, height: height * 0.2)
-                    .position(x: towerX, y: groundY - height * 0.1)
+                    .stroke(SoveeColor.carvao.opacity(0.92), style: StrokeStyle(lineWidth: 4.5, lineCap: .round, lineJoin: .round))
+                    .frame(width: 40, height: towerHeight)
+                    .position(x: towerX, y: towerBaseY - towerHeight / 2)
 
-                HStack(spacing: 12) {
-                    RoundedRectangle(cornerRadius: 3, style: .continuous)
-                        .fill(SoveeColor.carvao.opacity(0.85))
-                        .frame(width: 34, height: 20)
-                    RoundedRectangle(cornerRadius: 3, style: .continuous)
-                        .fill(SoveeColor.carvao.opacity(0.75))
-                        .frame(width: 20, height: 28)
+                HStack(spacing: 14) {
+                    RoundedRectangle(cornerRadius: 4, style: .continuous)
+                        .fill(SoveeColor.carvao.opacity(0.88))
+                        .frame(width: 46, height: 26)
+                    RoundedRectangle(cornerRadius: 4, style: .continuous)
+                        .fill(SoveeColor.carvao.opacity(0.78))
+                        .frame(width: 26, height: 36)
                 }
-                .position(x: towerX + 42, y: groundY - 10)
+                .position(x: towerX + 54, y: towerBaseY - 13)
 
                 // Selo do planeta-destino desbloqueado — só um lembrete visual de
                 // pra onde o pouso vai acontecer de manhã (ver `RocketLandingView`).
@@ -272,7 +277,7 @@ private struct LiftoffOrbitScene: View {
                         Spacer()
                         Circle()
                             .fill(destination.color)
-                            .frame(width: 20, height: 20)
+                            .frame(width: 22, height: 22)
                             .overlay(Circle().stroke(theme.ink.opacity(0.12), lineWidth: 1))
                     }
                     Spacer()
@@ -281,7 +286,8 @@ private struct LiftoffOrbitScene: View {
 
                 if showsSmoke && phase == .liftoff {
                     SmokeCluster()
-                        .position(x: padX, y: groundY - 4)
+                        .scaleEffect(1.4)
+                        .position(x: padX, y: groundY - 2)
                         .transition(.opacity)
                 }
 
@@ -291,11 +297,12 @@ private struct LiftoffOrbitScene: View {
                     // dimensões fixas por dentro (`RocketIcon`), então só um `.frame`
                     // maior não aumenta nada, apenas dá mais espaço vazio ao redor.
                     RocketWithFlame(showsFlame: true)
-                        .scaleEffect(1.6)
+                        .scaleEffect(2.0)
                         .position(x: padX, y: padAltitudeY - liftoffAltitude * (padAltitudeY - orbitCenter.y))
                         .transition(.opacity)
                 case .orbiting:
                     RocketWithFlame(showsFlame: false)
+                        .scaleEffect(1.3)
                         .rotationEffect(.degrees(orbitAngle + 90))
                         .position(
                             x: orbitCenter.x + CGFloat(cos(orbitAngle * .pi / 180)) * orbitRadiusX,
@@ -304,6 +311,7 @@ private struct LiftoffOrbitScene: View {
                         .transition(.opacity)
                 case .exploded:
                     ExplosionBurst()
+                        .scaleEffect(1.4)
                         .position(x: orbitCenter.x, y: orbitCenter.y)
                         .transition(.opacity)
                 }
@@ -402,6 +410,11 @@ private struct LaunchTowerShape: Shape {
         path.addLine(to: CGPoint(x: rect.minX, y: rect.minY))
         path.move(to: CGPoint(x: rect.maxX, y: rect.maxY))
         path.addLine(to: CGPoint(x: rect.maxX, y: rect.minY))
+
+        // Bracinho no topo (a "ponte" que encosta no foguete antes da decolagem,
+        // como na referência) — sai da coluna esquerda, um pouco pra fora.
+        path.move(to: CGPoint(x: rect.minX, y: rect.minY + rect.height * 0.06))
+        path.addLine(to: CGPoint(x: rect.maxX + rect.width * 0.7, y: rect.minY + rect.height * 0.06))
 
         let steps = 5
         for step in 0..<steps {
