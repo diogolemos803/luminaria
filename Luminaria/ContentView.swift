@@ -160,9 +160,29 @@ struct ContentView: View {
     /// original — a sombra do botão à noite já estava aprovada, não mudou.
     private var soveeMainScreen: some View {
         let theme = ModeTheme.current(armed: isNightModeArmed)
+        // Mais distante já desbloqueado pela sequência ATUAL de dias limpos (não o
+        // recorde histórico — se a sequência já quebrou, a viagem de hoje reflete
+        // isso). Ver `GrowthDestinations`/`DetoxStats.currentCleanDayStreak`.
+        let destination = GrowthDestinations.furthestUnlocked(
+            currentStreak: DetoxStats.currentCleanDayStreak(in: sleepReportStore.entries)
+        )
         return ZStack {
             if isNightModeArmed {
                 theme.stage.ignoresSafeArea()
+
+                // Viagem de foguete só com o bloqueio de apps realmente ativo (mesma
+                // condição do passe de emergência) — fica no topo da tela, bem acima
+                // do botão redondo, pra nunca sobrepor a identidade central do
+                // produto. `allowsHitTesting(false)`: é só decorativo, não deve
+                // roubar toques do botão nem de nada embaixo dele.
+                if screenTimeManager.isShieldActive {
+                    RocketGrowthVisual()
+                        .render(phase: growthTracker.phase, destination: destination, theme: theme)
+                        .frame(height: 240)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                        .padding(.top, 24)
+                        .allowsHitTesting(false)
+                }
             } else {
                 Color.white.ignoresSafeArea()
                 soveeDayGlow.ignoresSafeArea()
@@ -209,18 +229,6 @@ struct ContentView: View {
                 .disabled(screenTimeManager.emergencyPassesRemaining == 0)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
                 .padding(.bottom, 16)
-
-                // Indicador TEMPORÁRIO de debug pro sistema de crescimento (item 2c/
-                // 3b) — ainda não tem metáfora visual final escolhida (maré/lua/
-                // brasa), então isso só existe pra dar pra ver/testar que o
-                // progresso reseta ao reabrir o app ou usar um passe de emergência.
-                // Trocar por um dos visuais sugeridos quando a metáfora for
-                // escolhida — remover esse texto nessa hora.
-                Text("Crescimento (debug): \(Int(growthTracker.growthProgress * 100))%")
-                    .font(.soveeBody(.caption2))
-                    .foregroundStyle(theme.inkMuted.opacity(0.7))
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-                    .padding(.top, 60)
             }
         }
         .animation(.easeInOut(duration: 0.6), value: isNightModeArmed)

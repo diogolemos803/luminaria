@@ -198,28 +198,44 @@ depende de CI num runner macOS na nuvem (GitHub Actions) e de sideload via AltSt
   ambos com `init(from:)` manual decode-safe (mesmo padrão de sempre nesse projeto —
   default otimista quando ausente, não falha o decode nem reseta o histórico).
   `recordSession` ganhou os dois parâmetros novos correspondentes.
-- `Luminaria/GrowthEngine.swift` (novo, terreno pro item "sistema de crescimento" do
-  roadmap social/gamificação — sem visual final ainda, só o encaixe) — `protocol
-  GrowthVisualizing` (qualquer metáfora visual futura — maré, fase da lua, brasa —
-  implementa isso; a lógica de progresso nunca precisa saber qual metáfora está
-  sendo usada) e `NightSessionActivityTracker` (`ObservableObject` singleton):
-  `growthProgress: Double` 0...1, resetado por `registerTouchEvent()`. Também
-  alimenta a métrica "maior sequência sem tocar numa sessão" (`longestGapThisSession`,
-  devolvido por `sessionDidEnd()` pra virar `SleepReportEntry.
-  longestUninterruptedSeconds`). **Definição de "toque" usada**: reabrir o app OU usar
-  um passe de emergência durante uma sessão ativa — as duas únicas ações reais e
-  detectáveis (não existe API pública pra "qualquer toque na tela"/"desbloqueou o
-  celular" em segundo plano — ver Decisões abaixo pra investigação completa de
-  viabilidade). Conectado em `ScreenTimeManager.applyShield`/`removeShield`
-  (start/end de sessão) e em `ContentView.onChange(of: scenePhase)` (toque por
-  reabertura) + `ScreenTimeManager.useEmergencyPass` (toque por passe).
+- `Luminaria/GrowthEngine.swift` (novo, item "sistema de crescimento" do roadmap
+  social/gamificação) — `protocol GrowthVisualizing` (metáfora visual trocável sem
+  tocar na lógica) e `NightSessionActivityTracker` (`ObservableObject` singleton):
+  `phase: Phase` (`.traveling(progress: Double)` ou `.exploded`, essa última
+  transiente — volta sozinha pra `.traveling(progress: 0)` depois de
+  `explosionDuration`), resetado (ou melhor, "explodido") por
+  `registerTouchEvent()`. Também alimenta a métrica "maior sequência sem tocar numa
+  sessão" (`longestGapThisSession`, devolvido por `sessionDidEnd()` pra virar
+  `SleepReportEntry.longestUninterruptedSeconds`). **Definição de "toque" usada**:
+  reabrir o app OU usar um passe de emergência durante uma sessão ativa — as duas
+  únicas ações reais e detectáveis (não existe API pública pra "qualquer toque na
+  tela"/"desbloqueou o celular" em segundo plano — ver Decisões abaixo pra
+  investigação completa de viabilidade). Conectado em `ScreenTimeManager.
+  applyShield`/`removeShield` (start/end de sessão) e em `ContentView.
+  onChange(of: scenePhase)` (toque por reabertura) + `ScreenTimeManager.
+  useEmergencyPass` (toque por passe).
+  **Metáfora escolhida (2026-08-09): viagem de foguete cartoon minimalista até a
+  Lua/planetas** — `CelestialDestination`/`GrowthDestinations` (Lua/Marte/Saturno/
+  Netuno, desbloqueados por `DetoxStats.currentCleanDayStreak` — 0/7/15/30 dias,
+  não por compra — usuário decidiu adiar StoreKit, que exigiria configurar produtos
+  no App Store Connect e não dá pra testar sem device real com conta sandbox, nenhum
+  dos dois disponível aqui) e `RocketGrowthVisual` (implementa `GrowthVisualizing`):
+  foguete/planeta/explosão desenhados só com formas primitivas do SwiftUI
+  (`Circle`/`RoundedRectangle`/`Shape` customizado pro triângulo) — sem nenhum asset
+  de imagem, que exigiria um designer pra ilustração de personagem de verdade.
+  Renderizado em `ContentView.soveeMainScreen`, fixado no topo da tela (bem acima do
+  botão redondo, `allowsHitTesting(false)`) — só aparece com
+  `screenTimeManager.isShieldActive`, mesma condição do passe de emergência.
 - `Luminaria/SocialModels.swift` (novo, terreno pro item "amigos" e "ranking de
   detox" — só modelos de dados, sem UI final nem rede) — `Friend`/`FriendInvite`/
   `FriendInviteStatus` (`Codable` puro) e `protocol FriendsRepository` (qualquer
   fonte de dados — local, CloudKit, backend próprio — implementa isso depois, a UI
-  programa contra o protocolo). `enum DetoxStats` com `longestCleanDayStreak(in:)` e
-  `longestUninterruptedStreak(in:)`, funções puras sobre `[SleepReportEntry]`, sem
-  estado próprio.
+  programa contra o protocolo). `enum DetoxStats` com `longestCleanDayStreak(in:)`
+  (recorde histórico), `longestUninterruptedStreak(in:)` e `currentCleanDayStreak
+  (in:asOf:)` (sequência ATUAL, contando pra trás a partir de hoje — usada por
+  `GrowthDestinations` em `GrowthEngine.swift` pra decidir qual planeta está
+  desbloqueado agora, não qual já foi alcançado uma vez no passado) — todas funções
+  puras sobre `[SleepReportEntry]`, sem estado próprio.
 - `Luminaria/silence_loop.wav` / `Luminaria/alarm_tone.wav` — sons originais (sirene
   clássica), gerados programaticamente. `Luminaria/alarm_alvorada.wav` — tom puro
   (arpejo pentatônico ascendente), mantido. `Luminaria/alarm_ondas.wav` /
@@ -828,16 +844,31 @@ Fluxo usado pra testar de verdade, todo do Windows:
      sombra do botão em si (`theme.ink.opacity(0.12)`) não mudou, já estava
      aprovada; só o acento usado no ícone/chips do modo noite (que usava sage) virou
      azul.
-- **Sistema de crescimento (item 2c) intencionalmente sem visual nenhum até esta
-  rodada — usuário perguntou por que não aparecia**: resposta é "por design", não
-  bug — o pedido original foi explícito ("não implemente a visualização final
+- **Sistema de crescimento (item 2c) intencionalmente sem visual nenhum na rodada
+  anterior — usuário perguntou por que não aparecia**: resposta foi "por design",
+  não bug — o pedido original foi explícito ("não implemente a visualização final
   ainda... deixe a lógica atrás de um protocolo que permita trocar só a camada
-  visual depois"), então `NightSessionActivityTracker` sempre rodou sem nenhuma UI
-  observando `growthProgress`. Adicionado um indicador TEMPORÁRIO de debug (texto
-  simples em `soveeMainScreen`, "Crescimento (debug): N%") só pra dar pra ver o
-  número mudando e resetar ao reabrir o app ou usar um passe de emergência — não é
-  a metáfora visual final (maré/lua/brasa, ainda não escolhida), é só pra
-  verificação visual enquanto isso.
+  visual depois"), então `NightSessionActivityTracker` rodava sem nenhuma UI
+  observando o progresso. Um indicador de debug (texto simples) foi adicionado
+  temporariamente pra confirmar visualmente o reset — substituído pela metáfora
+  final logo em seguida (ver próxima entrada).
+- **Metáfora final do crescimento escolhida: viagem de foguete cartoon minimalista
+  até planetas (2026-08-09)** — pedido literal do usuário: foguete até a Lua,
+  "explode" se a pessoa desbloquear o celular durante a rotina ativa, planetas
+  desbloqueados por sequência de dias (7/15/30). Duas decisões de escopo
+  confirmadas com o usuário antes de implementar: (1) só desbloqueio por sequência
+  de dias, SEM compra — StoreKit exigiria configurar produtos pagos no App Store
+  Connect e não dá pra testar sem device real com conta sandbox tester, nenhum dos
+  dois disponível neste ambiente; a estrutura de dados (`CelestialDestination`) não
+  impede adicionar compra depois, só não foi implementada agora; (2) tom visual
+  "cartoon minimalista" (não puramente calmo/premium como o resto do app, mas
+  também não ilustração cartoon detalhada) — confirmado como intencional, uma
+  exceção divertida só nessa parte da tela, sem mudar o tom do botão redondo/telas
+  de configuração. Implementação 100% em formas primitivas do SwiftUI (`Circle`/
+  `RoundedRectangle`/`Shape` customizado) — sem asset de imagem nenhum, porque
+  ilustração de personagem de verdade exigiria um designer, não é algo que dá pra
+  gerar via código. Ver `GrowthEngine.swift` em Arquitetura acima pro detalhe
+  técnico completo.
 - **Item 3a (desligamento automático pelo horário) já estava parcialmente resolvido
   antes do brief SOVEE chegar**: o bloqueio de apps já desliga sozinho quando o
   despertador toca (`AlarmManager.triggerAlarm` → `ScreenTimeManager.removeShield`,
@@ -1253,6 +1284,16 @@ O usuário perguntou sobre viabilidade de controlar a luminária de verdade via 
   crescimento do item 2c não aparecia em lugar nenhum — comportamento esperado, era
   só lógica sem UI por pedido original, mas o debug deixa dar pra testar visualmente
   o reset por reabrir o app/usar passe de emergência).
+- **2026-08-09 (mesmo dia, metáfora final do crescimento)**: substituído o indicador
+  de debug por uma viagem de foguete cartoon minimalista de verdade —
+  `RocketGrowthVisual` em `GrowthEngine.swift`, renderizada no topo de
+  `soveeMainScreen` sempre que `screenTimeManager.isShieldActive`. Foguete viaja da
+  base até um planeta no topo, "explode" (animação de partículas) quando
+  `NightSessionActivityTracker.registerTouchEvent()` dispara, recomeça sozinho a
+  viagem depois de ~1.4s. Planetas (Lua/Marte/Saturno/Netuno) desbloqueiam por
+  `DetoxStats.currentCleanDayStreak` — 0/7/15/30 dias, sem compra (StoreKit adiado —
+  não dá pra testar sem device+conta sandbox). Ver Decisões acima pro detalhe
+  completo das duas confirmações de escopo feitas antes de implementar.
 
 ## Como retomar em outro computador
 

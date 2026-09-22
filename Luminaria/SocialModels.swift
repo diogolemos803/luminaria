@@ -89,4 +89,34 @@ enum DetoxStats {
     static func longestUninterruptedStreak(in entries: [SleepReportEntry]) -> TimeInterval {
         entries.map(\.longestUninterruptedSeconds).max() ?? 0
     }
+
+    /// Sequência ATUAL de dias consecutivos com sessão limpa, contando pra trás a
+    /// partir de hoje — diferente de `longestCleanDayStreak` (o recorde histórico,
+    /// que pode já ter sido quebrado). Usado por `GrowthDestinations` pra decidir
+    /// qual planeta está desbloqueado AGORA, não qual já foi alcançado uma vez no
+    /// passado. Se hoje ainda não teve sessão limpa (a noite ainda não terminou),
+    /// conta a partir de ontem — não zera a sequência só porque o dia ainda não
+    /// acabou.
+    static func currentCleanDayStreak(in entries: [SleepReportEntry], asOf referenceDate: Date = Date(), calendar: Calendar = .current) -> Int {
+        let cleanDays = Set(
+            entries
+                .filter { $0.endReason == .alarmFired }
+                .map { calendar.startOfDay(for: $0.date) }
+        )
+        guard !cleanDays.isEmpty else { return 0 }
+
+        var day = calendar.startOfDay(for: referenceDate)
+        if !cleanDays.contains(day) {
+            guard let yesterday = calendar.date(byAdding: .day, value: -1, to: day) else { return 0 }
+            day = yesterday
+        }
+
+        var streak = 0
+        while cleanDays.contains(day) {
+            streak += 1
+            guard let previousDay = calendar.date(byAdding: .day, value: -1, to: day) else { break }
+            day = previousDay
+        }
+        return streak
+    }
 }
