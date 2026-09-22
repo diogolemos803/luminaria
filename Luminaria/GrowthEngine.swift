@@ -200,7 +200,7 @@ private struct RocketJourneyView: View {
                     path.move(to: CGPoint(x: midX, y: bottomY))
                     path.addLine(to: CGPoint(x: midX, y: topY))
                 }
-                .stroke(style: StrokeStyle(lineWidth: 2, dash: [5, 9], lineCap: .round))
+                .stroke(style: StrokeStyle(lineWidth: 2, lineCap: .round, dash: [5, 9]))
                 .foregroundStyle(theme.inkMuted.opacity(0.25))
 
                 // Planeta/destino no topo — cor muda conforme o mais distante já
