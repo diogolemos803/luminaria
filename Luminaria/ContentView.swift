@@ -105,6 +105,15 @@ struct ContentView: View {
                         ShortcutManager.shared.runSleepShortcut()
                         alarmManager.armAlarm(hour: routine.alarmHour, minute: routine.alarmMinute, soundFileName: routine.soundOption.fileName)
                         screenTimeManager.applyShield(selection: routine.appSelection)
+                        // Sequência pedida pelo usuário: o botão fica visível mais 1s
+                        // depois do reconhecimento e então desce/some, dando lugar à
+                        // cena de decolagem (ver `soveeMainScreen`). Disparado direto
+                        // aqui — no exato instante da leitura — em vez de observar
+                        // `screenTimeManager.isShieldActive` de fora, pra não depender
+                        // de timing de propagação do `@Published`.
+                        showsRoundButton = true
+                        try? await Task.sleep(nanoseconds: 1_000_000_000)
+                        showsRoundButton = false
                     }
                 }
                 // Sem isso, cancelar a leitura, deixar dar timeout (~60s do CoreNFC) ou
@@ -113,6 +122,7 @@ struct ContentView: View {
                 // com sucesso.
                 nfcManager.onScanEndedWithoutMatch = {
                     isNightModeArmed = false
+                    showsRoundButton = true
                 }
                 // O desbloqueio de apps em si já acontece dentro de AlarmManager
                 // (funciona mesmo com o app suspenso) — isso aqui só sincroniza o botão
@@ -120,6 +130,7 @@ struct ContentView: View {
                 // na hora que o despertador dispara.
                 alarmManager.onAlarmFired = {
                     isNightModeArmed = false
+                    showsRoundButton = true
                 }
             }
             .onChange(of: scenePhase) { newPhase in
@@ -231,6 +242,7 @@ struct ContentView: View {
             if isNightModeArmed && screenTimeManager.isShieldActive {
                 Button {
                     _ = screenTimeManager.useEmergencyPass()
+                    showsRoundButton = true
                 } label: {
                     Text("Passe de emergência (\(screenTimeManager.emergencyPassesRemaining) restantes)")
                         .font(.soveeBody(.caption))
@@ -244,22 +256,6 @@ struct ContentView: View {
         .animation(.easeInOut(duration: 0.6), value: isNightModeArmed)
         .animation(.spring(response: 0.3, dampingFraction: 0.65), value: isPressed)
         .animation(.easeInOut(duration: 0.7), value: showsRoundButton)
-        .onChange(of: screenTimeManager.isShieldActive) { active in
-            if active {
-                // Reconhecimento novo de tag: garante o botão visível por 1s antes
-                // de começar a descer — só então a cena de decolagem entra (ver
-                // `showsJourney` acima).
-                showsRoundButton = true
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                    guard screenTimeManager.isShieldActive else { return }
-                    showsRoundButton = false
-                }
-            } else {
-                // Sessão terminou (despertador, desarme manual ou passe de
-                // emergência) — o botão volta.
-                showsRoundButton = true
-            }
-        }
     }
 
     /// Brilho de "nascer do sol" no fundo do modo dia — pedido específico depois de
@@ -338,6 +334,7 @@ struct ContentView: View {
             nfcManager.stopScanning()
             alarmManager.disarmAlarm()
             screenTimeManager.removeShield(reason: .manualDisarm)
+            showsRoundButton = true
         }
     }
 }
