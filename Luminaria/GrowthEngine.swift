@@ -181,88 +181,113 @@ struct RocketGrowthVisual: GrowthVisualizing {
     }
 }
 
-/// Cena de tela cheia: a Terra sobe de baixo da tela junto com o foguete decolando
-/// (`.liftoff`), depois o foguete fica orbitando a Terra continuamente (`.orbiting`)
-/// até a sessão terminar. `.exploded` interrompe a órbita com uma explosão rápida e
-/// volta a orbitar sozinho. O planeta-destino (Lua/Marte/Saturno/Netuno, conforme a
-/// sequência de dias) aparece só como um selo discreto no canto — o pouso nele de
-/// verdade acontece em `RocketLandingView`, na tela do despertador.
+/// Cena de tela cheia baseada numa referência visual dada pelo usuário (ilustração
+/// flat de um lançamento: Terra ocupando a base, torre de lançamento treliçada,
+/// fumaça na base, foguete branco/vermelho com chama) — versão noturna: o céu já é
+/// `theme.stage` (pintado por trás, em `ContentView`), aqui só entram as estrelas, o
+/// terreno e a base de lançamento.
+///
+/// A Terra ocupa só o quinto inferior da tela (pedido explícito, não um círculo
+/// grande como na primeira tentativa) — um morro raso (`GroundShape`), não uma
+/// esfera. A torre (`LaunchTowerShape`) e os prédios pequenos ficam sobre esse
+/// morro, junto do foguete. `.liftoff` sobe o foguete com chama e fumaça saindo da
+/// base; `.orbiting` é o estado de repouso da noite inteira — o foguete desliza
+/// devagar num arco largo no céu, sem chama; `.exploded` interrompe com uma
+/// explosão rápida e volta a orbitar sozinho.
 ///
 /// Sem simulador/device neste ambiente pra cronometrar quadro a quadro — as durações
-/// abaixo (`liftoffVisualDuration`, `orbitPeriod`) são estimativas razoáveis, não
-/// medidas contra um dispositivo real.
+/// abaixo são estimativas razoáveis, não medidas contra um dispositivo real.
 private struct LiftoffOrbitScene: View {
     let phase: NightSessionActivityTracker.Phase
     let destination: CelestialDestination
     let theme: ModeTheme
 
-    @State private var earthRisen = false
+    @State private var liftoffAltitude: CGFloat = 0
+    @State private var showsSmoke = true
     @State private var orbitAngle: Double = -90
 
-    private static let liftoffVisualDuration: Double = 2.0
-    private static let orbitPeriod: Double = 16
+    private static let liftoffVisualDuration: Double = 2.2
+    private static let smokeFadeDelay: Double = 1.3
+    private static let orbitPeriod: Double = 18
 
     var body: some View {
         GeometryReader { geo in
-            let earthRadius: CGFloat = min(geo.size.width, geo.size.height) * 0.22
-            let earthRestingCenter = CGPoint(x: geo.size.width / 2, y: geo.size.height - earthRadius * 0.6)
-            let earthHiddenCenter = CGPoint(x: geo.size.width / 2, y: geo.size.height + earthRadius)
-            let orbitRadiusX = geo.size.width * 0.34
-            let orbitRadiusY = earthRadius * 1.35
+            let width = geo.size.width
+            let height = geo.size.height
+            // Topo do quinto inferior — é aqui que o morro/base de lançamento vive.
+            let groundY = height * 0.8
+            let padX = width * 0.56
+            let towerX = width * 0.26
+            let orbitCenter = CGPoint(x: width / 2, y: height * 0.36)
+            let orbitRadiusX = width * 0.30
+            let orbitRadiusY = height * 0.13
+            let padAltitudeY = groundY - height * 0.05
 
             ZStack {
+                starsLayer
+
+                GroundShape(groundY: groundY, bulge: height * 0.035)
+                    .fill(
+                        LinearGradient(
+                            colors: [SoveeColor.floresta.opacity(0.55), SoveeColor.floresta.opacity(0.95)],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+
+                LaunchTowerShape()
+                    .stroke(SoveeColor.carvao.opacity(0.85), style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round))
+                    .frame(width: 22, height: height * 0.16)
+                    .position(x: towerX, y: groundY - height * 0.08)
+
+                HStack(spacing: 10) {
+                    RoundedRectangle(cornerRadius: 3, style: .continuous)
+                        .fill(SoveeColor.carvao.opacity(0.8))
+                        .frame(width: 26, height: 16)
+                    RoundedRectangle(cornerRadius: 3, style: .continuous)
+                        .fill(SoveeColor.carvao.opacity(0.7))
+                        .frame(width: 15, height: 22)
+                }
+                .position(x: towerX + 34, y: groundY - 8)
+
                 // Selo do planeta-destino desbloqueado — só um lembrete visual de
-                // pra onde a viagem vai terminar de manhã, sem interação nenhuma.
+                // pra onde o pouso vai acontecer de manhã (ver `RocketLandingView`).
                 VStack {
                     HStack {
                         Spacer()
                         Circle()
                             .fill(destination.color)
-                            .frame(width: 22, height: 22)
+                            .frame(width: 20, height: 20)
                             .overlay(Circle().stroke(theme.ink.opacity(0.12), lineWidth: 1))
                     }
                     Spacer()
                 }
-                .padding(20)
+                .padding(18)
 
-                // Terra — some fora da tela por baixo até a sessão começar, depois
-                // sobe pra posição de repouso e fica ali (cortada como um horizonte)
-                // durante toda a órbita.
-                Circle()
-                    .fill(
-                        RadialGradient(
-                            colors: [SoveeColor.floresta, SoveeColor.floresta.opacity(0.7)],
-                            center: .topLeading,
-                            startRadius: 4,
-                            endRadius: earthRadius * 2
-                        )
-                    )
-                    .frame(width: earthRadius * 2, height: earthRadius * 2)
-                    .position(earthRisen ? earthRestingCenter : earthHiddenCenter)
+                if showsSmoke && phase == .liftoff {
+                    SmokeCluster()
+                        .position(x: padX, y: groundY - 6)
+                        .transition(.opacity)
+                }
 
                 switch phase {
                 case .liftoff:
-                    RocketIcon(bodyColor: theme.card, accentColor: theme.accent)
-                        .frame(width: 30, height: 50)
-                        .position(
-                            x: earthRestingCenter.x,
-                            y: earthRisen
-                                ? earthRestingCenter.y - earthRadius - 34
-                                : earthHiddenCenter.y - earthRadius * 0.4
-                        )
+                    RocketWithFlame(showsFlame: true)
+                        .frame(width: 26, height: 58)
+                        .position(x: padX, y: padAltitudeY - liftoffAltitude * (padAltitudeY - orbitCenter.y))
                         .transition(.opacity)
                 case .orbiting:
-                    RocketIcon(bodyColor: theme.card, accentColor: theme.accent)
-                        .frame(width: 24, height: 40)
+                    RocketWithFlame(showsFlame: false)
+                        .frame(width: 22, height: 40)
                         .rotationEffect(.degrees(orbitAngle + 90))
                         .position(
-                            x: earthRestingCenter.x + CGFloat(cos(orbitAngle * .pi / 180)) * orbitRadiusX,
-                            y: earthRestingCenter.y - earthRadius * 0.3 + CGFloat(sin(orbitAngle * .pi / 180)) * orbitRadiusY
+                            x: orbitCenter.x + CGFloat(cos(orbitAngle * .pi / 180)) * orbitRadiusX,
+                            y: orbitCenter.y + CGFloat(sin(orbitAngle * .pi / 180)) * orbitRadiusY
                         )
                         .transition(.opacity)
                 case .exploded:
                     ExplosionBurst()
-                        .position(x: earthRestingCenter.x, y: earthRestingCenter.y - earthRadius - 24)
+                        .position(x: orbitCenter.x, y: orbitCenter.y)
                         .transition(.opacity)
                 }
             }
@@ -271,6 +296,32 @@ private struct LiftoffOrbitScene: View {
         }
     }
 
+    /// Estrelas fixas (posições fracionárias fixas, não geradas de novo a cada
+    /// render) — só pra vender "céu noturno" com mais clareza do que o fundo escuro
+    /// sozinho, já que `theme.stage` à noite é um grafite liso, não um azul-marinho.
+    private var starsLayer: some View {
+        GeometryReader { geo in
+            ZStack {
+                ForEach(Self.starPositions.indices, id: \.self) { index in
+                    let star = Self.starPositions[index]
+                    Circle()
+                        .fill(Color.white.opacity(star.opacity))
+                        .frame(width: star.size, height: star.size)
+                        .position(x: geo.size.width * star.x, y: geo.size.height * star.y)
+                }
+            }
+        }
+    }
+
+    private static let starPositions: [(x: CGFloat, y: CGFloat, size: CGFloat, opacity: Double)] = [
+        (0.08, 0.10, 2, 0.8), (0.20, 0.22, 1.5, 0.5), (0.34, 0.08, 2, 0.7),
+        (0.46, 0.30, 1.5, 0.4), (0.58, 0.14, 2, 0.9), (0.70, 0.24, 1.5, 0.5),
+        (0.82, 0.10, 2, 0.7), (0.90, 0.32, 1.5, 0.6), (0.14, 0.42, 1.5, 0.4),
+        (0.28, 0.50, 2, 0.6), (0.50, 0.46, 1.5, 0.5), (0.64, 0.44, 1.5, 0.4),
+        (0.76, 0.52, 2, 0.6), (0.92, 0.48, 1.5, 0.5), (0.06, 0.58, 1.5, 0.4),
+        (0.38, 0.62, 2, 0.5),
+    ]
+
     /// Sincroniza a animação visual com a fase autoritativa do
     /// `NightSessionActivityTracker` — a cena não guarda seu próprio estado de
     /// "decolando vs orbitando", só reage ao que a fase diz agora (importante porque
@@ -278,12 +329,18 @@ private struct LiftoffOrbitScene: View {
     private func syncWithPhase() {
         switch phase {
         case .liftoff:
-            earthRisen = false
-            withAnimation(.easeOut(duration: Self.liftoffVisualDuration)) {
-                earthRisen = true
+            showsSmoke = true
+            liftoffAltitude = 0
+            withAnimation(.easeIn(duration: Self.liftoffVisualDuration)) {
+                liftoffAltitude = 1
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + Self.smokeFadeDelay) {
+                withAnimation(.easeOut(duration: 0.6)) {
+                    showsSmoke = false
+                }
             }
         case .orbiting:
-            earthRisen = true
+            showsSmoke = false
             orbitAngle = -90
             withAnimation(.linear(duration: Self.orbitPeriod).repeatForever(autoreverses: false)) {
                 orbitAngle = -90 + 360
@@ -294,18 +351,104 @@ private struct LiftoffOrbitScene: View {
     }
 }
 
+/// Morro raso ocupando só o quinto inferior da tela (`groundY` fixado em 80% da
+/// altura) — não uma esfera/círculo grande como na primeira tentativa. `bulge`
+/// controla a curvatura (bem sutil, só o suficiente pra ler como horizonte, não
+/// como uma bola).
+private struct GroundShape: Shape {
+    let groundY: CGFloat
+    let bulge: CGFloat
+
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        path.move(to: CGPoint(x: 0, y: groundY))
+        path.addQuadCurve(to: CGPoint(x: rect.width, y: groundY), control: CGPoint(x: rect.width / 2, y: groundY - bulge))
+        path.addLine(to: CGPoint(x: rect.width, y: rect.height))
+        path.addLine(to: CGPoint(x: 0, y: rect.height))
+        path.closeSubpath()
+        return path
+    }
+}
+
+/// Torre de lançamento treliçada — duas colunas verticais + zigue-zague, igual à
+/// referência visual (silhueta simples, sem asset nenhum).
+private struct LaunchTowerShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        path.move(to: CGPoint(x: rect.minX, y: rect.maxY))
+        path.addLine(to: CGPoint(x: rect.minX, y: rect.minY))
+        path.move(to: CGPoint(x: rect.maxX, y: rect.maxY))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.minY))
+
+        let steps = 5
+        for step in 0..<steps {
+            let y0 = rect.maxY - CGFloat(step) / CGFloat(steps) * rect.height
+            let y1 = rect.maxY - CGFloat(step + 1) / CGFloat(steps) * rect.height
+            if step.isMultiple(of: 2) {
+                path.move(to: CGPoint(x: rect.minX, y: y0))
+                path.addLine(to: CGPoint(x: rect.maxX, y: y1))
+            } else {
+                path.move(to: CGPoint(x: rect.maxX, y: y0))
+                path.addLine(to: CGPoint(x: rect.minX, y: y1))
+            }
+        }
+        return path
+    }
+}
+
+/// Nuvem de fumaça na base do lançamento — só durante `.liftoff`, com um pulso leve
+/// de escala pra não ficar estática demais. Cluster de círculos sobrepostos em
+/// posições fixas (não aleatórias a cada render).
+private struct SmokeCluster: View {
+    @State private var pulse = false
+
+    private struct Puff {
+        let dx: CGFloat
+        let dy: CGFloat
+        let size: CGFloat
+        let opacity: Double
+    }
+
+    private static let puffs: [Puff] = [
+        Puff(dx: -30, dy: 4, size: 34, opacity: 0.55),
+        Puff(dx: -8, dy: 10, size: 44, opacity: 0.7),
+        Puff(dx: 18, dy: 6, size: 38, opacity: 0.6),
+        Puff(dx: 36, dy: 12, size: 30, opacity: 0.5),
+        Puff(dx: 4, dy: -6, size: 26, opacity: 0.5),
+    ]
+
+    var body: some View {
+        ZStack {
+            ForEach(Self.puffs.indices, id: \.self) { index in
+                let puff = Self.puffs[index]
+                Circle()
+                    .fill(Color.white.opacity(puff.opacity))
+                    .frame(width: puff.size * (pulse ? 1.08 : 1.0), height: puff.size * (pulse ? 1.08 : 1.0))
+                    .offset(x: puff.dx, y: puff.dy)
+            }
+        }
+        .onAppear {
+            withAnimation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true)) {
+                pulse = true
+            }
+        }
+    }
+}
+
 /// Foguete simples desenhado só com formas primitivas do SwiftUI (triângulos +
 /// retângulo arredondado + círculo) — sem depender de nenhum asset de imagem que eu
 /// não tenho como produzir (ilustração de personagem de verdade precisaria de um
-/// designer). Estilo flat/chapado, combina com o pedido de "cartoon minimalista".
+/// designer). Cores fixas (creme + terracota da própria paleta SOVEE), não ligadas
+/// ao tema dia/noite — o foguete é sempre o mesmo objeto reconhecível, só o cenário
+/// em volta muda.
 struct RocketIcon: View {
-    let bodyColor: Color
-    let accentColor: Color
+    private let bodyColor = Color(red: 0.97, green: 0.96, blue: 0.93)
+    private let trimColor = SoveeColor.terracota
 
     var body: some View {
         VStack(spacing: -6) {
             TriangleShape()
-                .fill(accentColor)
+                .fill(trimColor)
                 .frame(width: 22, height: 18)
 
             RoundedRectangle(cornerRadius: 9, style: .continuous)
@@ -313,22 +456,59 @@ struct RocketIcon: View {
                 .frame(width: 26, height: 34)
                 .overlay(
                     Circle()
-                        .fill(accentColor.opacity(0.85))
+                        .fill(SoveeColor.carvao.opacity(0.85))
                         .frame(width: 11, height: 11)
                 )
 
             HStack(spacing: 16) {
                 TriangleShape()
-                    .fill(accentColor)
+                    .fill(trimColor)
                     .frame(width: 12, height: 14)
                     .rotationEffect(.degrees(-100))
                 TriangleShape()
-                    .fill(accentColor)
+                    .fill(trimColor)
                     .frame(width: 12, height: 14)
                     .rotationEffect(.degrees(100))
             }
             .offset(y: -8)
         }
+    }
+}
+
+/// Foguete + chama — a chama só aparece durante a decolagem (`showsFlame: true`);
+/// em órbita o foguete desliza sozinho, sem propulsão visível.
+private struct RocketWithFlame: View {
+    let showsFlame: Bool
+    @State private var flicker = false
+
+    var body: some View {
+        VStack(spacing: 0) {
+            RocketIcon()
+            if showsFlame {
+                FlameShape()
+                    .fill(LinearGradient(colors: [.yellow, .orange], startPoint: .top, endPoint: .bottom))
+                    .frame(width: 14, height: flicker ? 26 : 18)
+                    .offset(y: -6)
+                    .onAppear {
+                        withAnimation(.easeInOut(duration: 0.18).repeatForever(autoreverses: true)) {
+                            flicker = true
+                        }
+                    }
+            }
+        }
+    }
+}
+
+private struct FlameShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        path.move(to: CGPoint(x: rect.midX, y: rect.maxY))
+        path.addQuadCurve(to: CGPoint(x: rect.maxX, y: rect.minY + rect.height * 0.3), control: CGPoint(x: rect.maxX, y: rect.maxY))
+        path.addQuadCurve(to: CGPoint(x: rect.midX, y: rect.minY), control: CGPoint(x: rect.midX, y: rect.minY + rect.height * 0.1))
+        path.addQuadCurve(to: CGPoint(x: rect.minX, y: rect.minY + rect.height * 0.3), control: CGPoint(x: rect.midX, y: rect.minY + rect.height * 0.1))
+        path.addQuadCurve(to: CGPoint(x: rect.midX, y: rect.maxY), control: CGPoint(x: rect.minX, y: rect.maxY))
+        path.closeSubpath()
+        return path
     }
 }
 
@@ -421,7 +601,7 @@ struct RocketLandingView: View {
                     .frame(width: planetRadius * 2, height: planetRadius * 2)
                     .position(planetCenter)
 
-                RocketIcon(bodyColor: theme.card, accentColor: theme.accent)
+                RocketIcon()
                     .frame(width: 28, height: 46)
                     .position(x: planetCenter.x, y: rocketLanded ? rocketRestingY : rocketRestingY - 160)
                     .opacity(astronautOut ? 0.85 : 1)
