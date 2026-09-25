@@ -61,7 +61,9 @@ final class AlarmManager: NSObject, ObservableObject {
     /// alarme MESMO que a checagem só rode bem depois do horário (app reaberto tarde) —
     /// antes, uma checagem por igualdade exata perdia a janela e nunca mais disparava
     /// naquele dia.
-    private var nextFireDate: Date?
+    /// Publicado (leitura) pra `ContentView` mostrar o despertador que continua armado
+    /// no modo dia depois de um passe de emergência, e pra calcular quando o passe volta.
+    @Published private(set) var nextFireDate: Date?
     /// Alarme do AlarmKit agendado pra esta noite; `nil` = despertador antigo (ou
     /// desarmado). Continua preenchido depois de tocar/ser parado, até `disarmAlarm()`
     /// — é o que impede o esquema antigo de começar a tocar som por cima.

@@ -23,11 +23,18 @@ final class ScreenTimeManager: ObservableObject {
     /// código pra desarmar, trancando os apps da pessoa até ela ir manualmente em
     /// Ajustes → Tempo de Uso.
     @Published private(set) var isShieldActive: Bool
-    /// Quantas vezes ainda dá pra liberar os apps sem esperar o despertador nesta
-    /// sessão de bloqueio (não é um limite mensal — reseta a cada `applyShield`
-    /// novo). Pedido do usuário pra casos reais (ligação urgente, saúde), inspirado
-    /// nos "passes de emergência" do Brick, mas por sessão em vez de vitalício.
-    @Published private(set) var emergencyPassesRemaining: Int
+    /// Quando o passe de emergência volta a ficar disponível; `nil` = disponível.
+    /// **1 passe por noite** (decisão do usuário, 2026-09-25): usar o passe encerra a
+    /// noite, e ele só volta no horário em que o despertador daquela noite tocaria —
+    /// preso ao ciclo real do sono, não a "24h a partir do uso" (usar às 23h poderia
+    /// deixar a pessoa sem passe na noite seguinte). Antes eram 2 passes por sessão, que
+    /// deixou de fazer sentido quando o passe passou a encerrar a sessão.
+    @Published private(set) var emergencyPassAvailableAgainAt: Date?
+
+    var isEmergencyPassAvailable: Bool {
+        guard let date = emergencyPassAvailableAgainAt else { return true }
+        return Date() >= date
+    }
 
     private let store = ManagedSettingsStore()
     private var shieldEngagedAt: Date?
@@ -40,19 +47,18 @@ final class ScreenTimeManager: ObservableObject {
     private static let shieldActiveKey = "com.luminaria.screenTime.shieldActive"
     private static let shieldEngagedAtKey = "com.luminaria.screenTime.shieldEngagedAt"
     private static let lastAppliedCountKey = "com.luminaria.screenTime.lastAppliedCount"
-    private static let emergencyPassesKey = "com.luminaria.screenTime.emergencyPasses"
-    private static let emergencyPassesPerSession = 2
+    private static let emergencyPassAvailableAtKey = "com.luminaria.screenTime.emergencyPassAvailableAt"
+    /// Sem despertador armado pra servir de referência (não deveria acontecer numa
+    /// sessão normal), o passe volta depois de 24h.
+    private static let emergencyPassFallbackInterval: TimeInterval = 24 * 60 * 60
 
     private init() {
         let defaults = UserDefaults.standard
         isShieldActive = defaults.bool(forKey: Self.shieldActiveKey)
         lastAppliedCount = defaults.integer(forKey: Self.lastAppliedCountKey)
-        // `integer(forKey:)` sozinho devolveria 0 numa instalação nova (chave
-        // ausente) — checar `object(forKey:)` primeiro garante que quem nunca
-        // armou o bloqueio comece com os 2 passes cheios, não com 0.
-        emergencyPassesRemaining = defaults.object(forKey: Self.emergencyPassesKey) != nil
-            ? defaults.integer(forKey: Self.emergencyPassesKey)
-            : Self.emergencyPassesPerSession
+        if defaults.object(forKey: Self.emergencyPassAvailableAtKey) != nil {
+            emergencyPassAvailableAgainAt = Date(timeIntervalSince1970: defaults.double(forKey: Self.emergencyPassAvailableAtKey))
+        }
         if defaults.object(forKey: Self.shieldEngagedAtKey) != nil {
             shieldEngagedAt = Date(timeIntervalSince1970: defaults.double(forKey: Self.shieldEngagedAtKey))
         }
@@ -92,10 +98,6 @@ final class ScreenTimeManager: ObservableObject {
         isShieldActive = true
         shieldEngagedAt = Date()
         lastAppliedCount = selection.applicationTokens.count + selection.categoryTokens.count + selection.webDomainTokens.count
-        // Reseta a cada sessão de bloqueio nova — não é um limite mensal, é "2
-        // chances por noite", contado a partir do mesmo instante em que o bloqueio
-        // de verdade começa.
-        emergencyPassesRemaining = Self.emergencyPassesPerSession
         NightSessionActivityTracker.shared.sessionDidStart()
         persistShieldState()
     }
@@ -105,7 +107,13 @@ final class ScreenTimeManager: ObservableObject {
     /// usado, ver `useEmergencyPass`). `reason` alimenta `DetoxStats.
     /// longestCleanDayStreak` (item 2b) — só sessões que terminam com `.alarmFired`
     /// contam como "limpas".
+    ///
+    /// Sem bloqueio ativo, não faz nada — bug real corrigido (2026-09-25): depois de um
+    /// passe de emergência, o despertador ainda toca de manhã e chamava isto de novo,
+    /// gravando uma segunda sessão como `.alarmFired` ("limpa"), o que anulava o efeito
+    /// do passe na sequência de dias.
     func removeShield(reason: DetoxSessionEndReason) {
+        guard isShieldActive else { return }
         store.clearAllSettings()
         isShieldActive = false
         let duration = shieldEngagedAt.map { Date().timeIntervalSince($0) } ?? 0
@@ -120,19 +128,19 @@ final class ScreenTimeManager: ObservableObject {
         persistShieldState()
     }
 
-    /// Libera os apps na hora, sem esperar o despertador — pra emergências reais
-    /// (ligação urgente, saúde), não pra "desistir da noite". Por isso NÃO desarma o
-    /// despertador nem a sessão NFC: só o bloqueio de apps termina cedo, o resto do
-    /// modo noite continua exatamente como estava. `isNightModeArmed` na
-    /// `ContentView` também não muda por causa disso — a tela continua no tema
-    /// escuro, só o botão de passe some sozinho (`isShieldActive` vira `false`).
+    /// Pra emergências reais (ligação urgente, saúde): libera os apps e encerra a noite
+    /// — a `ContentView` volta pro modo dia (pedido do usuário, 2026-09-25). O
+    /// despertador da manhã **continua armado** (decisão do usuário): é isso que
+    /// diferencia o passe de desligar pelo botão redondo, que cancela tudo.
+    /// `nextAlarmDate` é o horário do despertador desta noite — o passe só volta a
+    /// ficar disponível a partir dele (ver `emergencyPassAvailableAgainAt`).
     ///
     /// Também conta como um "toque" pro `NightSessionActivityTracker` (item 3b/2c) —
     /// é uma das duas únicas ações reais e detectáveis que significam "a pessoa
     /// mexeu no celular" durante a sessão.
-    func useEmergencyPass() -> Bool {
-        guard emergencyPassesRemaining > 0 else { return false }
-        emergencyPassesRemaining -= 1
+    func useEmergencyPass(nextAlarmDate: Date?) -> Bool {
+        guard isEmergencyPassAvailable, isShieldActive else { return false }
+        emergencyPassAvailableAgainAt = nextAlarmDate ?? Date().addingTimeInterval(Self.emergencyPassFallbackInterval)
         NightSessionActivityTracker.shared.registerTouchEvent()
         removeShield(reason: .emergencyPass)
         return true
@@ -142,7 +150,7 @@ final class ScreenTimeManager: ObservableObject {
         let defaults = UserDefaults.standard
         defaults.set(isShieldActive, forKey: Self.shieldActiveKey)
         defaults.set(lastAppliedCount, forKey: Self.lastAppliedCountKey)
-        defaults.set(emergencyPassesRemaining, forKey: Self.emergencyPassesKey)
+        defaults.set(emergencyPassAvailableAgainAt?.timeIntervalSince1970, forKey: Self.emergencyPassAvailableAtKey)
         if let shieldEngagedAt {
             defaults.set(shieldEngagedAt.timeIntervalSince1970, forKey: Self.shieldEngagedAtKey)
         } else {

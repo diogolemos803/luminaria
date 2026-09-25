@@ -285,22 +285,23 @@ struct ContentView: View {
                     .transition(.asymmetric(insertion: .opacity, removal: .move(edge: .leading).combined(with: .opacity)))
             }
 
-            // Só aparece com o bloqueio de apps realmente ativo — nunca no modo dia,
-            // nunca antes da luminária ser reconhecida. Continua visível mesmo com o
-            // botão redondo escondido: libera os apps sem desarmar a sessão (ver
-            // `nightReturnPage` pra desarmar de vez, rolando a tela pra baixo).
+            // Só aparece com o bloqueio de apps realmente ativo — nunca antes da
+            // luminária ser reconhecida. Continua visível com o botão redondo escondido
+            // (sobre a cena da decolagem). Usar o passe encerra a noite e volta pro modo
+            // dia, mas mantém o despertador (ver `useEmergencyPass`).
             if isNightModeArmed && screenTimeManager.isShieldActive {
-                Button {
-                    _ = screenTimeManager.useEmergencyPass()
-                    showsRoundButton = true
-                } label: {
-                    Text("Passe de emergência (\(screenTimeManager.emergencyPassesRemaining) restantes)")
-                        .font(.soveeBody(.caption))
-                        .foregroundStyle(theme.inkMuted)
-                }
-                .disabled(screenTimeManager.emergencyPassesRemaining == 0)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-                .padding(.bottom, 16)
+                emergencyPassButton(ink: theme.inkMuted)
+            }
+
+            // Depois de um passe de emergência o despertador continua armado mesmo no
+            // modo dia — sem esse lembrete, não daria pra saber que ele ainda vai tocar.
+            if !isNightModeArmed, let fireDate = alarmManager.nextFireDate, !alarmManager.isAlarmRinging {
+                Text("Despertador às \(fireDate.formatted(date: .omitted, time: .shortened))")
+                    .font(.soveeBody(.caption))
+                    .foregroundStyle(theme.inkMuted)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+                    .padding(.bottom, 40)
+                    .transition(.opacity)
             }
         }
         .animation(.easeInOut(duration: 0.6), value: isNightModeArmed)
@@ -318,6 +319,37 @@ struct ContentView: View {
     private func roundButtonIconColor(theme: ModeTheme) -> Color {
         guard isNightModeArmed else { return SoveeColor.carvao }
         return isTagRecognized ? SoveeColor.sage : theme.accent
+    }
+
+    /// 1 passe por noite: some o texto de "disponível" e mostra quando volta.
+    private func emergencyPassButton(ink: Color) -> some View {
+        let available = screenTimeManager.isEmergencyPassAvailable
+        let label: String
+        if available {
+            label = "Passe de emergência (1 por noite)"
+        } else if let date = screenTimeManager.emergencyPassAvailableAgainAt {
+            label = "Passe de emergência já usado — volta às \(date.formatted(date: .omitted, time: .shortened))"
+        } else {
+            label = "Passe de emergência já usado"
+        }
+        return Button(action: useEmergencyPass) {
+            Text(label)
+                .font(.soveeBody(.caption))
+                .foregroundStyle(ink)
+        }
+        .disabled(!available)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+        .padding(.bottom, 16)
+    }
+
+    /// Passe de emergência (pedido do usuário, 2026-09-25): libera os apps, encerra a
+    /// noite e volta pro modo dia — mas o despertador da manhã continua armado (é isso
+    /// que o diferencia do desligar pelo botão redondo, que cancela tudo).
+    private func useEmergencyPass() {
+        guard screenTimeManager.useEmergencyPass(nextAlarmDate: alarmManager.nextFireDate) else { return }
+        nfcManager.stopScanning()
+        isNightModeArmed = false
+        resetEntrance()
     }
 
     /// Volta o botão redondo pro estado inicial (antes de qualquer leitura).
@@ -414,17 +446,10 @@ struct ContentView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
                 .padding(.bottom, 40)
 
+            // Mesma regra da tela SOVEE (1 por noite, volta pro modo dia) — só o botão
+            // mudou aqui, o resto da tela antiga segue preservado.
             if isNightModeArmed && screenTimeManager.isShieldActive {
-                Button {
-                    _ = screenTimeManager.useEmergencyPass()
-                } label: {
-                    Text("Passe de emergência (\(screenTimeManager.emergencyPassesRemaining) restantes)")
-                        .font(.caption)
-                        .foregroundStyle(inkSleep)
-                }
-                .disabled(screenTimeManager.emergencyPassesRemaining == 0)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-                .padding(.bottom, 16)
+                emergencyPassButton(ink: inkSleep)
             }
         }
         .animation(.easeInOut(duration: 0.5), value: isNightModeArmed)

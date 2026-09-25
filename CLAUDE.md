@@ -192,13 +192,16 @@ depende de CI num runner macOS na nuvem (GitHub Actions) e de sideload via AltSt
   o ramo de desarmar de `toggleNightMode()`), reaproveitando o ciclo de vida existente
   em vez de inventar um padrão de interação novo. Por privacidade, o app NUNCA sabe
   quais apps foram escolhidos — só tokens opacos (dá pra saber quantos, não quais).
-  `emergencyPassesRemaining` (2 por sessão de bloqueio, não um limite mensal — reseta
-  dentro de `applyShield`) + `useEmergencyPass()`: libera os apps na hora sem esperar o
-  despertador, pra emergências reais. NÃO chama `disarmAlarm`/`stopScanning` — só o
-  bloqueio de apps termina cedo, o despertador continua armado normalmente (a intenção é
-  "preciso do celular livre agora", não "cancelar a noite"). Botão correspondente em
-  `ContentView` só aparece com `isNightModeArmed && isShieldActive`, sem tocar no botão
-  redondo nem no texto "Living/Zleepy mode".
+  **Passe de emergência (regra desde 2026-09-25)**: `useEmergencyPass(nextAlarmDate:)`
+  libera os apps e a `ContentView` volta pro modo dia (`isNightModeArmed = false`,
+  `resetEntrance()`), mas o despertador da manhã CONTINUA armado — é o que diferencia o
+  passe de desligar pelo botão redondo (que cancela tudo); o modo dia mostra
+  "Despertador às HH:mm" enquanto ele estiver armado. **1 passe por noite**:
+  `emergencyPassAvailableAgainAt` (persistido) = horário do despertador daquela noite
+  (fallback 24h sem despertador) — preso ao ciclo do sono, não a "24h a partir do uso".
+  `removeShield` agora não faz nada sem bloqueio ativo — bug real corrigido: depois de um
+  passe, o despertador de manhã gravava uma segunda sessão como `.alarmFired` ("limpa"),
+  anulando o passe na sequência de dias.
 - `Luminaria/AppBlockingView.swift` (só no `main`) — apresenta o `FamilyActivityPicker`
   do sistema (via `.familyActivityPicker(isPresented:selection:)`), chip de status de
   autorização (mesmo padrão do status de notificação em `HelpView`). Recebe a seleção
@@ -815,13 +818,14 @@ Fluxo usado pra testar de verdade, todo do Windows:
   despertador, rotina automática por calendário, backup no iCloud (esse último sugerido
   como lacuna real, não estava no documento original). Ficou deliberadamente de fora:
   Android (P2 do roadmap, decisão estrutural de investimento, não item de sprint).
-- **Passe de emergência não desarma o despertador nem a sessão NFC** — decisão de
-  produto explícita: a intenção é "preciso do celular livre agora por uma emergência
-  real", não "cancelar a noite inteira". `useEmergencyPass()` só chama `removeShield()`
-  (libera os apps), deixa o resto do modo noite intacto. `isNightModeArmed` na
-  `ContentView` também não muda por causa disso — a tela continua no tema escuro; o
-  botão de passe some sozinho porque `isShieldActive` vira `false`. 2 passes por SESSÃO
-  de bloqueio (reseta a cada `applyShield` novo), não um limite mensal.
+- **Passe de emergência: volta pro modo dia, mantém o despertador, 1 por noite** (decisões
+  do usuário em 2026-09-25, substituindo a regra anterior de "só libera os apps, a tela
+  continua no modo noite, 2 passes por sessão"). Como o passe agora encerra a noite, "2 por
+  sessão" deixou de fazer sentido; o usuário pensou num relógio de 24h ligado à sessão, e
+  a proposta aprovada foi o passe voltar no horário do despertador da própria noite em que
+  foi usado (usar às 2h com despertador às 7h → disponível de novo às 7h). O despertador
+  continuar armado foi escolhido pra dar ao passe um papel diferente do desligar pelo
+  botão (que cancela tudo e não tem limite).
 - **Bug potencial evitado antes de ir pra produção: segunda notificação de reforço do
   despertador quase causava avanço duplo de `nextFireDate`** — ao adicionar uma segunda
   notificação ~60s depois da primeira (`AlarmManager.scheduleBackupNotification`),
