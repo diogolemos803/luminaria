@@ -49,7 +49,19 @@ depende de CI num runner macOS na nuvem (GitHub Actions) e de sideload via AltSt
   `shortcuts://x-callback-url/run-shortcut` (com `x-success`/`x-error` apontando pro
   esquema custom `luminaria://`, registrado no `Info.plist`), evitando abrir o app
   Atalhos por completo. Só cuida de Foco + Modo Noturno — o despertador NÃO passa mais
-  por aqui (ver `AlarmManager.swift`).
+  por aqui (ver `AlarmManager.swift`). **Desde 2026-09-25 também desliga o Foco no fim da
+  noite** (usuário reportou que o Não Perturbe continuava ligado depois de desligar o
+  modo): segundo Atalho criado pelo usuário, "Acordar" (`wakeShortcutName`, "Definir Foco"
+  desligado), disparado por `requestWakeShortcut()` no desarme pelo botão
+  (`toggleNightMode`), no passe de emergência e em `AlarmManager.stopRingingAlarm()`.
+  Só roda se o Atalho de dormir rodou naquela noite (flag persistida
+  `sleepFocusOnKey`, evita piscar o Atalhos à toa); abrir URL do Atalhos exige o app em
+  primeiro plano, então se a noite terminar em segundo plano (ex.: "Parar" na
+  notificação) fica pendente e roda no próximo `scenePhase == .active`. Com o AlarmKit,
+  o "Parar" da tela bloqueada não dispara o "Acordar" — ele roda quando a pessoa toca
+  "Parar" na tela do pouso ao abrir o app; a Ajuda recomenda pôr "Definir Foco" desligado
+  também na automação da manhã, como rede de segurança. Não existe API pra um app
+  desligar um Foco direto (mesma limitação do ligar).
 - `Luminaria/SystemAlarm.swift` — **caminho principal do despertador desde 2026-09-25:
   alarme de sistema via AlarmKit (iOS 26+)**. Toca no silencioso, com Foco ativo e com o
   app fechado, em tela cheia na tela bloqueada — resolve o bug de "só toca quando abre a

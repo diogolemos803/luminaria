@@ -163,6 +163,8 @@ struct ContentView: View {
                     screenTimeManager.refreshAuthorizationStatus()
                     // Atualiza o estado da permissão de Alarmes (pode ter mudado em Ajustes).
                     alarmManager.requestSystemAlarmPermission()
+                    // Noite encerrada com o app em segundo plano: desliga o Foco agora.
+                    ShortcutManager.shared.runPendingWakeShortcutIfNeeded()
                     // Reabrir o app durante uma sessão de bloqueio ativa conta como
                     // "tocou no celular" (ver GrowthEngine.swift) — zera o progresso
                     // de crescimento e alimenta a métrica de maior sequência sem
@@ -347,6 +349,7 @@ struct ContentView: View {
     /// que o diferencia do desligar pelo botão redondo, que cancela tudo).
     private func useEmergencyPass() {
         guard screenTimeManager.useEmergencyPass(nextAlarmDate: alarmManager.nextFireDate) else { return }
+        ShortcutManager.shared.requestWakeShortcut()
         nfcManager.stopScanning()
         isNightModeArmed = false
         resetEntrance()
@@ -469,6 +472,8 @@ struct ContentView: View {
             nfcManager.stopScanning()
             alarmManager.disarmAlarm()
             screenTimeManager.removeShield(reason: .manualDisarm)
+            // Desliga o Foco da noite (Atalho "Acordar") — só roda se o de dormir rodou.
+            ShortcutManager.shared.requestWakeShortcut()
             resetEntrance()
         }
     }

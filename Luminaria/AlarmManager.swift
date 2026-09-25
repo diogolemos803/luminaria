@@ -303,6 +303,11 @@ final class AlarmManager: NSObject, ObservableObject {
     /// reconhecimento NFC novo naquela noite.
     func stopRingingAlarm() {
         disarmAlarm()
+        // A noite acabou: desliga o Foco que o Atalho "Dormir sem celular" ligou (ou
+        // deixa pendente, se o "Parar" veio da notificação com o app em segundo plano).
+        DispatchQueue.main.async {
+            ShortcutManager.shared.requestWakeShortcut()
+        }
     }
 
     /// Chamado quando o app volta a ficar ativo (ver `scenePhase` em `ContentView`) — cobre

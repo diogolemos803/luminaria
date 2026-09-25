@@ -6,9 +6,24 @@ import UIKit
 /// diretamente, nem para gravar programaticamente um Atalho com a ação "Definir Foco".
 /// Por isso o fluxo real é: o usuário cria esse Atalho uma única vez no app Atalhos
 /// (com a ação "Definir Foco"), e este app apenas o executa a cada reconhecimento da tag.
+///
+/// Desligar o Foco quando a noite termina segue a mesma regra: nenhum app terceiro
+/// consegue desligar um Foco sozinho, então existe um segundo Atalho, "Acordar"
+/// (`wakeShortcutName`, com "Definir Foco" desligado), que o app executa quando o modo
+/// noite é desligado, um passe de emergência é usado ou o despertador é parado no app
+/// (`requestWakeShortcut()`). Abrir URL do Atalhos só funciona com o app em primeiro
+/// plano — se a noite terminar com o app em segundo plano (ex.: "Parar" na notificação),
+/// fica pendente e roda na próxima vez que o app abrir.
 final class ShortcutManager {
     static let shared = ShortcutManager()
     static let shortcutName = "Dormir sem celular"
+    static let wakeShortcutName = "Acordar"
+
+    /// O Atalho de dormir rodou e o de acordar ainda não — só nesse caso vale abrir o
+    /// Atalhos pra desligar o Foco (evita piscar o Atalhos à toa, ex.: armou o modo noite
+    /// e cancelou antes de encostar a luminária).
+    private static let sleepFocusOnKey = "com.luminaria.shortcut.sleepFocusOn"
+    private static let wakePendingKey = "com.luminaria.shortcut.wakePending"
 
     private init() {}
 
@@ -23,8 +38,36 @@ final class ShortcutManager {
     /// O despertador NÃO passa mais por aqui — é tratado nativamente pelo `AlarmManager`,
     /// sem depender do Atalho. Este método só cuida do Foco e do Modo Noturno.
     func runSleepShortcut(completion: ((Bool) -> Void)? = nil) {
-        let encodedName = Self.shortcutName.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)
-            ?? Self.shortcutName
+        UserDefaults.standard.set(true, forKey: Self.sleepFocusOnKey)
+        runShortcut(named: Self.shortcutName, completion: completion)
+    }
+
+    /// Fim da noite: executa o Atalho "Acordar" agora (app aberto) ou deixa pendente pra
+    /// próxima abertura do app. Não faz nada se o Atalho de dormir não rodou.
+    func requestWakeShortcut() {
+        let defaults = UserDefaults.standard
+        guard defaults.bool(forKey: Self.sleepFocusOnKey) else {
+            defaults.set(false, forKey: Self.wakePendingKey)
+            return
+        }
+        guard UIApplication.shared.applicationState == .active else {
+            defaults.set(true, forKey: Self.wakePendingKey)
+            return
+        }
+        defaults.set(false, forKey: Self.sleepFocusOnKey)
+        defaults.set(false, forKey: Self.wakePendingKey)
+        runShortcut(named: Self.wakeShortcutName, completion: nil)
+    }
+
+    /// Chamado quando o app volta a ficar ativo.
+    func runPendingWakeShortcutIfNeeded() {
+        guard UserDefaults.standard.bool(forKey: Self.wakePendingKey) else { return }
+        requestWakeShortcut()
+    }
+
+    private func runShortcut(named name: String, completion: ((Bool) -> Void)?) {
+        let encodedName = name.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)
+            ?? name
         let successURL = "luminaria://shortcut-done".addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
         let errorURL = "luminaria://shortcut-error".addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
         let urlString = "shortcuts://x-callback-url/run-shortcut?name=\(encodedName)&x-success=\(successURL)&x-error=\(errorURL)"

@@ -38,6 +38,20 @@ struct HelpView: View {
                             ShortcutManager.shared.openShortcutsAppToCreate()
                         }
 
+                        sectionHeading("Desligar o Foco quando a noite acaba")
+
+                        Text("O iPhone não deixa nenhum app desligar um Foco sozinho. Por isso crie um segundo Atalho, chamado \"\(ShortcutManager.wakeShortcutName)\": o Luminária roda ele quando você desliga o modo noite, usa o passe de emergência ou para o despertador dentro do app. Se a noite terminar com o app fechado (ex.: \"Parar\" na tela bloqueada), ele roda assim que você abrir o Luminária.")
+                            .font(.luminaria(.subheadline))
+                            .foregroundStyle(theme.inkMuted)
+
+                        ThemedCard(theme: theme) {
+                            stepRow(1, "No app Atalhos, toque em + para criar um novo atalho")
+                            stepRow(2, "Nomeie como \"\(ShortcutManager.wakeShortcutName)\"")
+                            stepRow(3, "Adicione \"Definir Foco\" com o mesmo modo do outro atalho, desligado")
+                            stepRow(4, "Opcional: adicione \"Definir Modo Noturno\" como desligado")
+                            stepRow(5, "Salve o atalho")
+                        }
+
                         sectionHeading("Desligar o Modo Noturno de manhã")
 
                         Text("O despertador é do próprio Luminária e não depende do Atalho — só arma quando a luminária é reconhecida via NFC com o modo noite ativo. Já o Modo Noturno precisa de uma automação separada, porque o Atalho acima roda uma única vez à noite e não pode \"esperar\" até de manhã. Crie na aba Automação do app Atalhos, usando o mesmo horário configurado na rotina de sono:")
@@ -48,7 +62,8 @@ struct HelpView: View {
                             stepRow(1, "Na aba Automação, toque em + e escolha \"Horário do Dia\"")
                             stepRow(2, "Defina o mesmo horário configurado em \"Desligar Modo Noturno às\" na rotina ativa")
                             stepRow(3, "Adicione a ação \"Definir Modo Noturno\" como desligado")
-                            stepRow(4, "Desative \"Perguntar Antes de Executar\"")
+                            stepRow(4, "Recomendado: adicione também \"Definir Foco\" desligado — garante o Foco desligado de manhã mesmo se você não abrir o Luminária")
+                            stepRow(5, "Desative \"Perguntar Antes de Executar\"")
                         }
 
                         sectionHeading("Bloqueio de apps e relatório de sono")
