@@ -2,8 +2,22 @@ import AVFoundation
 import UserNotifications
 import WidgetKit
 
-/// Despertador próprio do app, sem depender do Atalhos nem do app Relógio (a Apple não
-/// oferece API pública pra criar um alarme nativo de fora do app Relógio).
+/// Chamado pelos botões "Parar"/"Abrir" do alarme do sistema (intents em
+/// `SystemAlarm.swift`) — função solta porque aquele arquivo importa o AlarmKit, que
+/// também tem um tipo chamado `AlarmManager`.
+func luminariaHandleSystemAlarmStopped() {
+    AlarmManager.shared.systemAlarmWasStopped()
+}
+
+/// Despertador do app, sem depender do Atalhos nem do app Relógio.
+///
+/// **Caminho principal (iOS 26+, com permissão)**: alarme de sistema via AlarmKit (ver
+/// `SystemAlarm.swift`) — toca no silencioso, com Foco e com o app fechado. Nesse modo
+/// (`systemAlarmID != nil`) este app não toca som nenhum: só acompanha o alarme pra
+/// liberar o bloqueio de apps e mostrar a tela do pouso (`isAlarmRinging`) quando ele
+/// dispara ou é parado pela interface do sistema.
+///
+/// **Reserva (sem AlarmKit ou sem permissão)**: o esquema antigo abaixo.
 ///
 /// Funciona tocando um áudio quase inaudível em loop o tempo todo enquanto armado — isso
 /// mantém o app "vivo" em segundo plano (modo "Audio" do UIBackgroundModes). Quando bate o
@@ -27,6 +41,8 @@ final class AlarmManager: NSObject, ObservableObject {
     /// `nil` enquanto a permissão ainda não foi pedida/respondida. Exposto pra tela de
     /// Ajuda poder avisar quando o usuário negou notificações (antes isso falhava calado).
     @Published var notificationsAuthorized: Bool?
+    /// Permissão de "Alarmes" do AlarmKit — exposta pra tela de Ajuda.
+    @Published private(set) var systemAlarmAuthorization: SystemAlarmAuthorization = .unavailable
     /// Chamado sempre que o despertador dispara de verdade (`triggerAlarm`). Usado só pra
     /// sincronizar `isNightModeArmed` na UI quando o app está em primeiro plano — o
     /// desbloqueio de apps em si acontece direto em `triggerAlarm`, sem depender desse
@@ -46,6 +62,14 @@ final class AlarmManager: NSObject, ObservableObject {
     /// antes, uma checagem por igualdade exata perdia a janela e nunca mais disparava
     /// naquele dia.
     private var nextFireDate: Date?
+    /// Alarme do AlarmKit agendado pra esta noite; `nil` = despertador antigo (ou
+    /// desarmado). Continua preenchido depois de tocar/ser parado, até `disarmAlarm()`
+    /// — é o que impede o esquema antigo de começar a tocar som por cima.
+    private var systemAlarmID: UUID?
+    private var systemAlarmUpdatesTask: Task<Void, Never>?
+    /// Alarme de sistema que já passou de 12h sem ninguém abrir o app: desarma calado
+    /// em vez de mostrar o pouso na noite seguinte.
+    private static let staleSystemAlarmInterval: TimeInterval = 12 * 60 * 60
 
     private static let notificationID = "com.luminaria.alarm"
     /// Segunda notificação de reforço, ~1 minuto depois da primeira — rede de
@@ -56,6 +80,7 @@ final class AlarmManager: NSObject, ObservableObject {
     private static let minuteKey = "com.luminaria.alarm.minute"
     private static let soundKey = "com.luminaria.alarm.sound"
     private static let nextFireKey = "com.luminaria.alarm.nextFire"
+    private static let systemAlarmIDKey = "com.luminaria.alarm.systemAlarmID"
     private static let alarmCategoryID = "com.luminaria.alarmCategory"
 
     /// App Group compartilhado com a `LuminariaWidgetExtension` — só pra ela saber o
@@ -70,7 +95,9 @@ final class AlarmManager: NSObject, ObservableObject {
     private override init() {
         super.init()
         registerNotificationCategories()
+        systemAlarmAuthorization = SystemAlarm.authorization
         restorePersistedState()
+        observeSystemAlarms()
         // Achado real testando no device: uma interrupção de áudio durante a noite
         // (ligação, Siri, outro app tocando som) pausa o loop silencioso que mantém o
         // app vivo em segundo plano — sem reagir a isso, a sessão fica parada pra
@@ -101,6 +128,21 @@ final class AlarmManager: NSObject, ObservableObject {
         }
     }
 
+    /// Pede a permissão de "Alarmes" (AlarmKit, iOS 26+) — só mostra o pedido do sistema
+    /// na primeira vez; depois só atualiza o estado exposto pra tela de Ajuda.
+    func requestSystemAlarmPermission() {
+        guard SystemAlarm.authorization == .notDetermined else {
+            systemAlarmAuthorization = SystemAlarm.authorization
+            return
+        }
+        Task { [weak self] in
+            let state = await SystemAlarm.requestAuthorization()
+            DispatchQueue.main.async {
+                self?.systemAlarmAuthorization = state
+            }
+        }
+    }
+
     /// Botão "Parar" direto na notificação (toque longo ou deslizar), sem precisar abrir
     /// o app — funciona até com a tela bloqueada, já que ações de notificação não exigem
     /// desbloquear o iPhone por padrão.
@@ -120,18 +162,100 @@ final class AlarmManager: NSObject, ObservableObject {
     }
 
     func armAlarm(hour: Int, minute: Int, soundFileName: String) {
+        // Um alarme de sistema de uma leitura anterior da mesma noite não pode sobrar.
+        cancelSystemAlarm()
         scheduledHour = hour
         scheduledMinute = minute
         scheduledSoundFileName = soundFileName
-        nextFireDate = Self.nextOccurrence(hour: hour, minute: minute, after: Date())
+        let fireDate = Self.nextOccurrence(hour: hour, minute: minute, after: Date())
+        nextFireDate = fireDate
+
+        systemAlarmAuthorization = SystemAlarm.authorization
+        if systemAlarmAuthorization == .authorized {
+            let id = UUID()
+            systemAlarmID = id
+            persistArmedState()
+            // Se a leitura anterior da noite caiu no esquema antigo, desliga ele.
+            stopSilentLoop()
+            UNUserNotificationCenter.current()
+                .removePendingNotificationRequests(withIdentifiers: [Self.notificationID, Self.notificationID2])
+            // Sem áudio próprio nem notificação: quem toca é o sistema. O timer só serve
+            // pra mostrar o pouso/liberar os apps se o app estiver aberto na hora.
+            startCheckTimer()
+            Task { [weak self] in
+                let scheduled = await SystemAlarm.schedule(id: id, at: fireDate, soundFileName: soundFileName)
+                guard !scheduled else { return }
+                DispatchQueue.main.async {
+                    self?.fallBackToLegacyAlarm(replacing: id)
+                }
+            }
+            return
+        }
+
         persistArmedState()
+        startLegacyAlarm(hour: hour, minute: minute, soundFileName: soundFileName)
+    }
+
+    /// Esquema antigo: loop silencioso + notificações de reforço.
+    private func startLegacyAlarm(hour: Int, minute: Int, soundFileName: String) {
         configureAudioSession()
         startSilentLoop()
         scheduleBackupNotification(hour: hour, minute: minute, soundFileName: soundFileName)
         startCheckTimer()
     }
 
+    /// O AlarmKit recusou o agendamento — antes ficar com o despertador antigo do que
+    /// sem despertador nenhum. Ignora se a pessoa já desarmou/rearmou nesse meio-tempo.
+    private func fallBackToLegacyAlarm(replacing id: UUID) {
+        guard systemAlarmID == id,
+              let hour = scheduledHour, let minute = scheduledMinute,
+              let soundFileName = scheduledSoundFileName else { return }
+        systemAlarmID = nil
+        persistArmedState()
+        startLegacyAlarm(hour: hour, minute: minute, soundFileName: soundFileName)
+    }
+
+    private func cancelSystemAlarm() {
+        if let id = systemAlarmID {
+            SystemAlarm.cancel(id: id)
+        }
+        systemAlarmID = nil
+    }
+
+    /// O alarme do sistema foi parado pela interface do sistema (botão "Parar"/"Abrir"
+    /// ou sumiu da lista depois do horário). Trata como "o despertador tocou": libera
+    /// os apps e deixa `isAlarmRinging` ligado, pra tela do pouso aparecer quando a
+    /// pessoa abrir o app — e ela só some com o "Parar" dessa tela (`disarmAlarm`).
+    func systemAlarmWasStopped() {
+        guard systemAlarmID != nil, let soundFileName = scheduledSoundFileName else { return }
+        triggerAlarm(soundFileName: soundFileName)
+    }
+
+    private func observeSystemAlarms() {
+        systemAlarmUpdatesTask = Task { [weak self] in
+            for await snapshots in SystemAlarm.updates() {
+                DispatchQueue.main.async {
+                    self?.handleSystemAlarmSnapshots(snapshots)
+                }
+            }
+        }
+    }
+
+    private func handleSystemAlarmSnapshots(_ snapshots: [SystemAlarmSnapshot]) {
+        guard let id = systemAlarmID, let soundFileName = scheduledSoundFileName else { return }
+        if let mine = snapshots.first(where: { $0.id == id }) {
+            if mine.isAlerting {
+                triggerAlarm(soundFileName: soundFileName)
+            }
+        } else if let fireDate = nextFireDate, Date() >= fireDate.addingTimeInterval(-5) {
+            // Sumiu da lista depois do horário: foi parado na tela bloqueada. (Antes do
+            // horário, sumir da lista é só o agendamento que ainda não apareceu.)
+            triggerAlarm(soundFileName: soundFileName)
+        }
+    }
+
     func disarmAlarm() {
+        cancelSystemAlarm()
         scheduledHour = nil
         scheduledMinute = nil
         scheduledSoundFileName = nil
@@ -204,6 +328,8 @@ final class AlarmManager: NSObject, ObservableObject {
     /// zero se por algum motivo ele não existir mais (nunca deveria acontecer, mas mais
     /// seguro que assumir).
     private func resumePlaybackIfNeeded() {
+        // Com alarme de sistema, o som é do iOS — nada de loop próprio por cima.
+        guard systemAlarmID == nil else { return }
         if isAlarmRinging {
             if let alarmPlayer, !alarmPlayer.isPlaying {
                 alarmPlayer.play()
@@ -272,7 +398,9 @@ final class AlarmManager: NSObject, ObservableObject {
         // reagir a um closure.
         ScreenTimeManager.shared.removeShield(reason: .alarmFired)
         onAlarmFired?()
-        startAlarmPlayer(soundFileName: soundFileName)
+        if systemAlarmID == nil {
+            startAlarmPlayer(soundFileName: soundFileName)
+        }
     }
 
     private func startAlarmPlayer(soundFileName: String) {
@@ -347,11 +475,13 @@ final class AlarmManager: NSObject, ObservableObject {
         defaults.set(scheduledMinute, forKey: Self.minuteKey)
         defaults.set(scheduledSoundFileName, forKey: Self.soundKey)
         defaults.set(nextFireDate?.timeIntervalSince1970, forKey: Self.nextFireKey)
+        defaults.set(systemAlarmID?.uuidString, forKey: Self.systemAlarmIDKey)
         updateWidgetState(isArmed: true, nextFireDate: nextFireDate)
     }
 
     private func clearPersistedState() {
         UserDefaults.standard.set(false, forKey: Self.armedKey)
+        UserDefaults.standard.removeObject(forKey: Self.systemAlarmIDKey)
         updateWidgetState(isArmed: false, nextFireDate: nil)
     }
 
@@ -384,6 +514,22 @@ final class AlarmManager: NSObject, ObservableObject {
             nextFireDate = Date(timeIntervalSince1970: defaults.double(forKey: Self.nextFireKey))
         } else {
             nextFireDate = Self.nextOccurrence(hour: scheduledHour ?? 7, minute: scheduledMinute ?? 0, after: Date())
+        }
+        if let idString = defaults.string(forKey: Self.systemAlarmIDKey), let id = UUID(uuidString: idString) {
+            systemAlarmID = id
+            if let fireDate = nextFireDate, Date().timeIntervalSince(fireDate) > Self.staleSystemAlarmInterval {
+                // O alarme tocou há muito tempo e ninguém abriu o app: só garante que
+                // os apps não ficaram bloqueados, sem pouso atrasado.
+                if ScreenTimeManager.shared.isShieldActive {
+                    ScreenTimeManager.shared.removeShield(reason: .alarmFired)
+                }
+                disarmAlarm()
+                return
+            }
+            // Processo relançado (ex.: pelo botão "Parar" do alarme do sistema, ou
+            // app aberto de manhã): sem áudio próprio, só o timer.
+            startCheckTimer()
+            return
         }
         configureAudioSession()
         startSilentLoop()

@@ -57,13 +57,23 @@ struct HelpView: View {
                             .font(.luminaria(.subheadline))
                             .foregroundStyle(theme.inkMuted)
 
-                        sectionHeading("Com a tela bloqueada")
+                        sectionHeading("Despertador")
 
-                        Text("Nenhum app de terceiros consegue desenhar tela nenhuma por cima da tela de bloqueio — nem este, nem qualquer outro despertador da App Store. Quem funciona de verdade nessa hora é a notificação: ela toca o som escolhido e tem um botão \"Parar\" (toque longo ou deslize a notificação) pra desarmar sem precisar desbloquear o iPhone. A tela de \"Parar\" dentro do app só aparece quando você desbloqueia e abre o Luminária.")
+                        Text("No iOS 26 ou mais novo, o despertador toca como um alarme do próprio iPhone: mesmo no modo silencioso, com o Foco ativado e com o app fechado, em tela cheia na tela bloqueada. Toque em \"Parar\" pra desligar, ou em \"Abrir\" pra ver o pouso na Lua. Pra isso o Luminária precisa da permissão de Alarmes, pedida na primeira vez que o app abre.")
                             .font(.luminaria(.subheadline))
                             .foregroundStyle(theme.inkMuted)
 
-                        Text("Se nem o som tocar, o Foco que o Atalho ativa (geralmente \"Não Perturbe\") está filtrando a notificação. O jeito mais confiável de resolver é adicionar o Luminária aos apps sempre permitidos DESSE Foco específico — não adianta liberar em outro:")
+                        systemAlarmStatusChip
+
+                        if alarmManager.systemAlarmAuthorization == .denied {
+                            Text("Pra ativar: Ajustes do iPhone → Apps → Luminária → ative Alarmes. Depois disso, a próxima leitura da luminária já agenda o alarme do sistema.")
+                                .font(.luminaria(.caption))
+                                .foregroundStyle(theme.inkMuted)
+                        }
+
+                        sectionHeading("Sem a permissão de Alarmes")
+
+                        Text("Sem essa permissão (ou num iOS anterior ao 26), o despertador depende de notificações: ela toca o som escolhido e tem um botão \"Parar\" (toque longo ou deslize a notificação). Nesse modo o som respeita o modo silencioso, e o Foco que o Atalho ativa (geralmente \"Não Perturbe\") pode filtrar a notificação. O jeito mais confiável é adicionar o Luminária aos apps sempre permitidos DESSE Foco específico — não adianta liberar em outro:")
                             .font(.luminaria(.subheadline))
                             .foregroundStyle(theme.inkMuted)
 
@@ -83,10 +93,6 @@ struct HelpView: View {
                             .foregroundStyle(theme.inkMuted)
 
                         statusChip
-
-                        Text("Uma sirene de verdade, tipo a do app Relógio, que ignora até o modo silencioso, exige uma permissão especial da Apple (\"alertas críticos\") inviável sem conta de desenvolvedor paga — por isso o despertador aqui depende de notificações normais do sistema.")
-                            .font(.luminaria(.caption))
-                            .foregroundStyle(theme.inkMuted)
                     }
                     .padding(16)
                     .padding(.top, 4)
@@ -127,6 +133,33 @@ struct HelpView: View {
         .padding(.horizontal, 10)
         .padding(.vertical, 6)
         .background(color.opacity(0.12))
+        .clipShape(Capsule())
+    }
+
+    private var systemAlarmStatus: (text: String, color: Color) {
+        switch alarmManager.systemAlarmAuthorization {
+        case .authorized:
+            return ("Alarmes autorizados", Color(uiColor: .systemGreen))
+        case .denied:
+            return ("Alarmes negados — abra Ajustes do iPhone", theme.danger)
+        case .notDetermined:
+            return ("Permissão de Alarmes ainda não pedida", theme.inkMuted)
+        case .unavailable:
+            return ("Alarme do sistema exige iOS 26 — usando notificações", theme.inkMuted)
+        }
+    }
+
+    private var systemAlarmStatusChip: some View {
+        let status = systemAlarmStatus
+        return HStack(spacing: 6) {
+            Circle().fill(status.color).frame(width: 7, height: 7)
+            Text(status.text)
+                .font(.luminaria(.caption, weight: .bold))
+                .foregroundStyle(status.color)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(status.color.opacity(0.12))
         .clipShape(Capsule())
     }
 

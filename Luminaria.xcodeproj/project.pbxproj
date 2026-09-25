@@ -37,6 +37,7 @@
 		AAAAAAAAAAAAAAAAAAAAAA5A /* AppTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA31 /* AppTheme.swift */; };
 		AAAAAAAAAAAAAAAAAAAAAA5C /* GrowthEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA5B /* GrowthEngine.swift */; };
 		AAAAAAAAAAAAAAAAAAAAAA60 /* RocketScenes.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA5F /* RocketScenes.swift */; };
+		AAAAAAAAAAAAAAAAAAAAAA62 /* SystemAlarm.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA61 /* SystemAlarm.swift */; };
 		AAAAAAAAAAAAAAAAAAAAAA5E /* SocialModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA5D /* SocialModels.swift */; };
 /* End PBXBuildFile section */
 
@@ -99,6 +100,7 @@
 		AAAAAAAAAAAAAAAAAAAAAA4D /* LuminariaWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = LuminariaWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		AAAAAAAAAAAAAAAAAAAAAA5B /* GrowthEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrowthEngine.swift; sourceTree = "<group>"; };
 		AAAAAAAAAAAAAAAAAAAAAA5F /* RocketScenes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RocketScenes.swift; sourceTree = "<group>"; };
+		AAAAAAAAAAAAAAAAAAAAAA61 /* SystemAlarm.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemAlarm.swift; sourceTree = "<group>"; };
 		AAAAAAAAAAAAAAAAAAAAAA5D /* SocialModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SocialModels.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -161,6 +163,7 @@
 				AAAAAAAAAAAAAAAAAAAAAA41 /* SleepReportView.swift */,
 				AAAAAAAAAAAAAAAAAAAAAA5B /* GrowthEngine.swift */,
 				AAAAAAAAAAAAAAAAAAAAAA5F /* RocketScenes.swift */,
+				AAAAAAAAAAAAAAAAAAAAAA61 /* SystemAlarm.swift */,
 				AAAAAAAAAAAAAAAAAAAAAA5D /* SocialModels.swift */,
 				AAAAAAAAAAAAAAAAAAAAAA1D /* Assets.xcassets */,
 				AAAAAAAAAAAAAAAAAAAAAA21 /* silence_loop.wav */,
@@ -317,6 +320,7 @@
 				AAAAAAAAAAAAAAAAAAAAAA42 /* SleepReportView.swift in Sources */,
 				AAAAAAAAAAAAAAAAAAAAAA5C /* GrowthEngine.swift in Sources */,
 				AAAAAAAAAAAAAAAAAAAAAA60 /* RocketScenes.swift in Sources */,
+				AAAAAAAAAAAAAAAAAAAAAA62 /* SystemAlarm.swift in Sources */,
 				AAAAAAAAAAAAAAAAAAAAAA5E /* SocialModels.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

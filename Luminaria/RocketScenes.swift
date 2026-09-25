@@ -908,6 +908,7 @@ enum LaunchPainter {
 struct MoonLandingScene: View {
     let streakDays: Int
 
+    @Environment(\.scenePhase) private var scenePhase
     @State private var start = Date()
 
     var body: some View {
@@ -919,6 +920,14 @@ struct MoonLandingScene: View {
             }
         }
         .onAppear { start = Date() }
+        // Com o alarme do sistema (AlarmKit), esta tela pode ser montada com o app em
+        // segundo plano (botão "Parar" na tela bloqueada) — recomeça o pouso quando a
+        // pessoa abre o app, em vez de ele já ter acontecido sem ninguém ver.
+        .onChange(of: scenePhase) { newPhase in
+            if newPhase == .active {
+                start = Date()
+            }
+        }
     }
 }
 

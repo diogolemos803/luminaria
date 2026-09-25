@@ -80,6 +80,9 @@ struct ContentView: View {
             }
             .onAppear {
                 alarmManager.requestNotificationPermission()
+                // Permissão de "Alarmes" (AlarmKit, iOS 26+) — é ela que faz o
+                // despertador tocar no silencioso, com Foco e com o app fechado.
+                alarmManager.requestSystemAlarmPermission()
                 screenTimeManager.refreshAuthorizationStatus()
                 // Cobre o app sendo aberto do zero (cold launch): onChange(of: scenePhase)
                 // só reage a mudanças, não à primeira transição pra .active.
@@ -158,6 +161,8 @@ struct ContentView: View {
                 if newPhase == .active {
                     alarmManager.checkForMissedAlarm()
                     screenTimeManager.refreshAuthorizationStatus()
+                    // Atualiza o estado da permissão de Alarmes (pode ter mudado em Ajustes).
+                    alarmManager.requestSystemAlarmPermission()
                     // Reabrir o app durante uma sessão de bloqueio ativa conta como
                     // "tocou no celular" (ver GrowthEngine.swift) — zera o progresso
                     // de crescimento e alimenta a métrica de maior sequência sem

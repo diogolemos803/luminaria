@@ -10,7 +10,10 @@ on:
 jobs:
   build:
     name: Build (device, sem assinatura)
-    runs-on: macos-15
+    # macos-26 (Xcode 26 por padrão): o despertador usa AlarmKit, que só existe no SDK
+    # do iOS 26 — num Xcode mais antigo o código dele seria pulado (#if canImport) e o
+    # CI passaria sem compilá-lo de verdade.
+    runs-on: macos-26
 
     steps:
       - name: Checkout

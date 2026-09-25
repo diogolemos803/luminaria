@@ -50,8 +50,31 @@ depende de CI num runner macOS na nuvem (GitHub Actions) e de sideload via AltSt
   esquema custom `luminaria://`, registrado no `Info.plist`), evitando abrir o app
   Atalhos por completo. Só cuida de Foco + Modo Noturno — o despertador NÃO passa mais
   por aqui (ver `AlarmManager.swift`).
+- `Luminaria/SystemAlarm.swift` — **caminho principal do despertador desde 2026-09-25:
+  alarme de sistema via AlarmKit (iOS 26+)**. Toca no silencioso, com Foco ativo e com o
+  app fechado, em tela cheia na tela bloqueada — resolve o bug de "só toca quando abre a
+  notificação e entra no app", que era limite do esquema antigo (o iOS não garante
+  manter o loop de áudio vivo a noite toda), não bug corrigível. Todo o AlarmKit fica
+  isolado aqui atrás de `#if canImport(AlarmKit)` + `#available(iOS 26, *)` (alvo mínimo
+  continua iOS 16). **Colisão de nome**: o AlarmKit também tem um tipo `AlarmManager` —
+  neste arquivo ele é sempre `AlarmKit.AlarmManager`, e os intents chamam a função solta
+  `luminariaHandleSystemAlarmStopped()` (em `AlarmManager.swift`) em vez de citar o
+  `AlarmManager` do app. Alarme `.fixed` (uma noite só), som = o mesmo `.wav` da rotina
+  (`.named`), botões "Parar" (`StopLuminariaAlarmIntent`) e "Abrir"
+  (`OpenLuminariaAlarmIntent`, `openAppWhenRun`), ambos `LiveActivityIntent` que rodam no
+  processo do app pra liberar o bloqueio de apps. Usa o inicializador de
+  `AlarmPresentation.Alert` com `stopButton` (obsoleto no 26.1, mas o único que existe
+  desde o 26.0). Sem widget/Live Activity próprio — só é exigido pra contagem regressiva.
+  `Info.plist` ganhou `NSAlarmKitUsageDescription` e `NSSupportsLiveActivities`.
 - `Luminaria/AlarmManager.swift` — despertador **nativo do próprio app**, sem depender do
-  Atalhos nem do app Relógio. Singleton (`AlarmManager.shared`) que conforma
+  Atalhos nem do app Relógio. **Desde 2026-09-25**: se a permissão de Alarmes (AlarmKit)
+  estiver concedida, `armAlarm` agenda o alarme de sistema (`systemAlarmID`, persistido)
+  e NÃO toca som próprio nem agenda notificação — só acompanha (`alarmUpdates`, timer,
+  intents) pra liberar os apps e ligar `isAlarmRinging` (tela do pouso) quando o alarme
+  toca ou é parado pela interface do sistema; sem permissão, iOS < 26 ou se o AlarmKit
+  recusar o agendamento, cai no esquema antigo descrito a seguir. Alarme de sistema com
+  mais de 12h sem ninguém abrir o app é desarmado calado no relançamento (sem pouso
+  atrasado). Permissão pedida em `ContentView.onAppear` junto com a de notificações. Singleton (`AlarmManager.shared`) que conforma
   `UNUserNotificationCenterDelegate`: reage imediatamente à entrega/toque da notificação
   de alarme (em vez de depender só de um `Timer` de 15s, que exige o processo vivo).
   Persiste o estado armado (hora, minuto, som escolhido) em `UserDefaults`, restaurado no
@@ -336,7 +359,7 @@ depende de CI num runner macOS na nuvem (GitHub Actions) e de sideload via AltSt
   dias (placeholder "7") e acena. A Terra aparece no céu, à esquerda. Traduzido pra
   SwiftUI em `RocketScenes.swift` (`MoonLandingScene`, usado por `AlarmRingingView`).
 - `.github/workflows/build.yml` — roda em todo push **pra `main`** (e PRs pra `main`),
-  compila pra device real sem assinatura (`-sdk iphoneos -destination
+  roda em `macos-26` (Xcode 26, pra compilar o AlarmKit de verdade) e compila pra device real sem assinatura (`-sdk iphoneos -destination
   'generic/platform=iOS'`, mesma receita do `sideload-ipa.yml`). Não dispara sozinho na
   branch `teste-gratis-sem-nfc` — precisa rodar manualmente ("Run workflow") quando for
   validar uma mudança feita só nela. **Trocado de Simulador pra device em 2026-08-05**:
@@ -446,7 +469,7 @@ Fluxo usado pra testar de verdade, todo do Windows:
 
 - **`Luminaria.xcodeproj/project.pbxproj` foi escrito à mão**, linha por linha — não existe
   Xcode/macOS neste ambiente de desenvolvimento (Windows). IDs de objeto seguem o padrão
-  `AAAAAAAAAAAAAAAAAAAAAA` + 2 dígitos hex incrementais (maior em uso: `60`); qualquer
+  `AAAAAAAAAAAAAAAAAAAAAA` + 2 dígitos hex incrementais (maior em uso: `62`); qualquer
   novo arquivo precisa de entradas em `PBXBuildFile`, `PBXFileReference`, no grupo, e na
   build phase certa (`Sources` pra `.swift`, `Resources` pra assets/sons). Sempre
   verificar balanço de chaves/parênteses e contagem de referências de cada ID novo
@@ -852,7 +875,7 @@ Fluxo usado pra testar de verdade, todo do Windows:
   notificações passaram de `repeats: true` pra `repeats: false` com data completa
   fixada (ano/mês/dia/hora/minuto, não só hora/minuto — um `repeats: false` incompleto
   deixaria o sistema decidir sozinho "hoje ou amanhã", ambíguo perto da meia-noite).
-- **Bug real achado testando no device, ainda sob investigação: despertador não tocava
+- **Bug real achado testando no device — resolvido em 2026-09-25 migrando pro AlarmKit (ver `SystemAlarm.swift`), a mitigação abaixo ficou só pro esquema antigo: despertador não tocava
   de verdade em segundo plano, só depois de tocar na notificação e abrir o app** —
   confirmado com o usuário que o iPhone estava no modo mudo durante o teste, o que
   explica o SOM DA NOTIFICAÇÃO ficar em silêncio (comportamento esperado — som de
