@@ -286,13 +286,9 @@ $outDir = Join-Path $PSScriptRoot "..\Luminaria"
 Write-Host "Gerando alarm_alvorada.wav..."
 Write-Wav -Path (Join-Path $outDir "alarm_alvorada.wav") -Samples (New-Alvorada) -SampleRate $SampleRate
 
-Write-Host "Gerando alarm_ondas.wav..."
-Write-Wav -Path (Join-Path $outDir "alarm_ondas.wav") -Samples (New-OceanWaves) -SampleRate $SampleRate
-
-Write-Host "Gerando alarm_chuva.wav..."
-Write-Wav -Path (Join-Path $outDir "alarm_chuva.wav") -Samples (New-Rain) -SampleRate $SampleRate
-
-Write-Host "Gerando alarm_passaros.wav..."
-Write-Wav -Path (Join-Path $outDir "alarm_passaros.wav") -Samples (New-Birds) -SampleRate $SampleRate
+# Ondas/chuva/passarinhos sintetizados (New-OceanWaves/New-Rain/New-Birds acima) não
+# são mais gerados: foram substituídos por gravações reais CC0/domínio público em
+# 2026-09-25 (ver scripts/process_alarm_recordings.js e Luminaria/SOUND_CREDITS.md).
+# As funções ficam aqui só como referência.
 
 Write-Host "Pronto."

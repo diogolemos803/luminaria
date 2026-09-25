@@ -98,8 +98,9 @@ depende de CI num runner macOS na nuvem (GitHub Actions) e de sideload via AltSt
   `init()`), o `Timer` de 15s, e `checkForMissedAlarm()` — pra cobrir o caso do loop
   silencioso parar de tocar (ligação, Siri, outro app com som) sem depender de só um desses
   gatilhos.
-- `Luminaria/SleepRoutineStore.swift` — `AlarmSoundOption` (enum com os 4 sons
-  disponíveis), `SleepRoutine` (nome + horário do despertador + horário de desligar Modo
+- `Luminaria/SleepRoutineStore.swift` — `AlarmSoundOption` (enum com os 21 sons
+  disponíveis, agrupados por `category` — Pássaros/Água/Sinos/Música/Clássicos; ver
+  "Sons do despertador" abaixo), `SleepRoutine` (nome + horário do despertador + horário de desligar Modo
   Noturno + som escolhido + `appSelection: FamilyActivitySelection`, os apps bloqueados
   DESSA rotina — cada rotina tem a própria lista, não é mais um bloqueio global) e
   `SleepRoutineStore` (`ObservableObject`, lista dinâmica de rotinas persistida como
@@ -280,19 +281,27 @@ depende de CI num runner macOS na nuvem (GitHub Actions) e de sideload via AltSt
   `GrowthDestinations` em `GrowthEngine.swift` pra decidir qual planeta está
   desbloqueado agora, não qual já foi alcançado uma vez no passado) — todas funções
   puras sobre `[SleepReportEntry]`, sem estado próprio.
-- `Luminaria/silence_loop.wav` / `Luminaria/alarm_tone.wav` — sons originais (sirene
-  clássica), gerados programaticamente. `Luminaria/alarm_alvorada.wav` — tom puro
-  (arpejo pentatônico ascendente), mantido. `Luminaria/alarm_ondas.wav` /
-  `alarm_chuva.wav` / `alarm_passaros.wav` — sons de natureza (ondas do mar, chuva,
-  passarinhos ao amanhecer), sintetizados a partir de **ruído branco filtrado** (não
-  tons puros) pra soar mais parecido com gravação de verdade — a mesma técnica que
-  concorrentes de despertador confortável (Sleep Cycle, Pillow etc.) usam de verdade
-  pra esse tipo de som — e normalizados bem mais alto (~85-92% do pico) que os tons
-  calmos anteriores, pra funcionar de verdade como despertador. Substituíram
-  `alarm_carrilhao.wav`/`alarm_respiracao.wav` (removidos), que eram tons puros demais
-  e não convenciam como "som de acordar". Todos 16-bit PCM mono 44.1kHz, gerados por
-  `scripts/generate_alarm_sounds.ps1` (PowerShell + .NET — ver decisão abaixo sobre por
-  que não é mais um script Python, e sobre por que não são gravações baixadas).
+- **Sons do despertador** — desde 2026-09-25, **biblioteca de 19 gravações reais** (pássaros,
+  água, sinos, caixinha de música), baixadas do Wikimedia Commons, todas CC0 ou domínio
+  público (uso comercial liberado, sem atribuição obrigatória) — lista completa com autor e
+  link de cada uma em `Luminaria/SOUND_CREDITS.md`. Pedido do usuário ("baixe uma
+  biblioteca de áudios calmos... substituem, mas quero bastante opções"), revertendo a
+  decisão anterior de não baixar gravações (ver Decisões). Pipeline, sem instalar nada:
+  `scripts/transcode_recordings.ps1` (transcodificador do Windows via WinRT — **não abre
+  .ogg**, mesmo com Web Media Extensions; pros originais em Ogg usamos a versão MP3 que o
+  Wikimedia publica de cada arquivo) → `scripts/process_alarm_recordings.js` (Node puro:
+  mono, 44,1 kHz, 16-bit, trecho de **20s** escolhido pela análise de volume e fixado na
+  tabela `SOUNDS`, entrada/saída suaves, volume normalizado por RMS com teto suave). 20s
+  porque a notificação de reserva só aceita até 30s e cada segundo pesa ~88 KB (19 sons ≈
+  33 MB); o AlarmKit repete o som. Originais em `Assets/sons_originais/` (fora do git).
+  Descartados na análise: dois quase só silêncio, e um "Robin's song" que era música
+  gravada em cilindro de fonógrafo, não pássaro. `oceanWaves`/`rain`/`birds` mantiveram o
+  rawValue e só apontam pras gravações equivalentes, então rotinas salvas migram sozinhas.
+  A escolha em `RoutineEditView` virou grade por categoria (3 colunas, ícone + nome);
+  tocar escolhe e toca a prévia (`AlarmManager.stopPreview()` ao sair da tela).
+  Continuam sintetizados: `alarm_alvorada.wav` (Alvorada), `alarm_tone.wav` (Sirene
+  clássica) e `silence_loop.wav`, por `scripts/generate_alarm_sounds.ps1` (os geradores de
+  ondas/chuva/passarinhos ficaram lá só como referência).
 - `Luminaria/Assets.xcassets` — `LogoAcordado`/`LogoSono`, PNGs com transparência real,
   recolorido (cinza escuro/cinza claro em vez de preto/branco puro) e recortado rente ao
   desenho. Os originais brutos ficam em `Assets/` na raiz (fora do git, só staging local).
@@ -469,7 +478,7 @@ Fluxo usado pra testar de verdade, todo do Windows:
 
 - **`Luminaria.xcodeproj/project.pbxproj` foi escrito à mão**, linha por linha — não existe
   Xcode/macOS neste ambiente de desenvolvimento (Windows). IDs de objeto seguem o padrão
-  `AAAAAAAAAAAAAAAAAAAAAA` + 2 dígitos hex incrementais (maior em uso: `62`); qualquer
+  `AAAAAAAAAAAAAAAAAAAAAA` + 2 dígitos hex incrementais (maior em uso: `8A`); qualquer
   novo arquivo precisa de entradas em `PBXBuildFile`, `PBXFileReference`, no grupo, e na
   build phase certa (`Sources` pra `.swift`, `Resources` pra assets/sons). Sempre
   verificar balanço de chaves/parênteses e contagem de referências de cada ID novo
@@ -702,7 +711,10 @@ Fluxo usado pra testar de verdade, todo do Windows:
   soar como sirene ("alarme anti bombas"). São ondas senoidais puras com envelope suave
   de ataque/liberação, frequências mais baixas e ritmo mais lento que o som original
   (bipe triplo em 1000Hz).
-- **Sons de natureza também são sintetizados, não gravações baixadas** — o usuário pediu
+- **(Substituída em 2026-09-25 pela biblioteca de gravações CC0/domínio público — ver
+  "Sons do despertador" em Arquitetura; o cuidado com licença continua valendo: só
+  baixar arquivo com a licença conferida um por um.)** Sons de natureza sintetizados,
+  não gravações baixadas — o usuário pediu
   sons "de verdade" tipo praia/natureza, inspirados em concorrentes de despertador
   confortável (Sleep Cycle, Pillow etc.). Decisão explícita de **não baixar** essas
   gravações de bancos de som (freesound.org e afins): licenciamento de áudio "grátis"

@@ -283,8 +283,14 @@ final class AlarmManager: NSObject, ObservableObject {
     func previewSound(_ option: AlarmSoundOption) {
         configureAudioSession()
         guard let url = Bundle.main.url(forResource: option.fileName, withExtension: "wav") else { return }
+        previewPlayer?.stop()
         previewPlayer = try? AVAudioPlayer(contentsOf: url)
         previewPlayer?.play()
+    }
+
+    func stopPreview() {
+        previewPlayer?.stop()
+        previewPlayer = nil
     }
 
     /// Chamado quando a pessoa toca "Parar" na tela do alarme tocando. O despertador é

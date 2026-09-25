@@ -3,40 +3,145 @@ import FamilyControls
 import EventKit
 
 /// Som do despertador escolhido pela rotina. `fileName` é o nome do recurso .wav
-/// no bundle (sem extensão), usado tanto pelo player em loop quanto pelo som
-/// customizado da notificação de backup.
+/// no bundle (sem extensão), usado pelo alarme do sistema (AlarmKit), pelo player em
+/// loop do despertador antigo e pelo som customizado da notificação de backup.
 ///
-/// `gentleChime` e `breathing` (tons puros) saíram de uso, substituídos pelos sons de
-/// natureza abaixo (ruído filtrado, mais forte e mais parecido com gravação de verdade
-/// — mesma linha dos concorrentes de despertador confortável). `Codable` é implementado
-/// à mão (em vez do sintetizado) só pra migrar rotinas já salvas que apontavam pros
-/// casos antigos, em vez de falhar o decode e resetar as rotinas do usuário.
+/// Biblioteca de gravações reais (2026-09-25), CC0/domínio público do Wikimedia Commons
+/// — autores em `SOUND_CREDITS.md`, processadas por `scripts/process_alarm_recordings.js`.
+/// Substituíram os sons sintetizados de ondas/chuva/passarinhos: `oceanWaves`, `rain` e
+/// `birds` mantêm o mesmo `rawValue` e só apontam pra gravação equivalente, então
+/// rotinas já salvas migram sozinhas, sem mexer no decode. Ordem dos casos = ordem na
+/// tela de escolha (agrupada por `category`).
+///
+/// `gentleChime` e `breathing` (tons puros bem antigos) continuam migrados no `Codable`
+/// manual abaixo, em vez de falhar o decode e resetar as rotinas do usuário.
 enum AlarmSoundOption: String, CaseIterable, Hashable, Identifiable {
-    case classic
-    case sunrise
-    case oceanWaves
-    case rain
+    // Pássaros
     case birds
+    case nightingale
+    case blackbirds
+    case breezeBirds
+    // Água
+    case oceanWaves
+    case seaWaves
+    case pebbleBeach
+    case stream
+    case trickle
+    case rain
+    case countryNight
+    // Sinos
+    case koshiChimes
+    case windChimes
+    case littleBells
+    case tubularBells
+    case pottery
+    case singingBowl
+    // Música
+    case musicBox
+    case lullaby
+    // Clássicos (sintetizados)
+    case sunrise
+    case classic
+
+    enum Category: String, CaseIterable, Identifiable {
+        case birds = "Pássaros"
+        case water = "Água"
+        case bells = "Sinos"
+        case music = "Música"
+        case classic = "Clássicos"
+
+        var id: String { rawValue }
+    }
 
     var id: String { rawValue }
 
+    var category: Category {
+        switch self {
+        case .birds, .nightingale, .blackbirds, .breezeBirds: return .birds
+        case .oceanWaves, .seaWaves, .pebbleBeach, .stream, .trickle, .rain, .countryNight: return .water
+        case .koshiChimes, .windChimes, .littleBells, .tubularBells, .pottery, .singingBowl: return .bells
+        case .musicBox, .lullaby: return .music
+        case .sunrise, .classic: return .classic
+        }
+    }
+
     var fileName: String {
         switch self {
-        case .classic: return "alarm_tone"
+        case .birds: return "alarm_passaros_acordando"
+        case .nightingale: return "alarm_rouxinol"
+        case .blackbirds: return "alarm_melros"
+        case .breezeBirds: return "alarm_brisa_passaros"
+        case .oceanWaves: return "alarm_ondas_praia"
+        case .seaWaves: return "alarm_ondas_mar"
+        case .pebbleBeach: return "alarm_praia_pedrinhas"
+        case .stream: return "alarm_riacho"
+        case .trickle: return "alarm_fio_dagua"
+        case .rain: return "alarm_chuva_leve"
+        case .countryNight: return "alarm_noite_campo"
+        case .koshiChimes: return "alarm_sinos_koshi"
+        case .windChimes: return "alarm_sinos_vento"
+        case .littleBells: return "alarm_sininhos"
+        case .tubularBells: return "alarm_sinos_tubulares"
+        case .pottery: return "alarm_ceramica"
+        case .singingBowl: return "alarm_tigela"
+        case .musicBox: return "alarm_caixinha"
+        case .lullaby: return "alarm_cancao_ninar"
         case .sunrise: return "alarm_alvorada"
-        case .oceanWaves: return "alarm_ondas"
-        case .rain: return "alarm_chuva"
-        case .birds: return "alarm_passaros"
+        case .classic: return "alarm_tone"
         }
     }
 
     var displayName: String {
         switch self {
-        case .classic: return "Sirene clássica"
+        case .birds: return "Pássaros acordando"
+        case .nightingale: return "Rouxinol"
+        case .blackbirds: return "Melros de manhã"
+        case .breezeBirds: return "Brisa com pássaros"
+        case .oceanWaves: return "Ondas na praia"
+        case .seaWaves: return "Ondas do mar"
+        case .pebbleBeach: return "Praia de pedrinhas"
+        case .stream: return "Riacho"
+        case .trickle: return "Fio d'água"
+        case .rain: return "Chuva leve"
+        case .countryNight: return "Noite no campo"
+        case .koshiChimes: return "Sinos de vento Koshi"
+        case .windChimes: return "Sinos de vento"
+        case .littleBells: return "Sininhos"
+        case .tubularBells: return "Sinos tubulares"
+        case .pottery: return "Cerâmica tilintando"
+        case .singingBowl: return "Tigela tibetana"
+        case .musicBox: return "Caixinha de música"
+        case .lullaby: return "Canção de ninar"
         case .sunrise: return "Alvorada"
-        case .oceanWaves: return "Ondas do mar"
-        case .rain: return "Chuva"
-        case .birds: return "Passarinhos ao amanhecer"
+        case .classic: return "Sirene clássica"
+        }
+    }
+
+    /// Ícone SF Symbols da grade de escolha (`RoutineEditView`). Todos existem desde o
+    /// iOS 16 (alvo mínimo do app).
+    var iconName: String {
+        switch self {
+        case .birds: return "bird.fill"
+        case .nightingale: return "music.note"
+        case .blackbirds: return "sunrise"
+        case .breezeBirds: return "wind"
+        case .oceanWaves: return "water.waves"
+        case .seaWaves: return "beach.umbrella"
+        case .pebbleBeach: return "circle.hexagongrid.fill"
+        case .stream: return "drop.fill"
+        case .trickle: return "drop"
+        case .rain: return "cloud.rain.fill"
+        case .countryNight: return "moon.stars.fill"
+        case .koshiChimes: return "bell.and.waves.left.and.right"
+        case .windChimes: return "wind.snow"
+        case .littleBells: return "bell"
+        case .tubularBells: return "bell.fill"
+        case .pottery: return "cup.and.saucer.fill"
+        case .singingBowl: return "circle.circle"
+        case .musicBox: return "gift.fill"
+        case .lullaby: return "moon.zzz.fill"
+        case .sunrise: return "sunrise.fill"
+        case .classic: return "alarm.fill"
         }
     }
 }

@@ -235,25 +235,33 @@ struct RoutineEditView: View {
                             .padding(.vertical, 9)
                         }
 
+                        // 21 sons em grade agrupada por categoria (antes: 5 ícones numa
+                        // fileira). Tocar num som escolhe E toca a prévia na hora — com
+                        // tanta opção, ouvir enquanto navega é o jeito natural de escolher.
                         ThemedCard(title: "Som do despertador", theme: theme) {
-                            HStack(spacing: 10) {
-                                ForEach(AlarmSoundOption.allCases) { option in
-                                    soundSwatch(for: option)
+                            VStack(alignment: .leading, spacing: 14) {
+                                Text(routine.soundOption.displayName)
+                                    .font(.luminaria(.subheadline, weight: .bold))
+                                    .foregroundStyle(theme.ink)
+                                Text("Toque num som pra ouvir e escolher.")
+                                    .font(.luminaria(.caption))
+                                    .foregroundStyle(theme.inkMuted)
+
+                                ForEach(AlarmSoundOption.Category.allCases) { category in
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        Text(category.rawValue.uppercased())
+                                            .font(.luminaria(.caption2, weight: .bold))
+                                            .tracking(0.8)
+                                            .foregroundStyle(theme.inkMuted)
+                                        LazyVGrid(columns: soundGridColumns, spacing: 10) {
+                                            ForEach(AlarmSoundOption.allCases.filter { $0.category == category }) { option in
+                                                soundSwatch(for: option)
+                                            }
+                                        }
+                                    }
                                 }
                             }
-                            .padding(8)
-
-                            Button {
-                                AlarmManager.shared.previewSound(routine.soundOption)
-                            } label: {
-                                ThemedRow(
-                                    theme: theme,
-                                    title: "Testar som",
-                                    leading: { IconBadge(systemName: "play.fill", theme: theme) },
-                                    accessory: { EmptyView() }
-                                )
-                            }
-                            .buttonStyle(.plain)
+                            .padding(10)
                         }
 
                         ThemedCard(title: "Bloqueio de apps", theme: theme) {
@@ -363,6 +371,8 @@ struct RoutineEditView: View {
                     .disabled(routine.name.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
             }
+            // A prévia tem 20s — não deixa ela tocando depois de sair da tela.
+            .onDisappear { AlarmManager.shared.stopPreview() }
         }
     }
 
@@ -373,33 +383,40 @@ struct RoutineEditView: View {
         return count == 0 ? "Nenhum app escolhido" : "\(count) selecionado\(count == 1 ? "" : "s")"
     }
 
+    private var soundGridColumns: [GridItem] {
+        Array(repeating: GridItem(.flexible(), spacing: 10, alignment: .top), count: 3)
+    }
+
     private func soundSwatch(for option: AlarmSoundOption) -> some View {
         let isSelected = routine.soundOption == option
         return Button {
             routine.soundOption = option
+            AlarmManager.shared.previewSound(option)
         } label: {
-            Image(systemName: iconName(for: option))
-                .font(.system(size: 16, weight: .semibold))
-                .frame(maxWidth: .infinity)
-                .frame(height: 52)
-                .foregroundStyle(isSelected ? theme.accent : theme.inkMuted)
-                .background(isSelected ? theme.accentWash : theme.ink.opacity(0.05))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .stroke(isSelected ? theme.accent : Color.clear, lineWidth: 2)
-                )
-                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            VStack(spacing: 6) {
+                Image(systemName: option.iconName)
+                    .font(.system(size: 17, weight: .semibold))
+                    .frame(height: 22)
+                Text(option.displayName)
+                    .font(.luminaria(.caption2, weight: isSelected ? .bold : .medium))
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.85)
+                    .frame(maxWidth: .infinity, minHeight: 28, alignment: .top)
+            }
+            .padding(.vertical, 10)
+            .padding(.horizontal, 4)
+            .frame(maxWidth: .infinity)
+            .foregroundStyle(isSelected ? theme.accent : theme.inkMuted)
+            .background(isSelected ? theme.accentWash : theme.ink.opacity(0.05))
+            .overlay(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .stroke(isSelected ? theme.accent : Color.clear, lineWidth: 2)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         }
         .buttonStyle(.plain)
-    }
-
-    private func iconName(for option: AlarmSoundOption) -> String {
-        switch option {
-        case .classic: return "bell.fill"
-        case .sunrise: return "sunrise.fill"
-        case .oceanWaves: return "water.waves"
-        case .rain: return "cloud.rain.fill"
-        case .birds: return "bird.fill"
-        }
+        .accessibilityLabel(option.displayName)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 }
