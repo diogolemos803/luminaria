@@ -1,0 +1,401 @@
+<title>Pouso na Lua</title>
+<style>
+  :root{ --bg:#0b0e14; --ink:#e8e6df; --ink-muted:#9aa0ad; --frame:#050608; }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:"Iowan Old Style","Palatino Linotype",serif;
+    display:flex; flex-direction:column; align-items:center; gap:24px; padding:40px 16px 72px;
+  }
+  h1{ font-size:1.5rem; font-weight:600; margin:0; text-align:center; text-wrap:balance; }
+  p.sub{ margin:0; max-width:560px; text-align:center; color:var(--ink-muted); font-size:.95rem; line-height:1.5; }
+  .col{ display:flex; flex-direction:column; align-items:center; gap:10px; }
+  .phone-frame{
+    width:300px; height:649px; background:var(--frame); border-radius:46px; padding:10px;
+    box-shadow:0 30px 60px rgba(0,0,0,.55), inset 0 0 0 1px rgba(255,255,255,.04);
+  }
+  .phone-screen{ width:100%; height:100%; border-radius:36px; overflow:hidden; position:relative; background:#000; }
+  .phone-screen svg{ width:100%; height:100%; display:block; }
+  .notch{ position:absolute; top:10px; left:50%; transform:translateX(-50%); width:90px; height:22px; background:var(--frame); border-radius:14px; z-index:5; }
+  .caption{ max-width:300px; text-align:center; font-size:.8rem; line-height:1.45; color:var(--ink-muted); margin:0; }
+  .buttons{ display:flex; gap:8px; flex-wrap:wrap; justify-content:center; }
+  button{ padding:8px 16px; border-radius:999px; border:1px solid #333c4c; background:#171c28; color:var(--ink); font-family:inherit; font-size:.85rem; cursor:pointer; }
+  button:hover{ background:#1f2536; }
+  button:focus-visible{ outline:2px solid #8fb3ff; outline-offset:2px; }
+
+  /* ================= LINHA DO TEMPO =================
+     0s     foguete descendo (motor ligado), Lua surge por baixo
+     ~2.2s  poeira lunar levanta conforme o chão se aproxima
+     ~3.1s  toque no solo + leve assentamento nas barbatanas
+     3.3s   motor desliga, poeira baixa
+     4.0s   porta abre, rampa desce
+     4.4s   astronauta aparece na porta, desce a rampa e caminha (gravidade
+            baixa: passos quicando), deixando pegadas
+     7.3s   crava a bandeira com o número de dias; ela se desenrola
+     8.6s   acena                                                            */
+
+  /* Foguete FIXO e centralizado (mesma posição da decolagem) — só o cenário se
+     move: a superfície da Lua sobe por baixo dele, desacelerando até o toque. */
+  .moon-rig{ animation: moonRise 3.4s linear 0s 1 both; }
+  @keyframes moonRise{
+    0%  { transform:translateY(900px); animation-timing-function: cubic-bezier(.12,.62,.3,1); }
+    90% { transform:translateY(-3px);  animation-timing-function: ease-in-out; }
+    100%{ transform:translateY(0px); }
+  }
+
+  .puff{ opacity:0; animation: puffLife var(--dur,3s) cubic-bezier(.22,.06,.3,1) var(--delay,0s) 1 both; }
+  @keyframes puffLife{
+    0%  { opacity:0;  transform:translate(0,0) scale(.35); }
+    14% { opacity:1;  transform:translate(calc(var(--dx)*.1), calc(var(--dy)*.08)) scale(.85); }
+    45% { opacity:.9; transform:translate(calc(var(--dx)*.5), calc(var(--dy)*.45)) scale(1.3); }
+    100%{ opacity:var(--endOp,0); transform:translate(var(--dx), var(--dy)) scale(1.8); }
+  }
+
+  /* motor: chama leve durante a descida, desliga depois do toque */
+  .flame-rig{ transform-origin:195px 672px; animation: flameOff .6s ease-in 3.3s 1 both; }
+  @keyframes flameOff{ from{ opacity:1; transform:scale(1,1); } to{ opacity:0; transform:scale(.6,.15); } }
+  .flame-sway { transform-origin:195px 672px; animation: flameSway 1.6s ease-in-out infinite alternate; }
+  @keyframes flameSway{ from{ transform:rotate(-.6deg); } to{ transform:rotate(.6deg); } }
+  .flame-outer{ transform-origin:195px 672px; animation: flickerA .7s ease-in-out infinite; }
+  .flame-mid  { transform-origin:195px 672px; animation: flickerB .5s ease-in-out infinite; }
+  .flame-core { transform-origin:195px 672px; animation: flickerC .36s ease-in-out infinite; }
+  @keyframes flickerA{ 0%,100%{ transform:scaleY(1); } 50%{ transform:scaleY(1.05); } }
+  @keyframes flickerB{ 0%,100%{ transform:scaleY(1); } 50%{ transform:scaleY(1.06); } }
+  @keyframes flickerC{ 0%,100%{ transform:scaleY(1); } 50%{ transform:scaleY(1.07); } }
+  .engine-glow{ animation: glowOff .8s ease-in 3.3s 1 both; }
+  @keyframes glowOff{ from{ opacity:1; } to{ opacity:0; } }
+  .exhaust-rig{ animation: fadeAway .5s linear 2.5s 1 both; }
+  @keyframes fadeAway{ from{ opacity:1; } to{ opacity:0; } }
+  .exhaust{ opacity:0; animation: exhaustPuff var(--xdur,1.4s) ease-out var(--xdelay,0s) infinite; }
+  @keyframes exhaustPuff{ 0%{ opacity:0; transform:translate(0,0) scale(.5); } 18%{ opacity:.5; } 100%{ opacity:0; transform:translate(var(--xdx,0px), 92px) scale(1.7); } }
+
+  /* porta e rampa */
+  .door-panel{ transform-box:fill-box; transform-origin:0% 50%; animation: doorOpen .5s ease-in-out 4s 1 both; }
+  @keyframes doorOpen{ from{ transform:scaleX(1); } to{ transform:scaleX(0); } }
+  .ramp{ transform-box:fill-box; transform-origin:0% 0%; animation: rampOut .6s cubic-bezier(.3,.7,.4,1) 4.3s 1 both; }
+  @keyframes rampOut{ from{ transform:scale(0); } to{ transform:scale(1); } }
+
+  /* astronauta: trajeto (porta → rampa → chão), aparição, quique da
+     gravidade baixa, pernas alternando, braço cravando a bandeira e acenando */
+  .astro-path{ animation: astroPath 3s linear 4.4s 1 both; }
+  @keyframes astroPath{
+    0%  { transform:translate(195px,626px); }
+    13% { transform:translate(195px,626px); }
+    27% { transform:translate(213px,627px); }
+    60% { transform:translate(248px,695px); }
+    93% { transform:translate(292px,699px); }
+    100%{ transform:translate(292px,699px); }
+  }
+  .astro-appear{ transform-box:fill-box; transform-origin:50% 100%; animation: astroAppear .4s ease-out 4.4s 1 both; }
+  @keyframes astroAppear{ from{ opacity:0; transform:scale(.7); } to{ opacity:1; transform:scale(1); } }
+  .astro-bob{ animation: astroBob .5s ease-in-out 4.8s 5 both; }
+  @keyframes astroBob{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-4px); } }
+  .leg-a{ transform-box:fill-box; transform-origin:50% 0%; animation: legA .5s ease-in-out 4.8s 5; }
+  .leg-b{ transform-box:fill-box; transform-origin:50% 0%; animation: legB .5s ease-in-out 4.8s 5; }
+  @keyframes legA{ 0%,100%{ transform:rotate(0); } 25%{ transform:rotate(18deg); } 75%{ transform:rotate(-18deg); } }
+  @keyframes legB{ 0%,100%{ transform:rotate(0); } 25%{ transform:rotate(-18deg); } 75%{ transform:rotate(18deg); } }
+  .arm-r{
+    transform-box:fill-box; transform-origin:50% 10%;
+    animation: armPlant .6s ease-in-out 7.25s 1 both, armWave .45s ease-in-out 8.6s 4 alternate;
+  }
+  @keyframes armPlant{ 0%{ transform:rotate(0); } 40%{ transform:rotate(-125deg); } 75%{ transform:rotate(-55deg); } 100%{ transform:rotate(-25deg); } }
+  @keyframes armWave{ from{ transform:rotate(-150deg); } to{ transform:rotate(-105deg); } }
+  .footprint{ opacity:0; animation: showUp .3s ease-out var(--fdelay) 1 both; }
+  @keyframes showUp{ from{ opacity:0; } to{ opacity:.55; } }
+
+  /* bandeira: aparece erguida, é cravada no chão (com poeirinha), se
+     desenrola e fica tremulando de leve */
+  .flag-plant{ animation: flagPlant .35s cubic-bezier(.5,0,.9,.6) 7.35s 1 both; }
+  @keyframes flagPlant{ 0%{ opacity:0; transform:translateY(-18px); } 25%{ opacity:1; } 100%{ opacity:1; transform:translateY(0); } }
+  .flag-cloth{ transform-box:fill-box; transform-origin:0% 50%; animation: flagUnfurl .5s cubic-bezier(.3,.8,.4,1) 7.8s 1 both; }
+  @keyframes flagUnfurl{ from{ transform:scaleX(0); } to{ transform:scaleX(1); } }
+  .flag-wave{ transform-box:fill-box; transform-origin:0% 50%; animation: flagWave 1.6s ease-in-out 8.3s infinite alternate; }
+  @keyframes flagWave{ from{ transform:skewY(0deg); } to{ transform:skewY(-4deg); } }
+
+  @media (prefers-reduced-motion: reduce){
+    .flame-sway, .flame-outer, .flame-mid, .flame-core, .exhaust, .flag-wave{ animation-iteration-count:1; }
+  }
+</style>
+<script>
+  var ANIMATED = '.moon-rig, .puff, .flame-rig, .flame-sway, .flame-outer, .flame-mid, .flame-core, .engine-glow, .exhaust-rig, .exhaust, .door-panel, .ramp, .astro-path, .astro-appear, .astro-bob, .leg-a, .leg-b, .arm-r, .footprint, .flag-plant, .flag-cloth, .flag-wave';
+  function sceneSvg(){ return document.querySelector('.phone-screen svg'); }
+  function replay(){
+    sceneSvg().querySelectorAll(ANIMATED).forEach(function(el){
+      el.style.animation = 'none'; void el.getBoundingClientRect(); el.style.animation = '';
+    });
+  }
+  function freezeAt(ms){
+    replay();
+    requestAnimationFrame(function(){ document.getAnimations().forEach(function(a){ a.pause(); a.currentTime = ms; }); });
+  }
+</script>
+
+<h1>Pouso na Lua</h1>
+<p class="sub">
+  Tocado de manhã, quando a pessoa aguentou a noite inteira. Mesmo estilo e mesma regra da
+  decolagem: o foguete fica fixo na tela e só o cenário se move. O número da bandeira é a
+  sequência de dias (aqui, 7 de exemplo).
+</p>
+
+<div class="col">
+  <div class="phone-frame">
+    <div class="phone-screen">
+      <div class="notch"></div>
+      <svg viewBox="0 0 390 844" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#0a0e1b"/>
+            <stop offset="60%" stop-color="#131a2e"/>
+            <stop offset="100%" stop-color="#1c233a"/>
+          </linearGradient>
+          <linearGradient id="moonGround" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#b3b7bd"/>
+            <stop offset="12%" stop-color="#9a9fa7"/>
+            <stop offset="50%" stop-color="#6f747d"/>
+            <stop offset="100%" stop-color="#4a4e57"/>
+          </linearGradient>
+          <radialGradient id="earthGrad" cx="35%" cy="30%" r="75%">
+            <stop offset="0%" stop-color="#5d93d6"/>
+            <stop offset="100%" stop-color="#2a568f"/>
+          </radialGradient>
+          <radialGradient id="earthHalo" cx="50%" cy="50%" r="50%">
+            <stop offset="70%" stop-color="#7fb0ff" stop-opacity="0.25"/>
+            <stop offset="100%" stop-color="#7fb0ff" stop-opacity="0"/>
+          </radialGradient>
+          <clipPath id="earthClip"><circle cx="302" cy="120" r="24"/></clipPath>
+
+          <linearGradient id="rocketBody" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stop-color="#e6e0d4"/>
+            <stop offset="45%" stop-color="#f8f4ec"/>
+            <stop offset="100%" stop-color="#dcd5c7"/>
+          </linearGradient>
+          <linearGradient id="rocketRed" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#ec6b4c"/>
+            <stop offset="100%" stop-color="#cc4a33"/>
+          </linearGradient>
+          <linearGradient id="glassGrad" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#46668a"/>
+            <stop offset="100%" stop-color="#28405a"/>
+          </linearGradient>
+          <linearGradient id="flameOuter" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#ffcf6e"/>
+            <stop offset="60%" stop-color="#f7a53f"/>
+            <stop offset="100%" stop-color="#ec7f2c" stop-opacity="0.7"/>
+          </linearGradient>
+          <linearGradient id="flameMid" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#fff0c4"/>
+            <stop offset="100%" stop-color="#ffd27a"/>
+          </linearGradient>
+          <radialGradient id="flameCoreGrad" cx="50%" cy="15%" r="85%">
+            <stop offset="0%" stop-color="#ffffff"/>
+            <stop offset="100%" stop-color="#fff3cf"/>
+          </radialGradient>
+          <radialGradient id="flameGlowGrad" cx="50%" cy="35%" r="60%">
+            <stop offset="0%" stop-color="#ffcf7a" stop-opacity="0.9"/>
+            <stop offset="55%" stop-color="#ff9a45" stop-opacity="0.35"/>
+            <stop offset="100%" stop-color="#ff9a45" stop-opacity="0"/>
+          </radialGradient>
+
+          <filter id="soft" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="7"/></filter>
+          <filter id="softer" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3"/></filter>
+          <filter id="crisp" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="1.1"/></filter>
+
+          <path id="rocketHull" d="M 195 481 C 214 490 231 530 232 580 C 233 620 228 650 225 665 L 165 665 C 162 650 157 620 158 580 C 159 530 176 490 195 481 Z"/>
+          <clipPath id="hullClip"><use href="#rocketHull"/></clipPath>
+          <path id="puffBlob" d="M -34 8 C -37 -9 -19 -19 -5 -14 C -3 -29 20 -31 26 -16 C 41 -21 50 -2 39 8 C 47 19 36 32 21 27 C 17 38 -6 37 -11 25 C -28 31 -39 19 -34 8 Z"/>
+
+          <!-- chama só aparece ACIMA da superfície (máscara que sobe junto com a
+               Lua) — perto do toque ela "esmaga" no chão em vez de atravessá-lo -->
+          <!-- (as coordenadas da máscara já estão no espaço do grupo mascarado,
+               que está dentro da "câmera" — não reaplicar o translate aqui) -->
+          <mask id="aboveMoon" maskUnits="userSpaceOnUse" x="-100" y="-400" width="600" height="1500">
+            <g class="moon-rig">
+              <path d="M -40 -2000 L 430 -2000 L 430 712 C 330 704 260 694 195 692 C 130 694 60 704 -40 712 Z" fill="#fff" filter="url(#softer)"/>
+            </g>
+          </mask>
+        </defs>
+
+        <!-- ===== céu ===== -->
+        <rect x="0" y="0" width="390" height="844" fill="url(#sky)"/>
+        <g fill="#ffffff">
+          <circle cx="30" cy="70" r="1.6" opacity="0.85"/><circle cx="70" cy="140" r="1.1" opacity="0.5"/>
+          <circle cx="130" cy="50" r="1.6" opacity="0.75"/><circle cx="180" cy="180" r="1.1" opacity="0.4"/>
+          <circle cx="230" cy="90" r="1.8" opacity="0.9"/><circle cx="360" cy="190" r="1.2" opacity="0.6"/>
+          <circle cx="55" cy="250" r="1.2" opacity="0.45"/><circle cx="110" cy="300" r="1.6" opacity="0.6"/>
+          <circle cx="195" cy="270" r="1.2" opacity="0.5"/><circle cx="250" cy="260" r="1.1" opacity="0.4"/>
+          <circle cx="300" cy="310" r="1.6" opacity="0.6"/><circle cx="20" cy="340" r="1.1" opacity="0.4"/>
+          <circle cx="150" cy="360" r="1.6" opacity="0.5"/><circle cx="345" cy="350" r="1.2" opacity="0.5"/>
+          <circle cx="90" cy="400" r="1.1" opacity="0.4"/><circle cx="260" cy="410" r="1.4" opacity="0.5"/>
+          <circle cx="36" cy="446" r="1.3" opacity="0.5"/><circle cx="128" cy="468" r="1.1" opacity="0.4"/>
+          <circle cx="232" cy="452" r="1.5" opacity="0.6"/><circle cx="318" cy="478" r="1.1" opacity="0.45"/>
+          <circle cx="372" cy="430" r="1.4" opacity="0.55"/><circle cx="80" cy="500" r="1.1" opacity="0.35"/>
+        </g>
+
+        <!-- ===== a Terra no céu (casa) ===== -->
+        <g transform="translate(-230,0)">
+        <circle cx="302" cy="120" r="34" fill="url(#earthHalo)"/>
+        <circle cx="302" cy="120" r="24" fill="url(#earthGrad)"/>
+        <g clip-path="url(#earthClip)">
+          <path d="M 284 104 C 292 98 302 102 300 110 C 298 118 288 118 286 126 C 284 132 278 130 278 122 C 278 114 280 108 284 104 Z" fill="#5f9d66"/>
+          <path d="M 306 118 C 314 112 324 116 322 126 C 320 136 310 140 304 136 C 300 132 302 124 306 118 Z" fill="#5f9d66"/>
+          <path d="M 296 136 C 300 134 306 136 304 140 C 302 144 296 143 296 136 Z" fill="#6aa76f"/>
+          <path d="M 286 112 C 294 108 304 108 312 112" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
+          <path d="M 300 130 C 308 128 316 130 322 134" fill="none" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round" opacity="0.45"/>
+          <circle cx="314" cy="128" r="24" fill="#0a0e1b" opacity="0.5"/>
+        </g>
+        </g>
+
+        <!-- ===== câmera: foguete centralizado (mesmo enquadramento da decolagem) ===== -->
+        <g transform="translate(0,-164)">
+
+          <!-- ===== LUA — sobe por baixo do foguete, desacelerando ===== -->
+          <g class="moon-rig">
+            <path d="M -20 1300 L -20 712 C 60 704 130 694 195 692 C 260 694 330 704 410 712 L 410 1300 Z" fill="url(#moonGround)"/>
+            <path d="M -20 712 C 60 704 130 694 195 692 C 260 694 330 704 410 712" fill="none" stroke="#e4e7eb" stroke-opacity="0.45" stroke-width="1.5"/>
+            <!-- "mares" mais escuros e manchas claras -->
+            <path d="M 10 780 Q 80 756 150 776 Q 120 806 30 804 Z" fill="#5f646d" opacity="0.45" filter="url(#softer)"/>
+            <path d="M 230 800 Q 300 780 380 796 Q 340 826 250 824 Z" fill="#5f646d" opacity="0.4" filter="url(#softer)"/>
+            <path d="M 120 900 Q 200 876 280 896 Q 240 930 140 926 Z" fill="#8c9199" opacity="0.4" filter="url(#softer)"/>
+            <path d="M -10 980 Q 70 956 150 978 Q 110 1010 10 1006 Z" fill="#555a63" opacity="0.4" filter="url(#softer)"/>
+            <!-- crateras: borda de baixo iluminada, fundo escuro (estilo chapado) -->
+            <g>
+              <ellipse cx="70" cy="730" rx="26" ry="7" fill="#7b8089"/><ellipse cx="70" cy="732" rx="20" ry="4.6" fill="#5c6169"/><path d="M 48 733 Q 70 741 92 733" fill="none" stroke="#c9ccd1" stroke-width="1.2" opacity="0.55"/>
+              <ellipse cx="330" cy="742" rx="18" ry="5" fill="#7b8089"/><ellipse cx="330" cy="743.5" rx="13" ry="3.2" fill="#5c6169"/><path d="M 314 744 Q 330 750 346 744" fill="none" stroke="#c9ccd1" stroke-width="1" opacity="0.55"/>
+              <ellipse cx="250" cy="830" rx="34" ry="10" fill="#6c717a"/><ellipse cx="250" cy="833" rx="27" ry="6.5" fill="#50555d"/><path d="M 221 835 Q 250 847 279 835" fill="none" stroke="#b9bcc2" stroke-width="1.4" opacity="0.5"/>
+              <ellipse cx="90" cy="850" rx="22" ry="6.5" fill="#6c717a"/><ellipse cx="90" cy="852" rx="16" ry="4" fill="#50555d"/>
+              <ellipse cx="170" cy="960" rx="40" ry="12" fill="#62676f"/><ellipse cx="170" cy="963" rx="32" ry="8" fill="#474b53"/><path d="M 136 966 Q 170 980 204 966" fill="none" stroke="#a9adb3" stroke-width="1.4" opacity="0.45"/>
+              <ellipse cx="340" cy="930" rx="20" ry="6" fill="#62676f"/><ellipse cx="340" cy="932" rx="14" ry="3.8" fill="#474b53"/>
+              <ellipse cx="30" cy="1080" rx="28" ry="8" fill="#5a5f67"/><ellipse cx="30" cy="1082" rx="21" ry="5" fill="#40444c"/>
+              <ellipse cx="290" cy="1060" rx="24" ry="7" fill="#5a5f67"/><ellipse cx="290" cy="1062" rx="18" ry="4.4" fill="#40444c"/>
+            </g>
+            <!-- pedrinhas -->
+            <g fill="#5b6068">
+              <circle cx="40" cy="760" r="3"/><circle cx="118" cy="742" r="2.2"/><circle cx="286" cy="762" r="2.6"/>
+              <circle cx="372" cy="772" r="3"/><circle cx="210" cy="880" r="2.4"/><circle cx="60" cy="920" r="2.8"/>
+              <circle cx="320" cy="990" r="2.4"/><circle cx="130" cy="1040" r="3"/>
+            </g>
+            <g fill="#c3c6cb" opacity="0.6">
+              <circle cx="39" cy="758.5" r="1.1"/><circle cx="285" cy="760.8" r="1"/><circle cx="371" cy="770.5" r="1.1"/>
+            </g>
+
+            <!-- poeira lunar levantada pelo motor perto do toque (presa ao chão) -->
+            <g filter="url(#crisp)">
+              <g transform="translate(195,688)"><g class="puff" style="--dx:0px;--dy:-12px;--dur:2.4s;--delay:2.2s">
+                <use href="#puffBlob" fill="#8e939b" transform="translate(4,6) scale(1.1,.8)"/><use href="#puffBlob" fill="#b7bbc1" transform="scale(1.1,.8)"/></g></g>
+              <g transform="translate(160,693)"><g class="puff" style="--dx:-95px;--dy:8px;--dur:2.6s;--delay:2.25s">
+                <use href="#puffBlob" fill="#8e939b" transform="translate(4,6) scale(.85,.65)"/><use href="#puffBlob" fill="#b3b7bd" transform="scale(.85,.65)"/></g></g>
+              <g transform="translate(230,693)"><g class="puff" style="--dx:95px;--dy:8px;--dur:2.6s;--delay:2.25s">
+                <use href="#puffBlob" fill="#8e939b" transform="translate(4,6) scale(.85,.65)"/><use href="#puffBlob" fill="#b3b7bd" transform="scale(.85,.65)"/></g></g>
+              <g transform="translate(130,698)"><g class="puff" style="--dx:-140px;--dy:12px;--dur:2.8s;--delay:2.4s">
+                <use href="#puffBlob" fill="#8e939b" transform="translate(4,6) scale(.7,.55)"/><use href="#puffBlob" fill="#adb1b7" transform="scale(.7,.55)"/></g></g>
+              <g transform="translate(260,698)"><g class="puff" style="--dx:140px;--dy:12px;--dur:2.8s;--delay:2.4s">
+                <use href="#puffBlob" fill="#8e939b" transform="translate(4,6) scale(.7,.55)"/><use href="#puffBlob" fill="#adb1b7" transform="scale(.7,.55)"/></g></g>
+              <g transform="translate(100,704)"><g class="puff" style="--dx:-160px;--dy:16px;--dur:3s;--delay:2.55s">
+                <use href="#puffBlob" fill="#a7abb1" transform="scale(.55,.45)"/></g></g>
+              <g transform="translate(290,704)"><g class="puff" style="--dx:160px;--dy:16px;--dur:3s;--delay:2.55s">
+                <use href="#puffBlob" fill="#a7abb1" transform="scale(.55,.45)"/></g></g>
+            </g>
+          </g>
+
+          <!-- ===== CHAMA do motor de descida (máscara: só acima da superfície) ===== -->
+          <g mask="url(#aboveMoon)">
+            <g class="flame-rig">
+              <g class="flame-sway">
+                <path class="flame-outer" d="M 179 672 C 170 694 183 728 195 764 C 207 728 220 694 211 672 Z" fill="url(#flameOuter)"/>
+                <path class="flame-mid"   d="M 184 672 C 178 692 188 720 195 745 C 202 720 212 692 206 672 Z" fill="url(#flameMid)"/>
+                <path class="flame-core"  d="M 188 672 C 185 686 191 704 195 720 C 199 704 205 686 202 672 Z" fill="url(#flameCoreGrad)"/>
+              </g>
+              <g class="exhaust-rig" fill="#f3eee4">
+                <g transform="translate(195,758)"><g class="exhaust" style="--xdur:1.4s;--xdelay:0s;--xdx:-4px"><use href="#puffBlob" transform="scale(.22)"/></g></g>
+                <g transform="translate(193,760)"><g class="exhaust" style="--xdur:1.5s;--xdelay:.35s;--xdx:6px"><use href="#puffBlob" transform="scale(.18)"/></g></g>
+                <g transform="translate(197,756)"><g class="exhaust" style="--xdur:1.3s;--xdelay:.7s;--xdx:-7px"><use href="#puffBlob" transform="scale(.2)"/></g></g>
+              </g>
+            </g>
+          </g>
+          <g class="engine-glow" style="mix-blend-mode:screen">
+            <ellipse cx="195" cy="702" rx="40" ry="46" opacity="0.75" fill="url(#flameGlowGrad)" filter="url(#soft)"/>
+          </g>
+
+          <!-- ===== FOGUETE (mesmo desenho da decolagem) + porta ===== -->
+          <g>
+            <path d="M 160 596 C 136 606 124 640 126 692 C 136 678 150 668 167 662 Z" fill="url(#rocketRed)"/>
+            <path d="M 230 596 C 254 606 266 640 264 692 C 254 678 240 668 223 662 Z" fill="url(#rocketRed)"/>
+            <path d="M 182 664 L 208 664 L 204 675 L 186 675 Z" fill="#4d525b"/>
+            <use href="#rocketHull" fill="url(#rocketBody)"/>
+            <g clip-path="url(#hullClip)">
+              <path d="M 140 470 L 250 470 L 250 516 Q 195 534 140 516 Z" fill="url(#rocketRed)"/>
+              <rect x="215" y="470" width="30" height="200" fill="#000" opacity="0.07"/>
+            </g>
+            <circle cx="195" cy="566" r="19" fill="#d4d8dd"/>
+            <circle cx="195" cy="566" r="14" fill="url(#glassGrad)"/>
+            <ellipse cx="189" cy="560" rx="5" ry="4" fill="#7f9bb8" opacity="0.7"/>
+            <circle cx="187" cy="558" r="1.6" fill="#ffffff" opacity="0.8"/>
+            <!-- porta: interior escuro por baixo, painel que abre por cima -->
+            <rect x="181" y="592" width="28" height="34" rx="6" fill="#1a2030"/>
+            <rect class="door-panel" x="181" y="592" width="28" height="34" rx="6" fill="#ece6da"/>
+            <rect x="181" y="592" width="28" height="34" rx="6" fill="none" stroke="#b9b2a4" stroke-width="1.2"/>
+            <rect x="191" y="628" width="8" height="66" rx="4" fill="url(#rocketRed)"/>
+          </g>
+
+          <!-- rampa desce da porta até o chão -->
+          <g class="ramp">
+            <polygon points="207,626 214,626 252,695 244,695" fill="#9ca2aa"/>
+            <g stroke="#6f757e" stroke-width="1.2">
+              <line x1="215" y1="642" x2="222" y2="642"/><line x1="224" y1="658" x2="231" y2="658"/><line x1="233" y1="674" x2="240" y2="674"/>
+            </g>
+          </g>
+
+          <!-- pegadas aparecendo conforme ele anda -->
+          <g fill="#62676f">
+            <ellipse class="footprint" cx="258" cy="696" rx="2.6" ry="1.2" style="--fdelay:6.4s"/>
+            <ellipse class="footprint" cx="268" cy="697.5" rx="2.6" ry="1.2" style="--fdelay:6.65s"/>
+            <ellipse class="footprint" cx="278" cy="698" rx="2.6" ry="1.2" style="--fdelay:6.9s"/>
+            <ellipse class="footprint" cx="287" cy="699" rx="2.6" ry="1.2" style="--fdelay:7.15s"/>
+          </g>
+
+          <!-- ===== BANDEIRA com a sequência de dias ===== -->
+          <g class="flag-plant">
+            <rect x="308.5" y="628" width="3" height="75" rx="1.2" fill="#d3d7dd"/>
+            <circle cx="310" cy="628" r="2.4" fill="#e9ecef"/>
+            <g class="flag-cloth">
+              <g class="flag-wave">
+                <rect x="311" y="631" width="60" height="40" rx="2" fill="url(#rocketRed)"/>
+                <text x="341" y="657" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="22" font-weight="700" fill="#ffffff">7</text>
+                <text x="341" y="666.5" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="7" font-weight="600" letter-spacing="1" fill="#ffe6dd">DIAS</text>
+              </g>
+            </g>
+          </g>
+          <g filter="url(#crisp)">
+            <g transform="translate(310,702)"><g class="puff" style="--dx:-14px;--dy:-2px;--dur:1s;--delay:7.62s">
+              <use href="#puffBlob" fill="#b3b7bd" transform="scale(.22,.16)"/></g></g>
+            <g transform="translate(311,702)"><g class="puff" style="--dx:14px;--dy:-2px;--dur:1s;--delay:7.62s">
+              <use href="#puffBlob" fill="#b3b7bd" transform="scale(.22,.16)"/></g></g>
+          </g>
+
+          <!-- ===== ASTRONAUTA (pés na origem, virado pra direita) ===== -->
+          <g class="astro-path">
+            <g class="astro-appear">
+              <g class="astro-bob">
+                <rect x="-10" y="-25" width="6" height="13" rx="2" fill="#c3c7ce"/>
+                <g class="leg-b"><rect x="-5" y="-10" width="4.5" height="10" rx="2" fill="#e3e6ea"/><rect x="-5.5" y="-2.5" width="5.5" height="2.8" rx="1" fill="#7c828c"/></g>
+                <g class="leg-a"><rect x="0.5" y="-10" width="4.5" height="10" rx="2" fill="#f2f3f5"/><rect x="0" y="-2.5" width="5.5" height="2.8" rx="1" fill="#7c828c"/></g>
+                <rect x="-10" y="-20" width="4" height="10" rx="2" fill="#e3e6ea"/>
+                <rect x="-7" y="-22" width="14" height="13" rx="4" fill="#f2f3f5"/>
+                <rect x="-3" y="-18" width="6" height="3.6" rx="1" fill="#d9573e"/>
+                <circle cx="0" cy="-27" r="7.5" fill="#f2f3f5"/>
+                <ellipse cx="1.8" cy="-27" rx="5" ry="4" fill="#2a4058"/>
+                <ellipse cx="3.4" cy="-28.4" rx="1.6" ry="1" fill="#8fb0d0"/>
+                <g class="arm-r"><rect x="5.5" y="-20" width="4" height="10" rx="2" fill="#f2f3f5"/></g>
+              </g>
+            </g>
+          </g>
+        </g>
+      </svg>
+    </div>
+  </div>
+  <p class="caption">Descida (motor ligado) → poeira → toque → motor desliga → porta abre → astronauta desce e caminha → crava a bandeira com os dias → acena</p>
+  <div class="buttons">
+    <button onclick="replay()">↻ Reiniciar</button>
+    <button onclick="freezeAt(9400)">⏸ Ver o quadro final</button>
+  </div>
+</div>
