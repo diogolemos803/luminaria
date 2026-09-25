@@ -30,11 +30,16 @@ depende de CI num runner macOS na nuvem (GitHub Actions) e de sideload via AltSt
   [`SoveeColor.carvao`], não o acento terracota; fundo de dia usa `soveeDayGlow` —
   ver Decisões abaixo pra por que) e `legacyMainScreen` (identidade Zleepy Lamp
   original, preservada byte a byte como opção de retorno — pedido explícito do
-  usuário: "crie uma nova, mas deixe no código uma opção de retorno"). Tem também um
-  indicador TEMPORÁRIO de debug do `NightSessionActivityTracker.growthProgress`
-  (texto simples, "Crescimento (debug): N%") — só existe pra dar pra ver/testar o
-  reset sem metáfora visual final escolhida ainda; remover quando escolher a
-  metáfora (maré/lua/brasa). O texto "Living mode"/"Zleepy mode" (`modeName`)
+  usuário: "crie uma nova, mas deixe no código uma opção de retorno"). **Entrada da
+  decolagem** (fluxo de `design/entrada_prototipo.html`): em `onRecognizedTap`, ~0,9s
+  depois da leitura (tempo da folha do NFC fechar) o rostinho do botão passa de azul
+  pra verde (`isTagRecognized`, `SoveeColor.sage`, com um pulso só no ícone); 2s
+  depois `sceneStartDate = Date()` e `showsRoundButton = false` — botão e tagline saem
+  pela esquerda (ease-in 0,6s) e a cena (`RocketGrowthVisual(sceneStart:)`) desenha
+  sozinha o céu descendo e a Terra subindo a partir desse instante (transição
+  `.identity`, sem fade). Reabrir o app no meio da sessão: `sceneStartDate = nil`,
+  foguete já em voo. `resetEntrance()` volta tudo ao estado inicial (desarme, leitura
+  cancelada, despertador). O texto "Living mode"/"Zleepy mode" (`modeName`)
   continua existindo só como
   `accessibilityLabel` nas duas versões, não mais como texto visível na versão SOVEE.
 - `Luminaria/NFCManager.swift` — leitura NDEF via `CoreNFC` (`NFCNDEFReaderSession`).
@@ -201,10 +206,12 @@ depende de CI num runner macOS na nuvem (GitHub Actions) e de sideload via AltSt
 - `Luminaria/GrowthEngine.swift` (novo, item "sistema de crescimento" do roadmap
   social/gamificação) — `protocol GrowthVisualizing` (metáfora visual trocável sem
   tocar na lógica) e `NightSessionActivityTracker` (`ObservableObject` singleton):
-  `phase: Phase` (`.traveling(progress: Double)` ou `.exploded`, essa última
-  transiente — volta sozinha pra `.traveling(progress: 0)` depois de
-  `explosionDuration`), resetado (ou melhor, "explodido") por
-  `registerTouchEvent()`. Também alimenta a métrica "maior sequência sem tocar numa
+  `phase: Phase` (`.liftoff` → `.orbiting` quando a própria cena avisa que a
+  decolagem terminou, ou `.exploded`, transiente — volta sozinha pra `.orbiting`
+  depois de `explosionDuration`), "explodido" por `registerTouchEvent()` — que
+  ignora os primeiros 10s da sessão (`startGracePeriod`): a folha do NFC fechando
+  devolve o app pra `.active` logo depois do reconhecimento e explodiria o foguete
+  na própria decolagem. Também alimenta a métrica "maior sequência sem tocar numa
   sessão" (`longestGapThisSession`, devolvido por `sessionDidEnd()` pra virar
   `SleepReportEntry.longestUninterruptedSeconds`). **Definição de "toque" usada**:
   reabrir o app OU usar um passe de emergência durante uma sessão ativa — as duas
@@ -219,13 +226,25 @@ depende de CI num runner macOS na nuvem (GitHub Actions) e de sideload via AltSt
   Netuno, desbloqueados por `DetoxStats.currentCleanDayStreak` — 0/7/15/30 dias,
   não por compra — usuário decidiu adiar StoreKit, que exigiria configurar produtos
   no App Store Connect e não dá pra testar sem device real com conta sandbox, nenhum
-  dos dois disponível aqui) e `RocketGrowthVisual` (implementa `GrowthVisualizing`):
-  foguete/planeta/explosão desenhados só com formas primitivas do SwiftUI
-  (`Circle`/`RoundedRectangle`/`Shape` customizado pro triângulo) — sem nenhum asset
-  de imagem, que exigiria um designer pra ilustração de personagem de verdade.
-  Renderizado em `ContentView.soveeMainScreen`, fixado no topo da tela (bem acima do
-  botão redondo, `allowsHitTesting(false)`) — só aparece com
-  `screenTimeManager.isShieldActive`, mesma condição do passe de emergência.
+  dos dois disponível aqui) e `RocketGrowthVisual` (implementa `GrowthVisualizing`,
+  só repassa pra `LaunchScene` em `RocketScenes.swift`; o destino desbloqueado vira a
+  cor do selo no céu). Renderizado em tela cheia em `ContentView.soveeMainScreen`
+  depois que o botão redondo sai — só com `screenTimeManager.isShieldActive`, mesma
+  condição do passe de emergência. `ExplosionBurst` (explosão por cima do foguete)
+  continua aqui.
+- `Luminaria/RocketScenes.swift` — tradução em SwiftUI dos três protótipos aprovados
+  (`design/entrada_prototipo.html`, `decolagem_prototipo.html`, `pouso_prototipo.html`).
+  Tudo num `Canvas` dentro de `TimelineView(.animation)`, desenhado no MESMO espaço de
+  coordenadas dos protótipos (390×844, "aspect fill", ponto 195×422 = centro do
+  foguete = centro da tela) e como função pura do tempo, com os mesmos atrasos,
+  durações e curvas `cubic-bezier` do CSS (`SceneCurve`, `SceneTime.sample` aplica a
+  curva por trecho de keyframe como o CSS faz) — ajustar o protótipo e o Swift é trocar
+  o mesmo número. `LaunchScene` (entrada + decolagem; `sceneStart` define o t=0, chama
+  `liftoffAnimationCompleted()` ao assentar e cai pra 30fps em repouso) e
+  `MoonLandingScene(streakDays:)` (pouso na tela do despertador, bandeira com os dias).
+  `RocketArt` tem o foguete (com porta que abre), a chama e a fumaça compartilhados
+  pelas duas cenas. Não validado visualmente num device ainda (sem Mac/simulador aqui)
+  — só compilação no CI.
 - `Luminaria/SocialModels.swift` (novo, terreno pro item "amigos" e "ranking de
   detox" — só modelos de dados, sem UI final nem rede) — `Friend`/`FriendInvite`/
   `FriendInviteStatus` (`Codable` puro) e `protocol FriendsRepository` (qualquer
@@ -277,6 +296,43 @@ depende de CI num runner macOS na nuvem (GitHub Actions) e de sideload via AltSt
 - `design/luminaria_prototipo.html` — protótipo HTML aprovado do botão, referência visual
   do checkpoint (`v1`). Não é o app de verdade, é só pra revisar visual sem precisar de
   Mac — publicado também como Artifact no claude.ai durante o desenvolvimento.
+- `design/referencia_decolagem.webp` — **imagem de referência do usuário pra cena de
+  decolagem do foguete** (ilustração flat: Terra curva na base, plataforma bege, torre
+  treliçada escura com braço no topo, foguete branco/vermelho, chama em gota curta,
+  coluna de fumaça lisa perto da chama que alarga e vira nuvem de bolhas na base).
+  Salva no repo porque imagem mandada só no chat se perde quando a conversa é resumida —
+  **comparar sempre contra este arquivo**, não de memória.
+- `design/decolagem_prototipo.html` — protótipo animado da decolagem (versão noturna da
+  referência), com a referência lado a lado e botão que congela no quadro equivalente à
+  foto (~3,1s). **O foguete fica fixo na tela o tempo todo, só o cenário se move**
+  (decisão explícita do usuário) — centralizado na vertical (mais céu, menos terra); o
+  cenário começa com o foguete pousado na plataforma e desce por baixo dele. A fumaça
+  passa NA FRENTE da base de lançamento (pedido do usuário — diferente da foto, onde as
+  estruturas ficam na frente). Base elaborada (deck com pés, mesa com fosso de chamas,
+  garras, tanques, prédio de controle, luz vermelha piscante no topo da torre); fogo em
+  voo com oscilação BEM leve (pedido do usuário — a versão com faixas/riscos/fagulhas
+  foi rejeitada como exagerada) soltando um pouco de fumaça clara pela ponta. A regra
+  `prefers-reduced-motion` limita essas animações contínuas a um ciclo — o navegador de
+  preview desta sessão tem essa preferência ligada, então pra testar o movimento é
+  preciso remover a regra na aba (via JS) antes. Linha do tempo: motor desligado → ignição (nuvem na base, chama
+  escondida abaixo do nível da plataforma) → cenário desce acelerando → quadro da
+  referência (plataforma no quinto inferior) → chão sai de tela. Fumaça é presa ao chão (fica parada no ar); a coluna aparece por uma máscara que
+  acompanha o bocal. Traduzido pra SwiftUI em `RocketScenes.swift` (`LaunchScene`).
+- `design/entrada_prototipo.html` — protótipo interativo de COMO a cena da decolagem
+  entra (fluxo definido pelo usuário): tela de dia → toque no botão redondo → modo noite
+  + folha de leitura NFC do iOS (do sistema; o app só controla o texto — "Aproxime o
+  iPhone da luminária" / "Luminária reconhecida!") → folha fecha e o rostinho do botão
+  (`LogoSono`) passa de azul (`noiteAzul`) pra verde (`SoveeColor.sage`, provisório) →
+  2s depois o botão e a tagline saem pela esquerda, o céu desce de cima e a Terra com o
+  foguete sobe de baixo → só com a cena assentada a decolagem começa. Usa cópias dos
+  ícones em `design/logo_sono.png`/`logo_acordado.png` (recoloridos via CSS mask).
+- `design/pouso_prototipo.html` — protótipo animado do pouso (tela do despertador, quando
+  a pessoa aguentou a noite): mesmo estilo e mesma regra da decolagem (foguete fixo e
+  centralizado, só o cenário se move). Lua sobe por baixo desacelerando, poeira lunar,
+  toque com leve assentamento, motor desliga, porta abre, rampa desce, astronauta desce e
+  caminha quicando (gravidade baixa) deixando pegadas, crava a bandeira com o número de
+  dias (placeholder "7") e acena. A Terra aparece no céu, à esquerda. Traduzido pra
+  SwiftUI em `RocketScenes.swift` (`MoonLandingScene`, usado por `AlarmRingingView`).
 - `.github/workflows/build.yml` — roda em todo push **pra `main`** (e PRs pra `main`),
   compila pra device real sem assinatura (`-sdk iphoneos -destination
   'generic/platform=iOS'`, mesma receita do `sideload-ipa.yml`). Não dispara sozinho na
@@ -388,7 +444,7 @@ Fluxo usado pra testar de verdade, todo do Windows:
 
 - **`Luminaria.xcodeproj/project.pbxproj` foi escrito à mão**, linha por linha — não existe
   Xcode/macOS neste ambiente de desenvolvimento (Windows). IDs de objeto seguem o padrão
-  `AAAAAAAAAAAAAAAAAAAAAA` + 2 dígitos hex incrementais (maior em uso: `46`); qualquer
+  `AAAAAAAAAAAAAAAAAAAAAA` + 2 dígitos hex incrementais (maior em uso: `60`); qualquer
   novo arquivo precisa de entradas em `PBXBuildFile`, `PBXFileReference`, no grupo, e na
   build phase certa (`Sources` pra `.swift`, `Resources` pra assets/sons). Sempre
   verificar balanço de chaves/parênteses e contagem de referências de cada ID novo

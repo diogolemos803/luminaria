@@ -7,17 +7,23 @@ struct ContentView: View {
     @StateObject private var screenTimeManager = ScreenTimeManager.shared
     @StateObject private var sleepReportStore = SleepReportStore.shared
     // `@ObservedObject`, não `@StateObject`: é um singleton compartilhado (dono do
-    // ciclo de vida é ele mesmo, `ContentView` só observa) — usado hoje só pelo
-    // indicador de debug do crescimento (ver `soveeMainScreen`).
+    // ciclo de vida é ele mesmo, `ContentView` só observa) — a fase dele decide se
+    // a cena de decolagem mostra o foguete ou a explosão (ver `soveeMainScreen`).
     @ObservedObject private var growthTracker = NightSessionActivityTracker.shared
     @Environment(\.scenePhase) private var scenePhase
     @State private var isNightModeArmed = false
     @State private var isPressed = false
     @State private var showSettings = false
-    // Controla a saída do botão redondo quando a viagem de foguete assume a tela —
-    // pedido explícito do usuário: "o botão fica 1s na tela e começa a descer até
-    // sumi[r]" depois que a luminária é reconhecida de verdade. Ver `soveeMainScreen`.
+    // Controla a saída do botão redondo quando a decolagem assume a tela (sequência
+    // aprovada em `design/entrada_prototipo.html`): a luminária é reconhecida → o
+    // rostinho azul fica verde → 2s depois o botão sai pela esquerda enquanto o céu
+    // desce de cima e a Terra com o foguete sobe de baixo. Ver `onRecognizedTap`.
     @State private var showsRoundButton = true
+    @State private var isTagRecognized = false
+    @State private var tagPulse = false
+    // Instante em que a cena de decolagem começa a entrar; `nil` = app reaberto no
+    // meio de uma sessão (mostra direto o foguete em voo, sem repetir a entrada).
+    @State private var sceneStartDate: Date?
 
     /// Alterna entre a tela principal nova (SOVEE) e a antiga (Zleepy Lamp) — pedido
     /// explícito do usuário: "crie uma nova, mas deixe no código uma opção de
@@ -88,6 +94,8 @@ struct ContentView: View {
                     // nesse caso o botão já deve nascer escondido, sem repetir a
                     // sequência de saída.
                     showsRoundButton = false
+                    isTagRecognized = true
+                    sceneStartDate = nil
                 }
                 nfcManager.onRecognizedTap = {
                     guard isNightModeArmed else { return }
@@ -97,6 +105,7 @@ struct ContentView: View {
                     // rotina ativa mesmo se a pessoa cancelasse a leitura NFC depois,
                     // dando a impressão de que a troca automática "ficava ligada o dia
                     // inteiro" em vez de só valer pra noite em que a tag é lida.
+                    let recognizedAt = Date()
                     Task { @MainActor in
                         if let autoRoutineID = await routineStore.resolveAutoActivateRoutine() {
                             routineStore.setActive(id: autoRoutineID)
@@ -105,14 +114,24 @@ struct ContentView: View {
                         ShortcutManager.shared.runSleepShortcut()
                         alarmManager.armAlarm(hour: routine.alarmHour, minute: routine.alarmMinute, soundFileName: routine.soundOption.fileName)
                         screenTimeManager.applyShield(selection: routine.appSelection)
-                        // Sequência pedida pelo usuário: o botão fica visível mais 1s
-                        // depois do reconhecimento e então desce/some, dando lugar à
-                        // cena de decolagem (ver `soveeMainScreen`). Disparado direto
-                        // aqui — no exato instante da leitura — em vez de observar
-                        // `screenTimeManager.isShieldActive` de fora, pra não depender
-                        // de timing de propagação do `@Published`.
+                    }
+                    // Sequência visual (relógio próprio, independente da consulta ao
+                    // calendário acima): disparada direto aqui — no exato instante da
+                    // leitura — em vez de observar `screenTimeManager.isShieldActive`
+                    // de fora, pra não depender de timing de propagação do `@Published`.
+                    Task { @MainActor in
                         showsRoundButton = true
-                        try? await Task.sleep(nanoseconds: 1_000_000_000)
+                        // Espera a folha de sistema do NFC terminar de fechar, senão
+                        // o verde acontece escondido atrás dela.
+                        await sleep(until: recognizedAt.addingTimeInterval(0.9))
+                        guard isNightModeArmed else { return }
+                        withAnimation(.easeInOut(duration: 0.45)) { isTagRecognized = true }
+                        withAnimation(.easeOut(duration: 0.22)) { tagPulse = true }
+                        await sleep(until: Date().addingTimeInterval(0.22))
+                        withAnimation(.easeOut(duration: 0.33)) { tagPulse = false }
+                        await sleep(until: recognizedAt.addingTimeInterval(2.9))
+                        guard isNightModeArmed else { return }
+                        sceneStartDate = Date()
                         showsRoundButton = false
                     }
                 }
@@ -122,7 +141,7 @@ struct ContentView: View {
                 // com sucesso.
                 nfcManager.onScanEndedWithoutMatch = {
                     isNightModeArmed = false
-                    showsRoundButton = true
+                    resetEntrance()
                 }
                 // O desbloqueio de apps em si já acontece dentro de AlarmManager
                 // (funciona mesmo com o app suspenso) — isso aqui só sincroniza o botão
@@ -130,7 +149,7 @@ struct ContentView: View {
                 // na hora que o despertador dispara.
                 alarmManager.onAlarmFired = {
                     isNightModeArmed = false
-                    showsRoundButton = true
+                    resetEntrance()
                 }
             }
             .onChange(of: scenePhase) { newPhase in
@@ -203,7 +222,7 @@ struct ContentView: View {
                     GeometryReader { proxy in
                         ScrollView(.vertical, showsIndicators: false) {
                             VStack(spacing: 0) {
-                                RocketGrowthVisual()
+                                RocketGrowthVisual(sceneStart: sceneStartDate)
                                     .render(phase: growthTracker.phase, destination: destination, theme: theme)
                                     .frame(width: proxy.size.width, height: proxy.size.height)
 
@@ -213,7 +232,9 @@ struct ContentView: View {
                         }
                     }
                     .ignoresSafeArea()
-                    .transition(.opacity)
+                    // A entrada (céu descendo, Terra subindo) é desenhada pela
+                    // própria cena a partir de `sceneStartDate` — sem fade por cima.
+                    .transition(.identity)
                 }
             } else {
                 Color.white.ignoresSafeArea()
@@ -227,8 +248,10 @@ struct ContentView: View {
                         .resizable()
                         .scaledToFit()
                         .padding(9)
+                        // pulso só no rostinho (não no botão) quando ele fica verde
+                        .scaleEffect(tagPulse ? 1.06 : 1)
                         .frame(width: 220, height: 220)
-                        .foregroundStyle(isNightModeArmed ? theme.accent : SoveeColor.carvao)
+                        .foregroundStyle(roundButtonIconColor(theme: theme))
                         .background(theme.card)
                         .clipShape(Circle())
                         .shadow(color: theme.ink.opacity(0.12), radius: 18, x: 0, y: 8)
@@ -236,19 +259,21 @@ struct ContentView: View {
                 .buttonStyle(.plain)
                 .scaleEffect(isPressed ? 0.9 : 1.0)
                 .accessibilityLabel(modeName)
-                .transition(.asymmetric(insertion: .opacity, removal: .move(edge: .bottom).combined(with: .opacity)))
+                .transition(.asymmetric(insertion: .opacity, removal: .move(edge: .leading).combined(with: .opacity)))
             }
 
             // Tagline da marca ("hora de desligar.") só no modo noite — é o
             // momento que ela descreve (encerrar o dia). No modo dia, silêncio
             // deliberado em vez de repetir uma legenda "Living mode" técnica.
-            if isNightModeArmed {
+            // Sai junto com o botão quando a decolagem entra.
+            if isNightModeArmed && showsRoundButton {
                 Text("hora de desligar.")
                     .font(.soveeDisplay(size: 15, weight: .semibold))
                     .tracking(0.5)
                     .foregroundStyle(theme.ink.opacity(0.7))
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
                     .padding(.bottom, 40)
+                    .transition(.asymmetric(insertion: .opacity, removal: .move(edge: .leading).combined(with: .opacity)))
             }
 
             // Só aparece com o bloqueio de apps realmente ativo — nunca no modo dia,
@@ -271,7 +296,33 @@ struct ContentView: View {
         }
         .animation(.easeInOut(duration: 0.6), value: isNightModeArmed)
         .animation(.spring(response: 0.3, dampingFraction: 0.65), value: isPressed)
-        .animation(.easeInOut(duration: 0.7), value: showsRoundButton)
+        // Saída: aceleração pura (ease-in), como no protótipo — o botão "parte"
+        // em vez de deslizar preguiçoso. Volta (desarme/passe): só um fade suave.
+        .animation(
+            showsRoundButton ? Animation.easeOut(duration: 0.5) : Animation.timingCurve(0.5, 0, 0.75, 0, duration: 0.6),
+            value: showsRoundButton
+        )
+    }
+
+    /// Dia: grafite. Noite: azul de luar enquanto espera a luminária; verde (sage)
+    /// assim que a tag é reconhecida.
+    private func roundButtonIconColor(theme: ModeTheme) -> Color {
+        guard isNightModeArmed else { return SoveeColor.carvao }
+        return isTagRecognized ? SoveeColor.sage : theme.accent
+    }
+
+    /// Volta o botão redondo pro estado inicial (antes de qualquer leitura).
+    private func resetEntrance() {
+        showsRoundButton = true
+        isTagRecognized = false
+        tagPulse = false
+        sceneStartDate = nil
+    }
+
+    private func sleep(until date: Date) async {
+        let wait = date.timeIntervalSinceNow
+        guard wait > 0 else { return }
+        try? await Task.sleep(nanoseconds: UInt64(wait * 1_000_000_000))
     }
 
     /// Segunda "página" da viagem, só alcançável rolando a tela pra baixo — o mesmo
@@ -292,7 +343,7 @@ struct ContentView: View {
                         .scaledToFit()
                         .padding(9)
                         .frame(width: 180, height: 180)
-                        .foregroundStyle(theme.accent)
+                        .foregroundStyle(SoveeColor.sage)
                         .background(theme.card)
                         .clipShape(Circle())
                         .shadow(color: theme.ink.opacity(0.12), radius: 18, x: 0, y: 8)
@@ -378,32 +429,28 @@ struct ContentView: View {
         }
         isNightModeArmed.toggle()
         if isNightModeArmed {
+            isTagRecognized = false
             nfcManager.beginScanning()
         } else {
             nfcManager.stopScanning()
             alarmManager.disarmAlarm()
             screenTimeManager.removeShield(reason: .manualDisarm)
-            showsRoundButton = true
+            resetEntrance()
         }
     }
 }
 
-/// Tela do despertador tocando — mostra a animação de pouso (`RocketLandingView`,
-/// ver `GrowthEngine.swift`) antes do botão "Parar": a pessoa aguentou a noite
-/// inteira (chegar aqui já significa que `AlarmManager.triggerAlarm()` registrou a
-/// sessão como `.alarmFired`), então o foguete desce no planeta desbloqueado, o
-/// astronauta sai e crava a bandeira com o número de dias da sequência atual.
+/// Tela do despertador tocando — mostra a animação de pouso na Lua
+/// (`MoonLandingScene`, ver `RocketScenes.swift` e `design/pouso_prototipo.html`)
+/// atrás do botão "Parar": a pessoa aguentou a noite inteira (chegar aqui já
+/// significa que `AlarmManager.triggerAlarm()` registrou a sessão como
+/// `.alarmFired`), então o foguete pousa, o astronauta sai e crava a bandeira com o
+/// número de dias da sequência atual.
 struct AlarmRingingView: View {
     @ObservedObject var alarmManager: AlarmManager
     @ObservedObject var sleepReportStore: SleepReportStore = .shared
 
     private let theme = ModeTheme.zleepy
-
-    private var destination: CelestialDestination {
-        GrowthDestinations.furthestUnlocked(
-            currentStreak: DetoxStats.currentCleanDayStreak(in: sleepReportStore.entries)
-        )
-    }
 
     private var streakDays: Int {
         DetoxStats.currentCleanDayStreak(in: sleepReportStore.entries)
@@ -413,7 +460,7 @@ struct AlarmRingingView: View {
         ZStack {
             theme.stage.ignoresSafeArea()
 
-            RocketLandingView(destination: destination, streakDays: streakDays, theme: theme)
+            MoonLandingScene(streakDays: streakDays)
                 .ignoresSafeArea()
                 .allowsHitTesting(false)
 
@@ -422,6 +469,8 @@ struct AlarmRingingView: View {
                 Text("Hora de acordar")
                     .font(.soveeDisplay(size: 28, weight: .bold))
                     .foregroundStyle(theme.ink)
+                    // fica sobre o chão cinza da Lua — sombra leve pra manter leitura
+                    .shadow(color: .black.opacity(0.35), radius: 6, x: 0, y: 2)
                 Button {
                     alarmManager.stopRingingAlarm()
                 } label: {
