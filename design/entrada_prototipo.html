@@ -68,7 +68,7 @@
   .menu-icon span{ display:block; height:2px; border-radius:1px; background:#444444; transition: background-color .6s; }
   .phone.night .menu-icon span, .phone.scene-in .menu-icon span{ background:#FDF8C7; }
 
-  /* 2s depois do verde: botão (e a tagline) saem pela esquerda */
+  /* 3s depois do verde: botão (e a tagline) saem pela esquerda */
   .phone.exit-ui .round-btn{ transform:translateX(-270px); }
   .phone.exit-ui .tagline{ transform:translateX(-270px); opacity:0; }
 
@@ -203,8 +203,8 @@
     later(function(){ p.classList.add('read-ok'); }, 1900);          // tag lida
     later(function(){ p.classList.remove('scanning'); }, 2700);      // folha fecha
     later(function(){ p.classList.add('read'); }, 2850);             // rostinho fica verde
-    later(function(){ p.classList.add('exit-ui', 'scene-in'); }, 2850 + 2000); // 2s depois: sai o botão, entra a cena
-    later(function(){ p.classList.add('launching'); }, 2850 + 2000 + 1800);    // cena assentada: decolagem
+    later(function(){ p.classList.add('exit-ui', 'scene-in'); }, 2850 + 3000); // 3s depois: sai o botão, entra a cena
+    later(function(){ p.classList.add('launching'); }, 2850 + 3000 + 1800);    // cena assentada: decolagem
   }
   function reset(){
     timers.forEach(clearTimeout); timers = [];

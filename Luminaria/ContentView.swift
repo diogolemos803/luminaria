@@ -16,7 +16,7 @@ struct ContentView: View {
     @State private var showSettings = false
     // Controla a saída do botão redondo quando a decolagem assume a tela (sequência
     // aprovada em `design/entrada_prototipo.html`): a luminária é reconhecida → o
-    // rostinho azul fica verde → 2s depois o botão sai pela esquerda enquanto o céu
+    // rostinho azul fica verde → 3s depois o botão sai pela esquerda enquanto o céu
     // desce de cima e a Terra com o foguete sobe de baixo. Ver `onRecognizedTap`.
     @State private var showsRoundButton = true
     @State private var isTagRecognized = false
@@ -129,7 +129,9 @@ struct ContentView: View {
                         withAnimation(.easeOut(duration: 0.22)) { tagPulse = true }
                         await sleep(until: Date().addingTimeInterval(0.22))
                         withAnimation(.easeOut(duration: 0.33)) { tagPulse = false }
-                        await sleep(until: recognizedAt.addingTimeInterval(2.9))
+                        // 3s de rostinho verde antes da cena entrar (eram 2s — o
+                        // usuário pediu mais 1s depois de testar no device).
+                        await sleep(until: recognizedAt.addingTimeInterval(3.9))
                         guard isNightModeArmed else { return }
                         sceneStartDate = Date()
                         showsRoundButton = false

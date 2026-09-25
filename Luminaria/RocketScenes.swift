@@ -912,7 +912,7 @@ struct MoonLandingScene: View {
 
     var body: some View {
         TimelineView(.animation) { timeline in
-            let t = timeline.date.timeIntervalSince(start)
+            let t = timeline.date.timeIntervalSince(start) - LandingPainter.holdBeforeLanding
             let clock = timeline.date.timeIntervalSinceReferenceDate
             Canvas { context, size in
                 LandingPainter.draw(in: &context, size: size, t: t, clock: clock, days: streakDays)
@@ -924,6 +924,11 @@ struct MoonLandingScene: View {
 
 enum LandingPainter {
     typealias S = SceneShapes
+
+    /// Tempo com o foguete descendo no céu, motor ligado, antes de a Lua começar a
+    /// subir (pedido do usuário depois de testar no device: "mais um segundo antes de
+    /// começar o pouso"). Os tempos do protótipo contam a partir do fim dessa espera.
+    static let holdBeforeLanding: Double = 1
 
     static func draw(in ctx: inout GraphicsContext, size: CGSize, t: Double, clock: Double, days: Int) {
         S.applyCamera(&ctx, size: size)

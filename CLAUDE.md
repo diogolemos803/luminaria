@@ -33,7 +33,7 @@ depende de CI num runner macOS na nuvem (GitHub Actions) e de sideload via AltSt
   usuário: "crie uma nova, mas deixe no código uma opção de retorno"). **Entrada da
   decolagem** (fluxo de `design/entrada_prototipo.html`): em `onRecognizedTap`, ~0,9s
   depois da leitura (tempo da folha do NFC fechar) o rostinho do botão passa de azul
-  pra verde (`isTagRecognized`, `SoveeColor.sage`, com um pulso só no ícone); 2s
+  pra verde (`isTagRecognized`, `SoveeColor.sage`, com um pulso só no ícone); 3s
   depois `sceneStartDate = Date()` e `showsRoundButton = false` — botão e tagline saem
   pela esquerda (ease-in 0,6s) e a cena (`RocketGrowthVisual(sceneStart:)`) desenha
   sozinha o céu descendo e a Terra subindo a partir desse instante (transição
@@ -241,7 +241,9 @@ depende de CI num runner macOS na nuvem (GitHub Actions) e de sideload via AltSt
   curva por trecho de keyframe como o CSS faz) — ajustar o protótipo e o Swift é trocar
   o mesmo número. `LaunchScene` (entrada + decolagem; `sceneStart` define o t=0, chama
   `liftoffAnimationCompleted()` ao assentar e cai pra 30fps em repouso) e
-  `MoonLandingScene(streakDays:)` (pouso na tela do despertador, bandeira com os dias).
+  `MoonLandingScene(streakDays:)` (pouso na tela do despertador, bandeira com os dias;
+  espera `LandingPainter.holdBeforeLanding` = 1s com o foguete descendo antes da Lua
+  subir — pedido do usuário, não existe no protótipo, que começa direto).
   `RocketArt` tem o foguete (com porta que abre), a chama e a fumaça compartilhados
   pelas duas cenas. Não validado visualmente num device ainda (sem Mac/simulador aqui)
   — só compilação no CI.
@@ -323,7 +325,7 @@ depende de CI num runner macOS na nuvem (GitHub Actions) e de sideload via AltSt
   + folha de leitura NFC do iOS (do sistema; o app só controla o texto — "Aproxime o
   iPhone da luminária" / "Luminária reconhecida!") → folha fecha e o rostinho do botão
   (`LogoSono`) passa de azul (`noiteAzul`) pra verde (`SoveeColor.sage`, provisório) →
-  2s depois o botão e a tagline saem pela esquerda, o céu desce de cima e a Terra com o
+  3s depois o botão e a tagline saem pela esquerda, o céu desce de cima e a Terra com o
   foguete sobe de baixo → só com a cena assentada a decolagem começa. Usa cópias dos
   ícones em `design/logo_sono.png`/`logo_acordado.png` (recoloridos via CSS mask).
 - `design/pouso_prototipo.html` — protótipo animado do pouso (tela do despertador, quando
