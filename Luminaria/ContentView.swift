@@ -259,7 +259,9 @@ struct ContentView: View {
                         .scaleEffect(tagPulse ? 1.06 : 1)
                         .frame(width: 220, height: 220)
                         .foregroundStyle(roundButtonIconColor(theme: theme))
-                        .background(theme.card)
+                        // De dia o botão é branco puro — `theme.card` de dia virou um
+                        // cinza claro (pros cartões do menu aparecerem no fundo branco).
+                        .background(isNightModeArmed ? theme.card : Color.white)
                         .clipShape(Circle())
                         .shadow(color: theme.ink.opacity(0.12), radius: 18, x: 0, y: 8)
                 }

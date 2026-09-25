@@ -42,9 +42,12 @@ struct ModeTheme {
     let danger: Color
     let dangerWash: Color
 
+    /// Fundo branco (era creme — o usuário não gostou do menu "amarelo" no modo dia,
+    /// 2026-09-25); com isso os cartões viram um cinza bem claro, senão sumiriam no
+    /// branco. O botão redondo da tela principal continua branco puro (ver `ContentView`).
     static let living = ModeTheme(
-        stage: SoveeColor.creme,
-        card: .white,
+        stage: .white,
+        card: Color(red: 0.953, green: 0.953, blue: 0.957),
         ink: SoveeColor.carvao,
         inkMuted: Color(red: 0.55, green: 0.54, blue: 0.50),
         hairline: Color.black.opacity(0.07),
