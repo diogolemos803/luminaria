@@ -88,10 +88,10 @@ final class AlarmManager: NSObject, ObservableObject {
     /// App Group compartilhado com a `LuminariaWidgetExtension` — só pra ela saber o
     /// próximo horário de despertador (chaves separadas das já existentes acima, que
     /// continuam em `UserDefaults.standard` sem mudança nenhuma).
-    private static let widgetSuiteName = "group.com.luminaria.app"
-    private static let widgetArmedKey = "widget.isArmed"
-    private static let widgetNextFireKey = "widget.nextFireDate"
-    private static let widgetKind = "com.luminaria.app.AlarmWidget"
+    private static let widgetSuiteName = SharedWidgetData.suiteName
+    private static let widgetArmedKey = SharedWidgetData.armedKey
+    private static let widgetNextFireKey = SharedWidgetData.nextFireKey
+    private static let widgetKind = SharedWidgetData.widgetKind
     private static let stopActionID = "com.luminaria.stopAlarmAction"
 
     private override init() {

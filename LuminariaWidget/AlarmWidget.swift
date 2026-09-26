@@ -1,94 +1,191 @@
 import WidgetKit
 import SwiftUI
 
-/// Mostra o próximo despertador na Tela Bloqueada — tocar nele abre o app (via
-/// `widgetURL`, esquema `luminaria://` já registrado no `Info.plist` do app). Widgets
-/// não são notificações, então o Foco/Não Perturbe não filtra isso, diferente da
-/// notificação do despertador. Abrir o app já basta: `ContentView.onAppear`/
-/// `.onChange(of: scenePhase)` recalculam `isAlarmRinging` de qualquer jeito que o app
-/// tenha sido aberto, mostrando a tela de "Parar" sozinha se o alarme estiver tocando.
-private let widgetSuiteName = "group.com.luminaria.app"
-private let widgetArmedKey = "widget.isArmed"
-private let widgetNextFireKey = "widget.nextFireDate"
-
-struct AlarmEntry: TimelineEntry {
+/// Widget da tela bloqueada em três tamanhos (protótipo aprovado em
+/// `design/widget_prototipo.html`): círculo com a sequência de noites e o anel até o
+/// próximo planeta, retângulo com planeta/barra/despertador, e a linha curta acima do
+/// relógio. Olhar a tela bloqueada não conta como "mexer no celular" — é assim que a
+/// pessoa acompanha o desafio sem arriscar a noite. Tocar abre o app (`widgetURL`).
+///
+/// Na tela bloqueada o iOS desenha todo widget num tom único translúcido (ignora cores
+/// próprias) — por isso aqui é só forma, símbolo e texto. A parte colorida da noite é a
+/// Atividade ao Vivo (`NightLiveActivityWidget`).
+///
+/// O `kind` continua o do widget antigo (só despertador), então quem já tinha adicionado
+/// recebe a versão nova sem precisar colocar de novo.
+struct LuminariaEntry: TimelineEntry {
     let date: Date
     let isArmed: Bool
     let nextFireDate: Date?
+    /// Sequência que vale no instante da entrada (ver `StreakMath.effective`).
+    let streak: Int
+    let longestStreak: Int
 }
 
-struct AlarmTimelineProvider: TimelineProvider {
-    func placeholder(in context: Context) -> AlarmEntry {
-        AlarmEntry(date: Date(), isArmed: true, nextFireDate: Date())
+struct LuminariaTimelineProvider: TimelineProvider {
+    func placeholder(in context: Context) -> LuminariaEntry {
+        LuminariaEntry(date: Date(), isArmed: true, nextFireDate: Date().addingTimeInterval(7 * 3600), streak: 7, longestStreak: 12)
     }
 
-    func getSnapshot(in context: Context, completion: @escaping (AlarmEntry) -> Void) {
-        completion(currentEntry())
+    func getSnapshot(in context: Context, completion: @escaping (LuminariaEntry) -> Void) {
+        completion(context.isPreview ? placeholder(in: context) : entry(at: Date()))
     }
 
-    func getTimeline(in context: Context, completion: @escaping (Timeline<AlarmEntry>) -> Void) {
-        completion(Timeline(entries: [currentEntry()], policy: .never))
+    /// Uma entrada agora e outra na próxima meia-noite — a sequência pode "quebrar" na
+    /// virada do dia sem o app abrir (quem não teve noite limpa ontem volta pra 0).
+    func getTimeline(in context: Context, completion: @escaping (Timeline<LuminariaEntry>) -> Void) {
+        let now = Date()
+        let calendar = Calendar.current
+        let midnight = calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: now)) ?? now.addingTimeInterval(86_400)
+        completion(Timeline(entries: [entry(at: now), entry(at: midnight)], policy: .after(midnight.addingTimeInterval(60))))
     }
 
-    private func currentEntry() -> AlarmEntry {
-        let defaults = UserDefaults(suiteName: widgetSuiteName)
-        let isArmed = defaults?.bool(forKey: widgetArmedKey) ?? false
-        let nextFireDate: Date?
-        if let interval = defaults?.object(forKey: widgetNextFireKey) as? Double {
-            nextFireDate = Date(timeIntervalSince1970: interval)
-        } else {
-            nextFireDate = nil
-        }
-        return AlarmEntry(date: Date(), isArmed: isArmed, nextFireDate: nextFireDate)
+    private func entry(at date: Date) -> LuminariaEntry {
+        let defaults = UserDefaults(suiteName: SharedWidgetData.suiteName)
+        let nextFire = (defaults?.object(forKey: SharedWidgetData.nextFireKey) as? Double).map { Date(timeIntervalSince1970: $0) }
+        let lastClean = (defaults?.object(forKey: SharedWidgetData.lastCleanNightKey) as? Double).map { Date(timeIntervalSince1970: $0) }
+        let stored = defaults?.integer(forKey: SharedWidgetData.currentStreakKey) ?? 0
+        return LuminariaEntry(
+            date: date,
+            isArmed: defaults?.bool(forKey: SharedWidgetData.armedKey) ?? false,
+            nextFireDate: nextFire,
+            streak: StreakMath.effective(streak: stored, lastCleanNight: lastClean, now: date),
+            longestStreak: defaults?.integer(forKey: SharedWidgetData.longestStreakKey) ?? 0
+        )
     }
 }
 
-struct AlarmWidgetView: View {
-    var entry: AlarmEntry
+struct LuminariaWidgetView: View {
+    @Environment(\.widgetFamily) private var family
+    var entry: LuminariaEntry
 
     var body: some View {
         if #available(iOS 17.0, *) {
             content.containerBackground(for: .widget) { Color.clear }
         } else {
-            content.background(Color.clear)
+            content
         }
     }
 
+    @ViewBuilder
     private var content: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Label {
-                Text("Luminária")
-                    .font(.luminaria(.caption, weight: .bold))
-            } icon: {
-                Image(systemName: "moon.stars.fill")
+        switch family {
+        case .accessoryCircular:
+            circular
+        case .accessoryInline:
+            inline
+        default:
+            rectangular
+        }
+    }
+
+    // MARK: Tamanhos
+
+    private var circular: some View {
+        Gauge(value: PlanetMilestones.progressToNext(streak: entry.streak)) {
+            Image(systemName: "flame.fill")
+        } currentValueLabel: {
+            VStack(spacing: -1) {
+                Text("\(entry.streak)")
+                    .font(.system(size: 20, weight: .bold, design: .rounded))
+                Text(entry.streak == 1 ? "noite" : "noites")
+                    .font(.system(size: 8, weight: .semibold))
+                    .textCase(.uppercase)
             }
-            Text(subtitle)
-                .font(.luminaria(.caption2))
+        }
+        .gaugeStyle(.accessoryCircularCapacity)
+        .widgetURL(Self.openURL)
+    }
+
+    private var inline: some View {
+        Label {
+            Text(inlineText)
+        } icon: {
+            Image(systemName: isSessionActive ? "moon.stars.fill" : "flame.fill")
+        }
+        .widgetURL(Self.openURL)
+    }
+
+    private var rectangular: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Label {
+                Text(rectangularTitle)
+                    .font(.system(size: 13, weight: .bold))
+                    .lineLimit(1)
+            } icon: {
+                Image(systemName: isSessionActive ? "moon.stars.fill" : "flame.fill")
+            }
+            Gauge(value: PlanetMilestones.progressToNext(streak: entry.streak)) {
+                EmptyView()
+            }
+            .gaugeStyle(.accessoryLinearCapacity)
+            Text(rectangularSubtitle)
+                .font(.system(size: 11, weight: .semibold))
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
+                .minimumScaleFactor(0.85)
         }
-        .widgetURL(URL(string: "luminaria://open"))
+        .widgetURL(Self.openURL)
     }
 
-    private var subtitle: String {
-        guard entry.isArmed, let nextFireDate = entry.nextFireDate else {
-            return "Nenhum despertador armado"
-        }
+    // MARK: Textos
+
+    private static let openURL = URL(string: "luminaria://open")
+
+    /// Noite em andamento = despertador armado e ainda no futuro.
+    private var isSessionActive: Bool {
+        guard entry.isArmed, let fire = entry.nextFireDate else { return false }
+        return fire > entry.date
+    }
+
+    private var nextPlanet: PlanetMilestone? { PlanetMilestones.next(afterStreak: entry.streak) }
+
+    private var alarmTimeText: String? {
+        guard isSessionActive, let fire = entry.nextFireDate else { return nil }
         let formatter = DateFormatter()
         formatter.dateFormat = "HH:mm"
-        return "Despertador às \(formatter.string(from: nextFireDate))"
+        return formatter.string(from: fire)
+    }
+
+    private func nights(_ count: Int) -> String {
+        count == 1 ? "1 noite" : "\(count) noites"
+    }
+
+    private var inlineText: String {
+        if let alarm = alarmTimeText {
+            return "\(nights(entry.streak)) · despertador \(alarm)"
+        }
+        return entry.streak == 0 ? "Comece sua sequência hoje" : "\(nights(entry.streak)) seguidas"
+    }
+
+    private var rectangularTitle: String {
+        if isSessionActive {
+            return "Rumo a \(nextPlanet?.name ?? "Netuno")"
+        }
+        return entry.streak == 0 ? "Sem sequência ainda" : "\(nights(entry.streak)) seguidas"
+    }
+
+    private var rectangularSubtitle: String {
+        guard let next = nextPlanet else {
+            return "Todos os planetas · recorde \(entry.longestStreak)"
+        }
+        let missing = next.requiredStreakDays - entry.streak
+        if let alarm = alarmTimeText {
+            return "faltam \(nights(missing)) · acorda \(alarm)"
+        }
+        return "\(next.name) em \(missing) · recorde \(entry.longestStreak)"
     }
 }
 
 struct AlarmWidget: Widget {
-    let kind = "com.luminaria.app.AlarmWidget"
+    let kind = SharedWidgetData.widgetKind
 
     var body: some WidgetConfiguration {
-        StaticConfiguration(kind: kind, provider: AlarmTimelineProvider()) { entry in
-            AlarmWidgetView(entry: entry)
+        StaticConfiguration(kind: kind, provider: LuminariaTimelineProvider()) { entry in
+            LuminariaWidgetView(entry: entry)
         }
         .configurationDisplayName("Luminária")
-        .description("Mostra o próximo despertador na Tela Bloqueada.")
-        .supportedFamilies([.accessoryRectangular])
+        .description("Sua sequência de noites, o próximo planeta e o despertador.")
+        .supportedFamilies([.accessoryCircular, .accessoryRectangular, .accessoryInline])
     }
 }

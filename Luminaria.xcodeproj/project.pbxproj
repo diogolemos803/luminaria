@@ -56,6 +56,10 @@
 		AAAAAAAAAAAAAAAAAAAAAA62 /* SystemAlarm.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA61 /* SystemAlarm.swift */; };
 		AAAAAAAAAAAAAAAAAAAAAA8C /* FriendsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA8B /* FriendsStore.swift */; };
 		AAAAAAAAAAAAAAAAAAAAAA8E /* FriendsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA8D /* FriendsView.swift */; };
+		AAAAAAAAAAAAAAAAAAAAAA90 /* WidgetShared.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA8F /* WidgetShared.swift */; };
+		AAAAAAAAAAAAAAAAAAAAAA91 /* WidgetShared.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA8F /* WidgetShared.swift */; };
+		AAAAAAAAAAAAAAAAAAAAAA93 /* WidgetBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA92 /* WidgetBridge.swift */; };
+		AAAAAAAAAAAAAAAAAAAAAA95 /* NightLiveActivityWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA94 /* NightLiveActivityWidget.swift */; };
 		AAAAAAAAAAAAAAAAAAAAAA5E /* SocialModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA5D /* SocialModels.swift */; };
 /* End PBXBuildFile section */
 
@@ -137,6 +141,9 @@
 		AAAAAAAAAAAAAAAAAAAAAA61 /* SystemAlarm.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemAlarm.swift; sourceTree = "<group>"; };
 		AAAAAAAAAAAAAAAAAAAAAA8B /* FriendsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendsStore.swift; sourceTree = "<group>"; };
 		AAAAAAAAAAAAAAAAAAAAAA8D /* FriendsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendsView.swift; sourceTree = "<group>"; };
+		AAAAAAAAAAAAAAAAAAAAAA8F /* WidgetShared.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetShared.swift; sourceTree = "<group>"; };
+		AAAAAAAAAAAAAAAAAAAAAA92 /* WidgetBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetBridge.swift; sourceTree = "<group>"; };
+		AAAAAAAAAAAAAAAAAAAAAA94 /* NightLiveActivityWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NightLiveActivityWidget.swift; sourceTree = "<group>"; };
 		AAAAAAAAAAAAAAAAAAAAAA5D /* SocialModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SocialModels.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -202,6 +209,8 @@
 				AAAAAAAAAAAAAAAAAAAAAA61 /* SystemAlarm.swift */,
 				AAAAAAAAAAAAAAAAAAAAAA8B /* FriendsStore.swift */,
 				AAAAAAAAAAAAAAAAAAAAAA8D /* FriendsView.swift */,
+				AAAAAAAAAAAAAAAAAAAAAA8F /* WidgetShared.swift */,
+				AAAAAAAAAAAAAAAAAAAAAA92 /* WidgetBridge.swift */,
 				AAAAAAAAAAAAAAAAAAAAAA5D /* SocialModels.swift */,
 				AAAAAAAAAAAAAAAAAAAAAA1D /* Assets.xcassets */,
 				AAAAAAAAAAAAAAAAAAAAAA21 /* silence_loop.wav */,
@@ -247,6 +256,7 @@
 			children = (
 				AAAAAAAAAAAAAAAAAAAAAA47 /* LuminariaWidgetBundle.swift */,
 				AAAAAAAAAAAAAAAAAAAAAA49 /* AlarmWidget.swift */,
+				AAAAAAAAAAAAAAAAAAAAAA94 /* NightLiveActivityWidget.swift */,
 				AAAAAAAAAAAAAAAAAAAAAA4B /* Info.plist */,
 				AAAAAAAAAAAAAAAAAAAAAA4C /* LuminariaWidget.entitlements */,
 			);
@@ -393,6 +403,8 @@
 				AAAAAAAAAAAAAAAAAAAAAA62 /* SystemAlarm.swift in Sources */,
 				AAAAAAAAAAAAAAAAAAAAAA8C /* FriendsStore.swift in Sources */,
 				AAAAAAAAAAAAAAAAAAAAAA8E /* FriendsView.swift in Sources */,
+				AAAAAAAAAAAAAAAAAAAAAA90 /* WidgetShared.swift in Sources */,
+				AAAAAAAAAAAAAAAAAAAAAA93 /* WidgetBridge.swift in Sources */,
 				AAAAAAAAAAAAAAAAAAAAAA5E /* SocialModels.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -404,6 +416,8 @@
 				AAAAAAAAAAAAAAAAAAAAAA48 /* LuminariaWidgetBundle.swift in Sources */,
 				AAAAAAAAAAAAAAAAAAAAAA4A /* AlarmWidget.swift in Sources */,
 				AAAAAAAAAAAAAAAAAAAAAA5A /* AppTheme.swift in Sources */,
+				AAAAAAAAAAAAAAAAAAAAAA91 /* WidgetShared.swift in Sources */,
+				AAAAAAAAAAAAAAAAAAAAAA95 /* NightLiveActivityWidget.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -526,6 +540,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = LuminariaWidget/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -549,6 +564,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = LuminariaWidget/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

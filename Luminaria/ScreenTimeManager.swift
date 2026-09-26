@@ -115,6 +115,7 @@ final class ScreenTimeManager: ObservableObject {
     func removeShield(reason: DetoxSessionEndReason) {
         guard isShieldActive else { return }
         store.clearAllSettings()
+        WidgetBridge.endNightActivity()
         isShieldActive = false
         let duration = shieldEngagedAt.map { Date().timeIntervalSince($0) } ?? 0
         let longestUninterrupted = NightSessionActivityTracker.shared.sessionDidEnd()

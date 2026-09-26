@@ -135,6 +135,7 @@ final class SleepReportStore: ObservableObject {
         )
         entries.insert(entry, at: 0)
         persist()
+        WidgetBridge.publishStats()
         // mantém os números do perfil público em dia pros amigos (ver `FriendsStore`)
         Task { @MainActor in
             await FriendsStore.shared.publishMyStatsQuietly()

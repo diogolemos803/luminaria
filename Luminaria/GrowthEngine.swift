@@ -37,13 +37,20 @@ struct CelestialDestination: Identifiable, Equatable {
 enum GrowthDestinations {
     /// 0/7/15/30 dias — os números exatos pedidos pelo usuário ("7 dias seguidos, 15
     /// dias, 1 mês etc"). A Lua está sempre disponível (0 dias), o resto desbloqueia
-    /// progressivamente.
-    static let all: [CelestialDestination] = [
-        CelestialDestination(id: "moon", name: "Lua", requiredStreakDays: 0, color: Color(red: 0.82, green: 0.82, blue: 0.80)),
-        CelestialDestination(id: "mars", name: "Marte", requiredStreakDays: 7, color: Color(red: 0.80, green: 0.42, blue: 0.30)),
-        CelestialDestination(id: "saturn", name: "Saturno", requiredStreakDays: 15, color: Color(red: 0.86, green: 0.72, blue: 0.48)),
-        CelestialDestination(id: "neptune", name: "Netuno", requiredStreakDays: 30, color: SoveeColor.noiteAzul),
-    ]
+    /// progressivamente. Nomes e marcos vêm de `PlanetMilestones` (`WidgetShared.swift`,
+    /// compartilhado com os widgets da tela bloqueada) — aqui só entram as cores.
+    static let all: [CelestialDestination] = PlanetMilestones.all.map {
+        CelestialDestination(id: $0.id, name: $0.name, requiredStreakDays: $0.requiredStreakDays, color: color(for: $0.id))
+    }
+
+    private static func color(for id: String) -> Color {
+        switch id {
+        case "mars": return Color(red: 0.80, green: 0.42, blue: 0.30)
+        case "saturn": return Color(red: 0.86, green: 0.72, blue: 0.48)
+        case "neptune": return SoveeColor.noiteAzul
+        default: return Color(red: 0.82, green: 0.82, blue: 0.80)
+        }
+    }
 
     static func unlocked(currentStreak: Int) -> [CelestialDestination] {
         all.filter { $0.requiredStreakDays <= currentStreak }
@@ -187,6 +194,7 @@ final class NightSessionActivityTracker: ObservableObject {
         isExploding = true
         phase = .exploded
         lastExplosionDate = now
+        WidgetBridge.markImpact(at: now)
         DispatchQueue.main.asyncAfter(deadline: .now() + Self.explosionDuration) { [weak self] in
             guard let self, self.sessionStartDate != nil, self.lastExplosionDate == now else { return }
             self.isExploding = false

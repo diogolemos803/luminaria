@@ -353,6 +353,28 @@ depende de CI num runner macOS na nuvem (GitHub Actions) e de sideload via AltSt
   círculo branco sobre fundo cream, imitando o botão principal em miniatura. É
   provisório — feito só pra não travar o primeiro build no Codemagic/TestFlight,
   substituir por um ícone de verdade quando houver um definido.
+- **Widgets da tela bloqueada + Atividade ao Vivo da noite (2026-09-26)** — pedido do
+  usuário: "um widget bem legal, pois na tela bloqueada a pessoa não perde o desafio"
+  (olhar a tela bloqueada não conta como mexer no celular). Protótipo aprovado em
+  `design/widget_prototipo.html`. Peças: `Luminaria/WidgetShared.swift` (compilado NOS
+  DOIS alvos — chaves do App Group em `SharedWidgetData`, `PlanetMilestones` como fonte
+  única de nomes/marcos dos planetas, `StreakMath.effective` e
+  `NightSessionActivityAttributes`); `Luminaria/WidgetBridge.swift` (só app —
+  `publishStats()` escreve sequência/recorde/última noite limpa no App Group ao abrir o
+  app e a cada noite registrada; `startNightActivity` no reconhecimento da luminária,
+  `markImpact` no meteoro via `registerTouchEvent`, `endNightActivity` em
+  `removeShield`); `LuminariaWidget/AlarmWidget.swift` (mesmo `kind` do widget antigo,
+  agora `.accessoryCircular`/`.accessoryRectangular`/`.accessoryInline` — sequência,
+  anel/barra até o próximo planeta, despertador; timeline com entrada extra à
+  meia-noite porque a sequência pode quebrar sem o app abrir) e
+  `LuminariaWidget/NightLiveActivityWidget.swift` (cartão colorido + Dynamic Island;
+  contagem e barra andam pelo relógio do sistema via `Text(_:style:)`/
+  `ProgressView(timerInterval:)`, sem o app rodar). Limites da plataforma: widgets da
+  tela bloqueada são desenhados em tom único pelo iOS (só a Atividade ao Vivo tem cor);
+  nenhum desenho próprio anda junto com a barra (Terra e planeta ficam nas pontas); a
+  Apple encerra a Atividade ao Vivo sozinha depois de ~8h ativa (noites mais longas
+  ficam com o cartão parado no fim). A extensão do widget passou a ter alvo mínimo
+  **iOS 16.2** (ActivityKit); o app continua 16.0, com `#available`.
 - `LuminariaWidget/` (só no `main`) — **target novo no Xcode** (Widget Extension,
   `com.luminaria.app.LuminariaWidgetExtension`), primeira vez que este projeto ganha um
   target além do app principal. `LuminariaWidgetBundle.swift` (`@main WidgetBundle`) +
@@ -521,7 +543,7 @@ Fluxo usado pra testar de verdade, todo do Windows:
 
 - **`Luminaria.xcodeproj/project.pbxproj` foi escrito à mão**, linha por linha — não existe
   Xcode/macOS neste ambiente de desenvolvimento (Windows). IDs de objeto seguem o padrão
-  `AAAAAAAAAAAAAAAAAAAAAA` + 2 dígitos hex incrementais (maior em uso: `8E`); qualquer
+  `AAAAAAAAAAAAAAAAAAAAAA` + 2 dígitos hex incrementais (maior em uso: `95`); qualquer
   novo arquivo precisa de entradas em `PBXBuildFile`, `PBXFileReference`, no grupo, e na
   build phase certa (`Sources` pra `.swift`, `Resources` pra assets/sons). Sempre
   verificar balanço de chaves/parênteses e contagem de referências de cada ID novo

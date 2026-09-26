@@ -83,6 +83,7 @@ struct ContentView: View {
                 // Permissão de "Alarmes" (AlarmKit, iOS 26+) — é ela que faz o
                 // despertador tocar no silencioso, com Foco e com o app fechado.
                 alarmManager.requestSystemAlarmPermission()
+                WidgetBridge.publishStats()
                 screenTimeManager.refreshAuthorizationStatus()
                 // Cobre o app sendo aberto do zero (cold launch): onChange(of: scenePhase)
                 // só reage a mudanças, não à primeira transição pra .active.
@@ -117,6 +118,8 @@ struct ContentView: View {
                         ShortcutManager.shared.runSleepShortcut()
                         alarmManager.armAlarm(hour: routine.alarmHour, minute: routine.alarmMinute, soundFileName: routine.soundOption.fileName)
                         screenTimeManager.applyShield(selection: routine.appSelection)
+                        // cartão da noite na tela bloqueada (ver WidgetBridge)
+                        WidgetBridge.startNightActivity(alarmDate: alarmManager.nextFireDate)
                     }
                     // Sequência visual (relógio próprio, independente da consulta ao
                     // calendário acima): disparada direto aqui — no exato instante da
