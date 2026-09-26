@@ -81,7 +81,18 @@ struct LuminariaWidgetView: View {
 
     // MARK: Tamanhos
 
+    /// Fundo de vidro do sistema (`AccessoryWidgetBackground`) atrás do anel — é o
+    /// cartão translúcido do protótipo; sem ele o conteúdo fica solto sobre o papel de
+    /// parede e some em fundos claros (achado no primeiro teste no iPhone).
     private var circular: some View {
+        ZStack {
+            AccessoryWidgetBackground()
+            circularGauge
+        }
+        .widgetURL(Self.openURL)
+    }
+
+    private var circularGauge: some View {
         Gauge(value: PlanetMilestones.progressToNext(streak: entry.streak)) {
             Image(systemName: "flame.fill")
         } currentValueLabel: {
@@ -94,7 +105,6 @@ struct LuminariaWidgetView: View {
             }
         }
         .gaugeStyle(.accessoryCircularCapacity)
-        .widgetURL(Self.openURL)
     }
 
     private var inline: some View {
@@ -106,7 +116,20 @@ struct LuminariaWidgetView: View {
         .widgetURL(Self.openURL)
     }
 
+    /// Mesmo fundo de vidro do círculo, com cantos arredondados, como no protótipo.
     private var rectangular: some View {
+        ZStack {
+            AccessoryWidgetBackground()
+                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            rectangularContent
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .widgetURL(Self.openURL)
+    }
+
+    private var rectangularContent: some View {
         VStack(alignment: .leading, spacing: 3) {
             Label {
                 Text(rectangularTitle)
@@ -125,7 +148,6 @@ struct LuminariaWidgetView: View {
                 .lineLimit(1)
                 .minimumScaleFactor(0.85)
         }
-        .widgetURL(Self.openURL)
     }
 
     // MARK: Textos
