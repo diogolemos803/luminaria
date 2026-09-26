@@ -1,0 +1,265 @@
+<title>Widgets da Tela Bloqueada</title>
+<style>
+  :root{
+    color-scheme: dark;
+    --bg:#0b0e14; --ink:#e8e6df; --ink-muted:#9aa0ad; --frame:#050608;
+    --sky0:#0c1120; --sky1:#161c31; --sky2:#232a42;
+    --moon:#84A1C8; --sage:#80A68E; --terra:#DB8149; --cream:#FDF8C7;
+    --glass:rgba(255,255,255,.16); --glass-ink:rgba(255,255,255,.92); --glass-soft:rgba(255,255,255,.55);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:"Iowan Old Style","Palatino Linotype",Palatino,serif;
+    display:flex; flex-direction:column; align-items:center; gap:22px;
+    padding-block:40px 72px; padding-inline:16px;
+  }
+  h1{font-size:1.5rem; font-weight:600; margin:0; text-align:center; text-wrap:balance;}
+  p.sub{margin:0; max-width:620px; text-align:center; color:var(--ink-muted); font-size:.95rem; line-height:1.5;}
+  .stage{display:flex; flex-wrap:wrap; gap:36px; justify-content:center; align-items:flex-start;}
+  .col{display:flex; flex-direction:column; align-items:center; gap:10px; max-width:300px;}
+  .label{font-size:.8rem; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-muted);}
+  .caption{text-align:center; font-size:.8rem; line-height:1.45; color:var(--ink-muted); margin:0;}
+
+  /* ---------- celular ---------- */
+  .phone-frame{width:300px; height:649px; background:var(--frame); border-radius:46px; padding:10px;
+    box-shadow:0 30px 60px rgba(0,0,0,.55), inset 0 0 0 1px rgba(255,255,255,.04);}
+  .screen{position:relative; width:100%; height:100%; border-radius:36px; overflow:hidden;
+    font-family:-apple-system,"SF Pro Display","SF Pro Text",system-ui,"Segoe UI",Roboto,sans-serif; color:#fff;}
+  .screen.night{background:
+      radial-gradient(120% 60% at 50% 110%, #2a3556 0%, transparent 60%),
+      linear-gradient(180deg, var(--sky0) 0%, var(--sky1) 55%, var(--sky2) 100%);}
+  .screen.day{background:
+      radial-gradient(90% 55% at 50% 105%, #f2c38e 0%, transparent 62%),
+      linear-gradient(180deg, #6f93c4 0%, #a9bfdc 55%, #e9d8c2 100%);}
+  .stars{position:absolute; inset:0; pointer-events:none;
+    background-image:
+      radial-gradient(1.2px 1.2px at 12% 18%, rgba(255,255,255,.8), transparent 60%),
+      radial-gradient(1px 1px at 72% 12%, rgba(255,255,255,.6), transparent 60%),
+      radial-gradient(1.4px 1.4px at 84% 30%, rgba(255,255,255,.7), transparent 60%),
+      radial-gradient(1px 1px at 30% 36%, rgba(255,255,255,.45), transparent 60%),
+      radial-gradient(1.2px 1.2px at 58% 44%, rgba(255,255,255,.55), transparent 60%),
+      radial-gradient(1px 1px at 20% 58%, rgba(255,255,255,.4), transparent 60%),
+      radial-gradient(1.2px 1.2px at 90% 62%, rgba(255,255,255,.5), transparent 60%);}
+  .island{position:absolute; top:10px; left:50%; transform:translateX(-50%); height:30px; border-radius:20px;
+    background:#000; z-index:5; display:flex; align-items:center; justify-content:space-between; padding:0 12px;}
+  .island.plain{width:96px;}
+  .island.compact{width:190px;}
+  .island .left{display:flex; align-items:center; gap:5px; color:var(--moon); font-size:11px; font-weight:600;}
+  .island .right{color:var(--moon); font-size:12px; font-weight:600; font-variant-numeric:tabular-nums;}
+  .status{position:absolute; top:16px; left:26px; right:26px; display:flex; justify-content:space-between; font-size:12px; font-weight:600; z-index:4;}
+
+  .lock{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; padding-top:58px;}
+  .inline-w{display:flex; align-items:center; gap:5px; font-size:12px; font-weight:600; color:var(--glass-ink); opacity:.9;}
+  .date{font-size:15px; font-weight:600; margin-top:2px; color:rgba(255,255,255,.85);}
+  .clock{font-size:78px; font-weight:700; letter-spacing:-2px; line-height:1; margin-top:2px;
+    font-family:-apple-system,"SF Pro Rounded","SF Pro Display",system-ui,sans-serif; font-variant-numeric:tabular-nums;}
+  .widgets{display:flex; gap:10px; margin-top:12px; align-items:center;}
+
+  /* widgets da tela bloqueada: tom único, material translúcido (é assim que a Apple desenha) */
+  .w-circ{width:64px; height:64px; border-radius:50%; background:var(--glass); backdrop-filter:blur(8px);
+    display:grid; place-items:center; position:relative;}
+  .w-circ svg{position:absolute; inset:0;}
+  .w-circ .n{font-size:20px; font-weight:700; line-height:1; color:var(--glass-ink);}
+  .w-circ .u{font-size:8px; font-weight:600; letter-spacing:.04em; color:var(--glass-soft); margin-top:1px; text-transform:uppercase;}
+  .w-rect{width:166px; height:64px; border-radius:16px; background:var(--glass); backdrop-filter:blur(8px);
+    padding:8px 10px; display:flex; flex-direction:column; justify-content:space-between; color:var(--glass-ink);}
+  .w-rect .t{display:flex; align-items:center; gap:5px; font-size:12px; font-weight:700;}
+  .w-rect .s{font-size:10.5px; color:var(--glass-soft); font-weight:600;}
+  .bar{height:5px; border-radius:3px; background:rgba(255,255,255,.22); overflow:hidden;}
+  .bar i{display:block; height:100%; background:rgba(255,255,255,.9); border-radius:3px;}
+
+  /* Atividade ao Vivo: essa sim pode ter cor */
+  .live{position:absolute; left:10px; right:10px; bottom:92px; border-radius:22px; padding:12px 14px 13px;
+    background:linear-gradient(160deg, #1b2440 0%, #0f1526 100%); box-shadow:0 10px 30px rgba(0,0,0,.35);
+    border:1px solid rgba(132,161,200,.18);}
+  .live .row{display:flex; justify-content:space-between; align-items:center;}
+  .live .kicker{display:flex; align-items:center; gap:6px; font-size:12px; font-weight:700; color:var(--cream);}
+  .live .streak{display:flex; align-items:center; gap:4px; font-size:11.5px; font-weight:700; color:var(--terra);}
+  .live .big{font-size:22px; font-weight:700; margin-top:8px; font-variant-numeric:tabular-nums; letter-spacing:-.3px;}
+  .live .big small{font-size:12px; font-weight:600; color:var(--ink-muted); margin-left:4px; letter-spacing:0;}
+  .track{display:flex; align-items:center; gap:7px; margin-top:9px;}
+  .track .planet{flex:none;}
+  .track .line{flex:1; height:6px; border-radius:3px; background:rgba(132,161,200,.22); overflow:hidden; position:relative;}
+  .track .line i{position:absolute; inset:0 auto 0 0; width:38%; background:linear-gradient(90deg, var(--moon), #b9cde6); border-radius:3px;
+    animation:fill 12s linear infinite;}
+  @keyframes fill{from{width:34%} to{width:44%}}
+  .live .foot{display:flex; justify-content:space-between; margin-top:7px; font-size:10.5px; color:var(--ink-muted); font-weight:600;}
+
+  .live.hit{border-color:rgba(219,129,73,.45); background:linear-gradient(160deg, #2a1d22 0%, #121524 100%);}
+  .live.hit .kicker{color:#ffb98a;}
+  .boom{display:inline-grid; place-items:center; width:18px; height:18px; border-radius:50%;
+    background:radial-gradient(circle, #fff3cf 0 25%, #ffc25a 45%, #f0702e 75%, transparent 76%);}
+
+  .dock{position:absolute; bottom:26px; left:0; right:0; display:flex; justify-content:space-between; padding:0 40px;}
+  .dock span{width:44px; height:44px; border-radius:50%; background:rgba(255,255,255,.14); display:grid; place-items:center;}
+  .home{position:absolute; bottom:8px; left:50%; transform:translateX(-50%); width:110px; height:4px; border-radius:2px; background:rgba(255,255,255,.7);}
+
+  /* ilha expandida (mostrada abaixo do celular 1) */
+  .island-x{width:280px; border-radius:30px; background:#000; padding:14px 16px; color:#fff;
+    font-family:-apple-system,"SF Pro Text",system-ui,sans-serif; box-shadow:0 14px 30px rgba(0,0,0,.4);}
+  .island-x .row{display:flex; justify-content:space-between; align-items:center; font-size:12px; font-weight:700;}
+  .island-x .big{font-size:24px; font-weight:700; margin-top:6px; font-variant-numeric:tabular-nums;}
+
+  .notes{max-width:760px; display:grid; gap:10px; grid-template-columns:repeat(auto-fit,minmax(230px,1fr));}
+  .note{background:#121722; border:1px solid #1e2533; border-radius:14px; padding:14px 16px; font-size:.86rem; line-height:1.5; color:#c9ccd3;}
+  .note b{color:var(--ink); display:block; margin-bottom:4px; font-size:.9rem;}
+  @media (prefers-reduced-motion: reduce){ .track .line i{animation:none;} }
+</style>
+
+<h1>Widgets da Tela Bloqueada</h1>
+<p class="sub">
+  Proposta pra acompanhar o desafio sem desbloquear o iPhone — olhar a tela bloqueada não conta como “mexer no celular”,
+  então o foguete continua voando. Exemplo: sequência de 7 noites, rumo a Saturno (15 noites), despertador às 07:00.
+</p>
+
+<div class="stage">
+  <!-- ============ 1. NOITE ============ -->
+  <div class="col">
+    <span class="label">Noite · sessão ativa</span>
+    <div class="phone-frame"><div class="screen night">
+      <div class="stars"></div>
+      <div class="island compact">
+        <span class="left">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2c3 2.2 4.6 5.6 4.6 9.4 0 1.7-.3 3.3-.9 4.6h-7.4c-.6-1.3-.9-2.9-.9-4.6C7.4 7.6 9 4.2 12 2Zm0 6.2a1.9 1.9 0 1 0 0 3.8 1.9 1.9 0 0 0 0-3.8ZM7.6 14.6l-2.4 3.3 2.9-.6.4-1.6Zm8.8 0 2.4 3.3-2.9-.6-.4-1.6ZM10 17.2h4l-.8 3.6h-2.4Z"/></svg>
+        </span>
+        <span class="right">7:19</span>
+      </div>
+      <div class="lock">
+        <div class="inline-w">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2c3 2.2 4.6 5.6 4.6 9.4 0 1.7-.3 3.3-.9 4.6h-7.4c-.6-1.3-.9-2.9-.9-4.6C7.4 7.6 9 4.2 12 2Z"/></svg>
+          7 noites · despertador 07:00
+        </div>
+        <div class="clock">23:41</div>
+        <div class="date">sexta-feira, 26 de setembro</div>
+        <div class="widgets">
+          <div class="w-circ" title="Progresso até o próximo planeta">
+            <svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="27" fill="none" stroke="rgba(255,255,255,.22)" stroke-width="5"/>
+              <circle cx="32" cy="32" r="27" fill="none" stroke="rgba(255,255,255,.92)" stroke-width="5" stroke-linecap="round"
+                stroke-dasharray="169.6" stroke-dashoffset="90.5" transform="rotate(-90 32 32)"/></svg>
+            <div style="text-align:center"><div class="n">7</div><div class="u">noites</div></div>
+          </div>
+          <div class="w-rect">
+            <div class="t">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2c3 2.2 4.6 5.6 4.6 9.4 0 1.7-.3 3.3-.9 4.6h-7.4c-.6-1.3-.9-2.9-.9-4.6C7.4 7.6 9 4.2 12 2Z"/></svg>
+              Rumo a Saturno
+            </div>
+            <div class="bar"><i style="width:47%"></i></div>
+            <div class="s">faltam 8 noites · acorda 07:00</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="live">
+        <div class="row">
+          <span class="kicker">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2c3 2.2 4.6 5.6 4.6 9.4 0 1.7-.3 3.3-.9 4.6h-7.4c-.6-1.3-.9-2.9-.9-4.6C7.4 7.6 9 4.2 12 2Zm0 6.2a1.9 1.9 0 1 0 0 3.8 1.9 1.9 0 0 0 0-3.8ZM7.6 14.6l-2.4 3.3 2.9-.6.4-1.6Zm8.8 0 2.4 3.3-2.9-.6-.4-1.6ZM10 17.2h4l-.8 3.6h-2.4Z"/></svg>
+            Foguete em voo
+          </span>
+          <span class="streak">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13.5 2s1 3-1.5 6c-1.6 1.9-3 3.3-3 6a3 3 0 0 0 6 0c0-1-.3-1.8-.8-2.6 2.2 1 3.8 3.1 3.8 5.6A6 6 0 0 1 12 23a6 6 0 0 1-6-6c0-4.4 3.3-6.4 5-9 1.3-2 1.9-4 2.5-6Z"/></svg>
+            7 noites
+          </span>
+        </div>
+        <div class="big">7h19<small>até o despertador</small></div>
+        <div class="track">
+          <svg class="planet" width="14" height="14" viewBox="0 0 24 24" aria-label="Terra"><circle cx="12" cy="12" r="9" fill="#4f7f5f"/><path d="M6 9c3-2 5 1 7-1s4 1 4 3-3 2-5 4-4 1-6-1" fill="#2a568f" opacity=".9"/></svg>
+          <div class="line"><i></i></div>
+          <svg class="planet" width="20" height="14" viewBox="0 0 30 20" aria-label="Saturno"><ellipse cx="15" cy="10" rx="14" ry="4" fill="none" stroke="#e0c690" stroke-width="1.6"/><circle cx="15" cy="10" r="6.5" fill="#dbb87a"/></svg>
+        </div>
+        <div class="foot"><span>Desde 23:40 sem mexer</span><span>Acorda 07:00</span></div>
+      </div>
+
+      <div class="dock"><span>🔦</span><span>📷</span></div>
+      <div class="home"></div>
+    </div></div>
+    <p class="caption">A Atividade ao Vivo (embaixo) começa quando a luminária é lida e some quando o despertador toca. A barra avança sozinha até a hora de acordar, sem abrir o app.</p>
+  </div>
+
+  <!-- ============ 2. IMPACTO ============ -->
+  <div class="col">
+    <span class="label">Se abrir o app na noite</span>
+    <div class="phone-frame"><div class="screen night">
+      <div class="stars"></div>
+      <div class="island compact">
+        <span class="left" style="color:#ffb98a"><span class="boom" aria-hidden="true"></span></span>
+        <span class="right" style="color:#ffb98a">7:02</span>
+      </div>
+      <div class="lock">
+        <div class="inline-w">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2c3 2.2 4.6 5.6 4.6 9.4 0 1.7-.3 3.3-.9 4.6h-7.4c-.6-1.3-.9-2.9-.9-4.6C7.4 7.6 9 4.2 12 2Z"/></svg>
+          7 noites · despertador 07:00
+        </div>
+        <div class="clock">23:58</div>
+        <div class="date">sexta-feira, 26 de setembro</div>
+      </div>
+      <div class="live hit">
+        <div class="row">
+          <span class="kicker"><span class="boom" aria-hidden="true"></span> Um meteoro atingiu o foguete</span>
+        </div>
+        <div class="big">7h02<small>até o despertador</small></div>
+        <div class="track">
+          <svg class="planet" width="14" height="14" viewBox="0 0 24 24" aria-label="Terra"><circle cx="12" cy="12" r="9" fill="#4f7f5f"/><path d="M6 9c3-2 5 1 7-1s4 1 4 3-3 2-5 4-4 1-6-1" fill="#2a568f" opacity=".9"/></svg>
+          <div class="line"><i style="width:6%;animation:none;background:linear-gradient(90deg,#f0702e,#ffc25a)"></i></div>
+          <svg class="planet" width="20" height="14" viewBox="0 0 30 20" aria-label="Saturno"><ellipse cx="15" cy="10" rx="14" ry="4" fill="none" stroke="#e0c690" stroke-width="1.6"/><circle cx="15" cy="10" r="6.5" fill="#dbb87a"/></svg>
+        </div>
+        <div class="foot"><span>Foguete novo lançado 23:57</span><span>Acorda 07:00</span></div>
+      </div>
+      <div class="dock"><span>🔦</span><span>📷</span></div>
+      <div class="home"></div>
+    </div></div>
+    <p class="caption">Abrir o app conta como mexer no celular: o cartão mostra o impacto e a viagem recomeça do zero (a sequência de noites só quebra se a noite terminar antes do despertador).</p>
+
+    <span class="label" style="margin-top:14px">Dynamic Island aberta</span>
+    <div class="island-x">
+      <div class="row"><span style="color:var(--moon)">Foguete em voo</span><span style="color:var(--terra)">7 noites</span></div>
+      <div class="big">7h19 <span style="font-size:12px;color:#9aa0ad;font-weight:600">até 07:00</span></div>
+      <div class="track" style="margin-top:8px">
+        <svg class="planet" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="#4f7f5f"/></svg>
+        <div class="line"><i></i></div>
+        <svg class="planet" width="20" height="14" viewBox="0 0 30 20" aria-hidden="true"><ellipse cx="15" cy="10" rx="14" ry="4" fill="none" stroke="#e0c690" stroke-width="1.6"/><circle cx="15" cy="10" r="6.5" fill="#dbb87a"/></svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 3. DIA ============ -->
+  <div class="col">
+    <span class="label">Dia · sem sessão</span>
+    <div class="phone-frame"><div class="screen day">
+      <div class="island plain"></div>
+      <div class="lock">
+        <div class="inline-w">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13.5 2s1 3-1.5 6c-1.6 1.9-3 3.3-3 6a3 3 0 0 0 6 0c0-1-.3-1.8-.8-2.6 2.2 1 3.8 3.1 3.8 5.6A6 6 0 0 1 12 23a6 6 0 0 1-6-6c0-4.4 3.3-6.4 5-9 1.3-2 1.9-4 2.5-6Z"/></svg>
+          7 noites seguidas
+        </div>
+        <div class="clock">14:20</div>
+        <div class="date">sábado, 27 de setembro</div>
+        <div class="widgets">
+          <div class="w-circ">
+            <svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="27" fill="none" stroke="rgba(255,255,255,.22)" stroke-width="5"/>
+              <circle cx="32" cy="32" r="27" fill="none" stroke="rgba(255,255,255,.92)" stroke-width="5" stroke-linecap="round"
+                stroke-dasharray="169.6" stroke-dashoffset="90.5" transform="rotate(-90 32 32)"/></svg>
+            <div style="text-align:center"><div class="n">7</div><div class="u">noites</div></div>
+          </div>
+          <div class="w-rect">
+            <div class="t">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13.5 2s1 3-1.5 6c-1.6 1.9-3 3.3-3 6a3 3 0 0 0 6 0c0-1-.3-1.8-.8-2.6 2.2 1 3.8 3.1 3.8 5.6A6 6 0 0 1 12 23a6 6 0 0 1-6-6c0-4.4 3.3-6.4 5-9 1.3-2 1.9-4 2.5-6Z"/></svg>
+              7 noites seguidas
+            </div>
+            <div class="bar"><i style="width:47%"></i></div>
+            <div class="s">Saturno em 8 · recorde 12</div>
+          </div>
+        </div>
+      </div>
+      <div class="dock"><span>🔦</span><span>📷</span></div>
+      <div class="home"></div>
+    </div></div>
+    <p class="caption">Sem sessão, os widgets lembram a sequência, o recorde e quanto falta pro próximo planeta. Tocar em qualquer um abre o app.</p>
+  </div>
+</div>
+
+<div class="notes">
+  <div class="note"><b>Por que os widgets são brancos</b>Na tela bloqueada, a Apple redesenha todo widget num tom único translúcido, que acompanha o papel de parede. Só a Atividade ao Vivo pode usar as cores do app.</div>
+  <div class="note"><b>O que atualiza sozinho</b>A barra e a contagem da Atividade ao Vivo andam pelo relógio do iPhone, sem o app rodar. A sequência e o planeta mudam quando uma noite termina.</div>
+  <div class="note"><b>Três tamanhos de widget</b>Círculo (sequência + anel até o próximo planeta), retângulo (planeta, barra e despertador) e a linha curta acima do relógio. A pessoa escolhe quais pôr.</div>
+</div>
