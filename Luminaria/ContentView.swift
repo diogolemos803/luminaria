@@ -231,7 +231,7 @@ struct ContentView: View {
                     GeometryReader { proxy in
                         ScrollView(.vertical, showsIndicators: false) {
                             VStack(spacing: 0) {
-                                RocketGrowthVisual(sceneStart: sceneStartDate)
+                                RocketGrowthVisual(sceneStart: sceneStartDate, explosionDate: growthTracker.lastExplosionDate)
                                     .render(phase: growthTracker.phase, destination: destination, theme: theme)
                                     .frame(width: proxy.size.width, height: proxy.size.height)
 

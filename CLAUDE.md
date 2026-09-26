@@ -269,8 +269,10 @@ depende de CI num runner macOS na nuvem (GitHub Actions) e de sideload via AltSt
   só repassa pra `LaunchScene` em `RocketScenes.swift`; o destino desbloqueado vira a
   cor do selo no céu). Renderizado em tela cheia em `ContentView.soveeMainScreen`
   depois que o botão redondo sai — só com `screenTimeManager.isShieldActive`, mesma
-  condição do passe de emergência. `ExplosionBurst` (explosão por cima do foguete)
-  continua aqui.
+  condição do passe de emergência. Guarda `lastExplosionDate` (instante do último
+  "toque") pra cena desenhar meteoro/explosão/relançamento; depois da explosão a fase
+  volta pra `.liftoff` (o foguete novo decola de novo). `ExplosionBurst` foi removido —
+  a explosão agora é desenhada dentro da própria cena.
 - `Luminaria/RocketScenes.swift` — tradução em SwiftUI dos três protótipos aprovados
   (`design/entrada_prototipo.html`, `decolagem_prototipo.html`, `pouso_prototipo.html`).
   Tudo num `Canvas` dentro de `TimelineView(.animation)`, desenhado no MESMO espaço de
@@ -284,7 +286,18 @@ depende de CI num runner macOS na nuvem (GitHub Actions) e de sideload via AltSt
   espera `LandingPainter.holdBeforeLanding` = 1s com o foguete descendo antes da Lua
   subir — pedido do usuário, não existe no protótipo, que começa direto).
   `RocketArt` tem o foguete (com porta que abre), a chama e a fumaça compartilhados
-  pelas duas cenas. Não validado visualmente num device ainda (sem Mac/simulador aqui)
+  pelas duas cenas. **Divergências do Swift em relação aos protótipos (pedidos do
+  usuário em 2026-09-26, não existem nos HTML):** (1) foguete 40% menor
+  (`RocketArt.scale = 0.6`, a partir da base das barbatanas `pivot`, com
+  `centerCompensation` subindo a câmera pra ele continuar no centro — o chão aparece um
+  pouco mais no começo); chama, brilho, porta, rampa e o astronauta do pouso vão na mesma
+  escala, o trajeto do astronauta e as pegadas foram recalculados, a bandeira não mudou;
+  a descida do chão na decolagem recalcula o trecho linear pra continuar emendando com a
+  mesma velocidade; (2) explosão por meteoro: no "toque" (`explosionDate`), um meteoro
+  cruza do canto superior esquerdo até o foguete (`meteorTravel` 0,8s), explosão com
+  clarão/bola de fogo/destroços/fumaça (`explosionLength` 1,3s), e então a MESMA
+  entrada + decolagem roda de novo com o céu já no lugar (`Frame.skyInPlace`) — a Terra
+  sobe com um foguete novo na plataforma e ele decola. Não validado visualmente num device ainda (sem Mac/simulador aqui)
   — só compilação no CI.
 - `Luminaria/SocialModels.swift` (novo, terreno pro item "amigos" e "ranking de
   detox" — só modelos de dados, sem UI final nem rede) — `Friend`/`FriendInvite`/

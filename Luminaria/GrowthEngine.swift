@@ -87,9 +87,10 @@ final class NightSessionActivityTracker: ObservableObject {
     /// dura a noite inteira, sem "progresso" nenhum pra calcular (a viagem não avança
     /// mais em direção a um destino durante a noite; o destino só entra em cena no
     /// pouso, de manhã — ver `MoonLandingScene` em `RocketScenes.swift`).
-    /// `.exploded` é TRANSIENTE — some sozinho depois de `explosionDuration`,
-    /// voltando pra `.orbiting` (a sessão de bloqueio em si não é afetada — ver
-    /// `ScreenTimeManager.useEmergencyPass`, que documenta a mesma decisão).
+    /// `.exploded` é TRANSIENTE (meteoro atinge o foguete) — depois de
+    /// `explosionDuration` volta pra `.liftoff`, porque a cena relança um foguete novo
+    /// da Terra, e vira `.orbiting` quando esse relançamento assenta. A sessão de
+    /// bloqueio em si não é afetada.
     enum Phase: Equatable {
         case liftoff
         case orbiting
@@ -97,14 +98,19 @@ final class NightSessionActivityTracker: ObservableObject {
     }
 
     @Published private(set) var phase: Phase = .liftoff
+    /// Instante do último "toque" (explosão). A cena usa isso pra desenhar o meteoro, a
+    /// explosão e o relançamento a partir desse momento (ver `LaunchScene`).
+    @Published private(set) var lastExplosionDate: Date?
 
     private var sessionStartDate: Date?
     private var lastTouchDate: Date?
     private var longestGapThisSession: TimeInterval = 0
     private var isExploding = false
 
-    /// Quanto tempo a animação de explosão fica visível antes da órbita voltar.
-    private static let explosionDuration: TimeInterval = 1.4
+    /// Meteoro + explosão (ver `LaunchPainter.relaunchDelay`); depois disso a fase volta
+    /// pra `.liftoff`, porque o foguete novo decola de novo — e é a própria cena que
+    /// chama `liftoffAnimationCompleted()` quando esse relançamento assenta.
+    private static let explosionDuration: TimeInterval = 2.1
     /// Janela logo após o início da sessão em que "voltar a ficar ativo" é ignorado
     /// (ver `registerTouchEvent`).
     private static let startGracePeriod: TimeInterval = 10
@@ -129,6 +135,7 @@ final class NightSessionActivityTracker: ObservableObject {
         lastTouchDate = now
         longestGapThisSession = 0
         isExploding = false
+        lastExplosionDate = nil
         phase = .liftoff
     }
 
@@ -155,6 +162,7 @@ final class NightSessionActivityTracker: ObservableObject {
         lastTouchDate = nil
         longestGapThisSession = 0
         isExploding = false
+        lastExplosionDate = nil
         phase = .liftoff
         return result
     }
@@ -178,10 +186,11 @@ final class NightSessionActivityTracker: ObservableObject {
         lastTouchDate = now
         isExploding = true
         phase = .exploded
+        lastExplosionDate = now
         DispatchQueue.main.asyncAfter(deadline: .now() + Self.explosionDuration) { [weak self] in
-            guard let self, self.sessionStartDate != nil else { return }
+            guard let self, self.sessionStartDate != nil, self.lastExplosionDate == now else { return }
             self.isExploding = false
-            self.phase = .orbiting
+            self.phase = .liftoff
         }
     }
 }
@@ -200,42 +209,10 @@ final class NightSessionActivityTracker: ObservableObject {
 /// direto o foguete já em voo.
 struct RocketGrowthVisual: GrowthVisualizing {
     var sceneStart: Date?
+    /// Último "toque" da sessão (`NightSessionActivityTracker.lastExplosionDate`).
+    var explosionDate: Date?
 
     func render(phase: NightSessionActivityTracker.Phase, destination: CelestialDestination, theme: ModeTheme) -> some View {
-        LaunchScene(phase: phase, badgeColor: destination.color, sceneStart: sceneStart)
-    }
-}
-
-/// Explosão simples: um núcleo que aumenta e desaparece, com partículas pequenas
-/// espalhando pra fora — mesma técnica cartoon/flat do resto do visual, só formas e
-/// cor, sem imagem nenhuma.
-struct ExplosionBurst: View {
-    @State private var animate = false
-
-    private let particleColors: [Color] = [.orange, .yellow, .red]
-
-    var body: some View {
-        ZStack {
-            ForEach(0..<8, id: \.self) { index in
-                let angle = Double(index) / 8 * 2 * .pi
-                Circle()
-                    .fill(particleColors[index % particleColors.count])
-                    .frame(width: 8, height: 8)
-                    .offset(
-                        x: animate ? CGFloat(cos(angle)) * 58 : 0,
-                        y: animate ? CGFloat(sin(angle)) * 58 : 0
-                    )
-                    .opacity(animate ? 0 : 1)
-            }
-            Circle()
-                .fill(Color.orange)
-                .frame(width: animate ? 90 : 18, height: animate ? 90 : 18)
-                .opacity(animate ? 0 : 0.9)
-        }
-        .onAppear {
-            withAnimation(.easeOut(duration: 1.0)) {
-                animate = true
-            }
-        }
+        LaunchScene(badgeColor: destination.color, sceneStart: sceneStart, explosionDate: explosionDate)
     }
 }

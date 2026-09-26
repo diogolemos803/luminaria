@@ -173,6 +173,28 @@ enum RocketArt {
     static let red0 = Color(sceneHex: 0xEC6B4C)
     static let red1 = Color(sceneHex: 0xCC4A33)
 
+    /// Foguete 40% menor que no protótipo, proporcionalmente ao cenário (pedido do
+    /// usuário, 2026-09-26). A escala é aplicada a partir da base das barbatanas
+    /// (`pivot`), então ele continua pousado na plataforma/na Lua. Chama, brilho,
+    /// fumaça da ponta, porta e rampa são desenhados dentro dessa mesma escala.
+    static let scale: Double = 0.6
+    static let pivot = CGPoint(x: 195, y: 692)
+    /// Encolher a partir da base desce o centro do foguete; as cenas sobem a câmera
+    /// essa diferença pra ele continuar no centro da tela (o foguete original ia de
+    /// y 481 a 692, centro 586,5).
+    static let centerCompensation: Double = (692 - 586.5) * (1 - scale)
+
+    static func applyScale(_ ctx: inout GraphicsContext) {
+        ctx.translateBy(x: pivot.x, y: pivot.y)
+        ctx.scaleBy(x: scale, y: scale)
+        ctx.translateBy(x: -pivot.x, y: -pivot.y)
+    }
+
+    /// Onde um ponto do desenho original do foguete vai parar depois da escala.
+    static func scaledPoint(_ x: Double, _ y: Double) -> CGPoint {
+        CGPoint(x: pivot.x + (x - pivot.x) * scale, y: pivot.y + (y - pivot.y) * scale)
+    }
+
     static let hull: Path = {
         var p = Path()
         p.move(to: S.pt(195, 481))
@@ -416,34 +438,43 @@ struct ScenePuff {
 /// assentada a decolagem começa. `sceneStart == nil` = app reaberto no meio da
 /// sessão: mostra direto o foguete já em voo, sem repetir nada.
 ///
+/// `explosionDate` = último "toque" da pessoa no celular (ver
+/// `NightSessionActivityTracker.registerTouchEvent`). A partir dele (pedido do usuário,
+/// 2026-09-26): um meteoro atravessa o céu e atinge o foguete (`LaunchPainter.
+/// meteorTravel`), o foguete explode, e então a Terra volta a subir com um foguete novo
+/// na plataforma e ele decola de novo — a mesma entrada + decolagem, só que com o céu
+/// já no lugar (`relaunchDelay` depois do meteoro sair).
+///
 /// O foguete NUNCA se move na tela (decisão do usuário) — só o cenário se move.
 struct LaunchScene: View {
-    let phase: NightSessionActivityTracker.Phase
     let badgeColor: Color
     let sceneStart: Date?
+    let explosionDate: Date?
 
     @State private var isResting = false
 
+    private struct AnimationKey: Equatable {
+        let sceneStart: Date?
+        let explosionDate: Date?
+    }
+
     var body: some View {
         TimelineView(.animation(minimumInterval: isResting ? 1.0 / 30.0 : nil)) { timeline in
-            let now = timeline.date
-            let sceneTime: Double = sceneStart.map { now.timeIntervalSince($0) } ?? 600
-            let clock = now.timeIntervalSinceReferenceDate
-            let showsRocket = phase != .exploded
+            let frame = LaunchPainter.frame(at: timeline.date, sceneStart: sceneStart, explosionDate: explosionDate)
+            let clock = timeline.date.timeIntervalSinceReferenceDate
             Canvas { context, size in
-                LaunchPainter.draw(in: &context, size: size, sceneTime: sceneTime, clock: clock, showsRocket: showsRocket, badgeColor: badgeColor)
+                LaunchPainter.draw(in: &context, size: size, frame: frame, clock: clock, badgeColor: badgeColor)
             }
         }
-        .overlay {
-            // O foguete fica exatamente no centro da tela, então a explosão também.
-            if phase == .exploded {
-                ExplosionBurst()
-            }
-        }
-        .task(id: sceneStart) {
+        .task(id: AnimationKey(sceneStart: sceneStart, explosionDate: explosionDate)) {
             isResting = false
-            if let start = sceneStart {
-                let wait = start.addingTimeInterval(LaunchPainter.settleTime).timeIntervalSinceNow
+            var settleAt = sceneStart.map { $0.addingTimeInterval(LaunchPainter.settleTime) }
+            if let explosionDate {
+                let relaunchSettled = explosionDate.addingTimeInterval(LaunchPainter.relaunchDelay + LaunchPainter.settleTime)
+                settleAt = max(settleAt ?? relaunchSettled, relaunchSettled)
+            }
+            if let settleAt {
+                let wait = settleAt.timeIntervalSinceNow
                 if wait > 0 {
                     try? await Task.sleep(nanoseconds: UInt64(wait * 1_000_000_000))
                 }
@@ -463,17 +494,54 @@ enum LaunchPainter {
     /// Momento em que o chão já saiu de tela e o rastro sumiu: dali pra frente é só o
     /// foguete voando no céu (estado da noite inteira).
     static let settleTime: Double = launchDelay + 7.6
+    /// Meteoro: tempo de travessia até atingir o foguete.
+    static let meteorTravel: Double = 0.8
+    /// Explosão depois do impacto, até a Terra começar a voltar com o foguete novo.
+    static let explosionLength: Double = 1.3
+    static let relaunchDelay: Double = meteorTravel + explosionLength
 
-    private static let rocketLift: Double = -164
+    /// Câmera: o protótipo usava -164 com o foguete no tamanho original; com o foguete
+    /// menor, sobe mais um pouco pra ele continuar no centro da tela.
+    private static let rocketLift: Double = -164 - RocketArt.centerCompensation
+    /// Ponto do corpo do foguete (na tela) onde o meteoro bate.
+    private static let impactPoint: CGPoint = {
+        let p = RocketArt.scaledPoint(195, 560)
+        return CGPoint(x: p.x, y: p.y + rocketLift)
+    }()
 
-    static func draw(in ctx: inout GraphicsContext, size: CGSize, sceneTime: Double, clock: Double, showsRocket: Bool, badgeColor: Color) {
+    struct Frame {
+        /// Relógio da entrada + decolagem (0 = começa a entrar).
+        var sceneTime: Double
+        /// Relançamento depois de uma explosão: o céu já está no lugar, só a Terra sobe.
+        var skyInPlace: Bool
+        /// Segundos desde que o meteoro apareceu, enquanto meteoro/explosão estão em cena.
+        var meteorTime: Double?
+    }
+
+    static func frame(at now: Date, sceneStart: Date?, explosionDate: Date?) -> Frame {
+        let sceneTime = sceneStart.map { now.timeIntervalSince($0) } ?? 600
+        guard let explosionDate, now >= explosionDate else {
+            return Frame(sceneTime: sceneTime, skyInPlace: false, meteorTime: nil)
+        }
+        let e = now.timeIntervalSince(explosionDate)
+        if e < relaunchDelay {
+            return Frame(sceneTime: sceneTime, skyInPlace: false, meteorTime: e)
+        }
+        return Frame(sceneTime: e - relaunchDelay, skyInPlace: true, meteorTime: nil)
+    }
+
+    static func draw(in ctx: inout GraphicsContext, size: CGSize, frame: Frame, clock: Double, badgeColor: Color) {
         S.applyCamera(&ctx, size: size)
 
+        let sceneTime = frame.sceneTime
         let entrance = SceneCurve(x1: 0.3, y1: 0, x2: 0.2, y2: 1).value(SceneTime.progress(sceneTime, delay: 0.12, duration: 1.6))
         let t = sceneTime - launchDelay
+        let showsRocket = frame.meteorTime.map { $0 < meteorTravel } ?? true
 
         var sky = ctx
-        sky.translateBy(x: 0, y: -1260 * (1 - entrance))
+        if !frame.skyInPlace {
+            sky.translateBy(x: 0, y: -1260 * (1 - entrance))
+        }
         drawSky(&sky, badgeColor: badgeColor)
 
         var world = ctx
@@ -482,7 +550,7 @@ enum LaunchPainter {
 
         var ground = world
         ground.translateBy(x: 0, y: groundY)
-        if groundY < 900 {
+        if groundY < groundGoneY {
             drawTerrain(&ground)
             drawLaunchBase(&ground, clock: clock)
         }
@@ -491,12 +559,13 @@ enum LaunchPainter {
         if showsRocket {
             drawFlame(&world, t: t, clock: clock, groundY: groundY)
         }
-        if groundY < 900 {
+        if groundY < groundGoneY {
             drawCloud(&ground, t: t)
         }
         if showsRocket {
             var rocket = world
             rocket.translateBy(x: 0, y: rocketLift)
+            RocketArt.applyScale(&rocket)
             let glowIn = SceneTime.sample([0, 0.18, 0.55, 1], [0, 0.5, 0.5, 1], SceneTime.progress(t, delay: 0.15, duration: 1.8), .easeOut)
             let pulse = SceneTime.loop(clock, period: 1.1)
             let pulseOpacity = SceneTime.sample([0, 0.5, 1], [0.62, 0.75, 0.62], pulse, .easeInOut)
@@ -504,16 +573,152 @@ enum LaunchPainter {
             RocketArt.drawGlow(&rocket, opacity: 0.8 * glowIn * pulseOpacity, scale: pulseScale)
             RocketArt.drawRocket(&rocket, doorOpen: 0)
         }
+
+        if let m = frame.meteorTime {
+            if m < meteorTravel {
+                drawMeteor(&world, progress: m / meteorTravel)
+            } else {
+                drawExplosion(&world, progress: (m - meteorTravel) / explosionLength)
+            }
+        }
     }
 
     /// Chão parado na ignição, depois desce acelerando a partir do repouso e sai de
-    /// tela (as duas curvas se emendam com a mesma velocidade).
+    /// tela. As duas curvas se emendam com a mesma velocidade: a descida linear é
+    /// calculada a partir da inclinação final da curva de arranque (o protótipo tinha
+    /// 164 → 0 → 900 com esses números batendo; com o foguete menor o arranque é maior e
+    /// a descida acompanha).
     static func groundOffset(_ t: Double) -> Double {
         let p = SceneTime.progress(t, delay: 1.0, duration: 4.8)
+        let start = rocketLift
         if p <= 0.27 {
-            return -164 + 164 * SceneCurve(x1: 0.33, y1: 0, x2: 0.67, y2: 0.33).value(p / 0.27)
+            return start - start * SceneCurve(x1: 0.33, y1: 0, x2: 0.67, y2: 0.33).value(p / 0.27)
         }
-        return 900 * (p - 0.27) / 0.73
+        let endSlope = (1 - 0.33) / (1 - 0.67)
+        let linearEnd = -start / 0.27 * endSlope * 0.73
+        return linearEnd * (p - 0.27) / 0.73
+    }
+
+    /// Daqui pra baixo o chão (topo da torre ~y 420) já saiu de qualquer tela.
+    private static let groundGoneY: Double = 1000
+
+    // MARK: Meteoro e explosão
+
+    /// Meteoro atravessando o céu do canto superior esquerdo até o foguete, com rastro
+    /// incandescente. Acelera um pouco no fim (entrando na "atmosfera").
+    static func drawMeteor(_ w: inout GraphicsContext, progress: Double) {
+        let start = CGPoint(x: -50, y: 70)
+        let end = impactPoint
+        let e = SceneCurve.easeIn.value(progress)
+        let x = start.x + (end.x - start.x) * e
+        let y = start.y + (end.y - start.y) * e
+        let dx = end.x - start.x
+        let dy = end.y - start.y
+        let length = (dx * dx + dy * dy).squareRoot()
+        let ux = dx / length
+        let uy = dy / length
+
+        // rastro: triângulo afinando pra trás, do laranja pro transparente
+        let trail = 90.0
+        let tailX = x - ux * trail
+        let tailY = y - uy * trail
+        var tail = Path()
+        tail.move(to: CGPoint(x: x - uy * 7, y: y + ux * 7))
+        tail.addLine(to: CGPoint(x: tailX, y: tailY))
+        tail.addLine(to: CGPoint(x: x + uy * 7, y: y - ux * 7))
+        tail.closeSubpath()
+        var glow = w
+        glow.blendMode = .screen
+        glow.addFilter(.blur(radius: 3))
+        glow.fill(tail, with: .linearGradient(
+            Gradient(stops: [
+                .init(color: Color(sceneHex: 0xFFD27A, opacity: 0.95), location: 0),
+                .init(color: Color(sceneHex: 0xFF8A3D, opacity: 0.55), location: 0.35),
+                .init(color: Color(sceneHex: 0xFF5A2C, opacity: 0), location: 1),
+            ]),
+            startPoint: CGPoint(x: x, y: y),
+            endPoint: CGPoint(x: tailX, y: tailY)
+        ))
+        glow.fill(S.circle(x, y, 16), with: S.radial([
+            .init(color: Color(sceneHex: 0xFFB45C, opacity: 0.8), location: 0),
+            .init(color: Color(sceneHex: 0xFF7A33, opacity: 0), location: 1),
+        ], center: CGPoint(x: x, y: y), radius: 16))
+
+        // a rocha
+        w.fill(S.circle(x, y, 8), with: S.radial([
+            .init(color: Color(sceneHex: 0x8A7A6E), location: 0),
+            .init(color: Color(sceneHex: 0x4E433D), location: 1),
+        ], center: CGPoint(x: x - 2.5, y: y - 2.5), radius: 10))
+        w.fill(S.circle(x + 2.5, y + 1.5, 2), with: .color(Color(sceneHex: 0x3C332E)))
+        w.fill(S.circle(x - 2, y + 3, 1.4), with: .color(Color(sceneHex: 0x3C332E)))
+        w.stroke(S.circle(x, y, 8), with: .color(Color(sceneHex: 0xFFB45C, opacity: 0.55)), lineWidth: 1.2)
+    }
+
+    /// Explosão no ponto do impacto: clarão, bola de fogo, destroços com as cores do
+    /// foguete caindo com gravidade e fumaça se desfazendo. `progress` 0...1.
+    static func drawExplosion(_ w: inout GraphicsContext, progress: Double) {
+        let q = min(max(progress, 0), 1)
+        let c = impactPoint
+
+        // fumaça (por baixo do fogo), cresce devagar e some
+        let smokeOpacity = 0.55 * (1 - q)
+        if smokeOpacity > 0.01 {
+            var smoke = w
+            smoke.opacity *= smokeOpacity
+            smoke.addFilter(.blur(radius: 2))
+            let offsets: [(Double, Double, Double)] = [(-16, -6, 0.5), (14, -10, 0.45), (0, 12, 0.55), (-10, 16, 0.4), (18, 8, 0.42)]
+            for (i, o) in offsets.enumerated() {
+                let grow = 0.6 + 1.1 * SceneCurve.easeOut.value(q)
+                let drift = -18 * q
+                smoke.fill(
+                    S.blobPath(at: c.x + o.0 * grow, c.y + o.1 * grow + drift, scale: o.2 * grow),
+                    with: .color(Color(sceneHex: i % 2 == 0 ? 0x7A7F8A : 0x5F646E))
+                )
+            }
+        }
+
+        // bola de fogo
+        let fire = SceneCurve.easeOut.value(min(q / 0.55, 1))
+        let fireOpacity = max(0, 1 - q / 0.7)
+        if fireOpacity > 0.01 {
+            var f = w
+            f.opacity *= fireOpacity
+            f.fill(S.circle(c.x, c.y, 10 + 34 * fire), with: S.radial([
+                .init(color: Color(sceneHex: 0xFFF3CF), location: 0),
+                .init(color: Color(sceneHex: 0xFFC25A), location: 0.35),
+                .init(color: Color(sceneHex: 0xF0702E), location: 0.75),
+                .init(color: Color(sceneHex: 0xC4422A, opacity: 0), location: 1),
+            ], center: c, radius: 10 + 34 * fire))
+        }
+
+        // clarão rápido
+        let flash = max(0, 1 - q / 0.25)
+        if flash > 0.01 {
+            var fl = w
+            fl.blendMode = .screen
+            fl.opacity *= flash
+            fl.addFilter(.blur(radius: 6))
+            fl.fill(S.circle(c.x, c.y, 26 + 60 * q), with: .color(Color(sceneHex: 0xFFE8B0)))
+        }
+
+        // destroços: pedaços brancos e vermelhos do foguete voando com gravidade
+        let debrisOpacity = max(0, 1 - q)
+        if debrisOpacity > 0.01 {
+            var d = w
+            d.opacity *= debrisOpacity
+            for i in 0..<12 {
+                let angle = Double(i) / 12 * 2 * .pi + 0.3 * sin(Double(i) * 1.7)
+                let speed = 70 + 45 * (0.5 + 0.5 * sin(Double(i) * 2.3))
+                let dist = speed * SceneCurve.easeOut.value(q)
+                let px = c.x + cos(angle) * dist
+                let py = c.y + sin(angle) * dist + 60 * q * q
+                var piece = d
+                piece.translateBy(x: px, y: py)
+                piece.rotate(by: .radians(angle + q * 6))
+                let color: Color = i % 3 == 0 ? RocketArt.red0 : (i % 3 == 1 ? Color(sceneHex: 0xF3EEE4) : Color(sceneHex: 0x9CA2AA))
+                piece.fill(S.rrect(-2.5, -1.5, 5, 3, 0.8), with: .color(color))
+            }
+        }
     }
 
     // MARK: Céu
@@ -822,12 +1027,13 @@ enum LaunchPainter {
                     col.fill(S.blobPath(at: b.0, b.1, scale: b.2), with: .color(color))
                 }
             }
-            // máscara presa ao foguete: só abaixo do bocal (660→684 no foguete)
+            // máscara presa ao foguete: só abaixo do bocal (660→684 no desenho do
+            // foguete, convertidos pra escala menor dele)
             layer.blendMode = .destinationIn
             layer.fill(S.rect(-200, -3000, 790, 6000), with: .linearGradient(
                 Gradient(colors: [Color.black.opacity(0), Color.black]),
-                startPoint: S.pt(0, 660 + rocketLift),
-                endPoint: S.pt(0, 684 + rocketLift)
+                startPoint: S.pt(0, RocketArt.scaledPoint(195, 660).y + rocketLift),
+                endPoint: S.pt(0, RocketArt.scaledPoint(195, 684).y + rocketLift)
             ))
         }
     }
@@ -844,6 +1050,7 @@ enum LaunchPainter {
         var c = world
         c.clip(to: aboveGround.applying(CGAffineTransform(translationX: 0, y: groundY)))
         c.translateBy(x: 0, y: rocketLift)
+        RocketArt.applyScale(&c)
         c.opacity *= opacity
         c.translateBy(x: 195, y: 672)
         c.scaleBy(x: 0.8 + 0.2 * e, y: 0.6 + 0.4 * e)
@@ -944,7 +1151,8 @@ enum LandingPainter {
         drawSky(&ctx)
 
         var world = ctx
-        world.translateBy(x: 0, y: -164)
+        // mesma câmera da decolagem: sobe o necessário pro foguete menor ficar no centro
+        world.translateBy(x: 0, y: -164 - RocketArt.centerCompensation)
         let moonY = moonOffset(t)
 
         var moon = world
@@ -957,6 +1165,7 @@ enum LandingPainter {
         if off < 0.999 {
             var flame = world
             flame.clip(to: aboveMoon.applying(CGAffineTransform(translationX: 0, y: moonY)))
+            RocketArt.applyScale(&flame)
             flame.opacity *= 1 - off
             flame.translateBy(x: 195, y: 672)
             flame.scaleBy(x: 1 - 0.4 * off, y: 1 - 0.85 * off)
@@ -966,13 +1175,16 @@ enum LandingPainter {
             exhaust.opacity *= 1 - SceneTime.progress(t, delay: 2.5, duration: 0.5)
             RocketArt.drawExhaust(&exhaust, clock: clock, count: 3)
         }
+        // foguete, porta e rampa na escala menor do foguete (base das barbatanas no chão)
+        var ship = world
+        RocketArt.applyScale(&ship)
         let glowOff = SceneCurve.easeIn.value(SceneTime.progress(t, delay: 3.3, duration: 0.8))
-        RocketArt.drawGlow(&world, opacity: 0.75 * (1 - glowOff), scale: 1)
+        RocketArt.drawGlow(&ship, opacity: 0.75 * (1 - glowOff), scale: 1)
 
         let door = SceneCurve.easeInOut.value(SceneTime.progress(t, delay: 4.0, duration: 0.5))
-        RocketArt.drawRocket(&world, doorOpen: door)
+        RocketArt.drawRocket(&ship, doorOpen: door)
 
-        drawRamp(&world, t: t)
+        drawRamp(&ship, t: t)
         drawFootprints(&world, t: t)
         drawFlag(&world, t: t, clock: clock, days: days)
         drawAstronaut(&world, t: t)
@@ -1202,7 +1414,9 @@ enum LandingPainter {
     }
 
     static func drawFootprints(_ w: inout GraphicsContext, t: Double) {
-        let prints: [(Double, Double, Double)] = [(258, 696, 6.4), (268, 697.5, 6.65), (278, 698, 6.9), (287, 699, 7.15)]
+        // logo atrás de onde o astronauta está no instante de cada pegada (ver trajeto
+        // em drawAstronaut — no chão ele vai do pé da rampa menor até perto da bandeira)
+        let prints: [(Double, Double, Double)] = [(238, 694.6, 6.4), (254, 696, 6.65), (270, 697.3, 6.9), (286, 698.6, 7.15)]
         for fp in prints {
             let o = 0.55 * SceneCurve.easeOut.value(SceneTime.progress(t, delay: fp.2, duration: 0.3))
             guard o > 0.001 else { continue }
@@ -1252,11 +1466,16 @@ enum LandingPainter {
         let appear = SceneCurve.easeOut.value(SceneTime.progress(t, delay: 4.4, duration: 0.4))
         guard appear > 0.001 else { return }
 
-        // trajeto: porta → topo da rampa → chão → perto da bandeira
+        // trajeto: porta → topo da rampa → pé da rampa → perto da bandeira. Porta e rampa
+        // vêm do desenho original convertido pra escala menor do foguete; o trecho final,
+        // no chão, continua indo até a bandeira (que não mudou de lugar nem de tamanho).
         let pathP = SceneTime.progress(t, delay: 4.4, duration: 3)
         let offsets = [0, 0.13, 0.27, 0.6, 0.93, 1]
-        let x = SceneTime.sample(offsets, [195, 195, 213, 248, 292, 292], pathP, .linear)
-        let y = SceneTime.sample(offsets, [626, 626, 627, 695, 699, 699], pathP, .linear)
+        let doorPoint = RocketArt.scaledPoint(195, 626)
+        let rampTop = RocketArt.scaledPoint(213, 627)
+        let rampFoot = RocketArt.scaledPoint(248, 695)
+        let x = SceneTime.sample(offsets, [Double(doorPoint.x), Double(doorPoint.x), Double(rampTop.x), Double(rampFoot.x), 292, 292], pathP, .linear)
+        let y = SceneTime.sample(offsets, [Double(doorPoint.y), Double(doorPoint.y), Double(rampTop.y), Double(rampFoot.y), 699, 699], pathP, .linear)
 
         // quique da gravidade baixa + pernas alternando, enquanto caminha
         let walking = t >= 4.8 && t < 7.3
@@ -1276,7 +1495,8 @@ enum LandingPainter {
         var c = w
         c.translateBy(x: x, y: y)
         c.opacity *= appear
-        let s = 0.7 + 0.3 * appear
+        // no tamanho do foguete menor (senão não passaria pela porta)
+        let s = RocketArt.scale * (0.7 + 0.3 * appear)
         c.scaleBy(x: s, y: s)
         c.translateBy(x: 0, y: bob)
 
