@@ -142,6 +142,8 @@ struct RoutineEditView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.isNightModeArmed) private var isNightModeArmed
     @State private var routine: SleepRoutine
+    /// Grupos de som abertos — todos começam recolhidos.
+    @State private var expandedSoundCategories: Set<AlarmSoundOption.Category> = []
     var isNew: Bool = false
 
     private var theme: ModeTheme { .current(armed: isNightModeArmed) }
@@ -235,30 +237,22 @@ struct RoutineEditView: View {
                             .padding(.vertical, 9)
                         }
 
-                        // 21 sons em grade agrupada por categoria (antes: 5 ícones numa
-                        // fileira). Tocar num som escolhe E toca a prévia na hora — com
-                        // tanta opção, ouvir enquanto navega é o jeito natural de escolher.
+                        // 21 sons agrupados por categoria, cada grupo RECOLHIDO por padrão
+                        // (pedido do usuário: a grade aberta ocupava espaço demais). O
+                        // cabeçalho do grupo mostra quantos sons tem e, se for o grupo do
+                        // som escolhido, o nome dele. Tocar num som escolhe E toca a prévia.
                         ThemedCard(title: "Som do despertador", theme: theme) {
-                            VStack(alignment: .leading, spacing: 14) {
+                            VStack(alignment: .leading, spacing: 6) {
                                 Text(routine.soundOption.displayName)
                                     .font(.luminaria(.subheadline, weight: .bold))
                                     .foregroundStyle(theme.ink)
-                                Text("Toque num som pra ouvir e escolher.")
+                                Text("Abra um grupo e toque num som pra ouvir e escolher.")
                                     .font(.luminaria(.caption))
                                     .foregroundStyle(theme.inkMuted)
+                                    .padding(.bottom, 4)
 
                                 ForEach(AlarmSoundOption.Category.allCases) { category in
-                                    VStack(alignment: .leading, spacing: 8) {
-                                        Text(category.rawValue.uppercased())
-                                            .font(.luminaria(.caption2, weight: .bold))
-                                            .tracking(0.8)
-                                            .foregroundStyle(theme.inkMuted)
-                                        LazyVGrid(columns: soundGridColumns, spacing: 10) {
-                                            ForEach(AlarmSoundOption.allCases.filter { $0.category == category }) { option in
-                                                soundSwatch(for: option)
-                                            }
-                                        }
-                                    }
+                                    soundCategorySection(category)
                                 }
                             }
                             .padding(10)
@@ -381,6 +375,58 @@ struct RoutineEditView: View {
             + routine.appSelection.categoryTokens.count
             + routine.appSelection.webDomainTokens.count
         return count == 0 ? "Nenhum app escolhido" : "\(count) selecionado\(count == 1 ? "" : "s")"
+    }
+
+    private func soundCategorySection(_ category: AlarmSoundOption.Category) -> some View {
+        let options = AlarmSoundOption.allCases.filter { $0.category == category }
+        let isExpanded = expandedSoundCategories.contains(category)
+        let containsSelection = routine.soundOption.category == category
+        return VStack(alignment: .leading, spacing: 8) {
+            Button {
+                withAnimation(.easeInOut(duration: 0.25)) {
+                    if isExpanded {
+                        expandedSoundCategories.remove(category)
+                    } else {
+                        expandedSoundCategories.insert(category)
+                    }
+                }
+            } label: {
+                HStack(spacing: 8) {
+                    Text(category.rawValue)
+                        .font(.luminaria(.subheadline, weight: .semibold))
+                        .foregroundStyle(theme.ink)
+                    if containsSelection && !isExpanded {
+                        Text("· \(routine.soundOption.displayName)")
+                            .font(.luminaria(.caption, weight: .medium))
+                            .foregroundStyle(theme.accent)
+                            .lineLimit(1)
+                    }
+                    Spacer(minLength: 8)
+                    Text("\(options.count)")
+                        .font(.luminaria(.caption))
+                        .foregroundStyle(theme.inkMuted)
+                    Image(systemName: "chevron.right")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(theme.inkMuted)
+                        .rotationEffect(.degrees(isExpanded ? 90 : 0))
+                }
+                .padding(.vertical, 10)
+                .padding(.horizontal, 4)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityHint(isExpanded ? "Recolher" : "Mostrar sons")
+
+            if isExpanded {
+                LazyVGrid(columns: soundGridColumns, spacing: 10) {
+                    ForEach(options) { option in
+                        soundSwatch(for: option)
+                    }
+                }
+                .padding(.bottom, 6)
+                .transition(.opacity)
+            }
+        }
     }
 
     private var soundGridColumns: [GridItem] {

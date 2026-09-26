@@ -312,7 +312,8 @@ depende de CI num runner macOS na nuvem (GitHub Actions) e de sideload via AltSt
   Descartados na análise: dois quase só silêncio, e um "Robin's song" que era música
   gravada em cilindro de fonógrafo, não pássaro. `oceanWaves`/`rain`/`birds` mantiveram o
   rawValue e só apontam pras gravações equivalentes, então rotinas salvas migram sozinhas.
-  A escolha em `RoutineEditView` virou grade por categoria (3 colunas, ícone + nome);
+  A escolha em `RoutineEditView` virou grade por categoria (3 colunas, ícone + nome), com
+  cada grupo recolhido por padrão (`expandedSoundCategories`, pedido do usuário);
   tocar escolhe e toca a prévia (`AlarmManager.stopPreview()` ao sair da tela).
   Continuam sintetizados: `alarm_alvorada.wav` (Alvorada), `alarm_tone.wav` (Sirene
   clássica) e `silence_loop.wav`, por `scripts/generate_alarm_sounds.ps1` (os geradores de
