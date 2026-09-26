@@ -121,9 +121,11 @@ struct LuminariaWidgetView: View {
         ZStack {
             AccessoryWidgetBackground()
                 .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            // margem pequena: o iOS já recua o conteúdo do widget por conta própria
+            // (com 10pt o título cortava — "2 noites segui…" no teste no iPhone)
             rectangularContent
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 4)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
         .widgetURL(Self.openURL)
@@ -131,12 +133,13 @@ struct LuminariaWidgetView: View {
 
     private var rectangularContent: some View {
         VStack(alignment: .leading, spacing: 3) {
-            Label {
-                Text(rectangularTitle)
-                    .font(.system(size: 13, weight: .bold))
-                    .lineLimit(1)
-            } icon: {
+            HStack(spacing: 4) {
                 Image(systemName: isSessionActive ? "moon.stars.fill" : "flame.fill")
+                    .font(.system(size: 12, weight: .semibold))
+                Text(rectangularTitle)
+                    .font(.system(size: 14, weight: .bold))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
             }
             Gauge(value: PlanetMilestones.progressToNext(streak: entry.streak)) {
                 EmptyView()
