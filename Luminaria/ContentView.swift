@@ -632,6 +632,20 @@ struct SettingsView: View {
                             }
                         }
 
+                        ThemedCard(title: "Amigos", theme: theme) {
+                            NavigationLink {
+                                FriendsView()
+                            } label: {
+                                ThemedRow(
+                                    theme: theme,
+                                    title: "Amigos e ranking",
+                                    subtitle: "Quem fica mais noites longe do celular",
+                                    leading: { IconBadge(systemName: "person.2.fill", theme: theme) },
+                                    accessory: { chevron }
+                                )
+                            }
+                        }
+
                         ThemedCard(title: "Ajuda", theme: theme) {
                             Button {
                                 showHelp = true

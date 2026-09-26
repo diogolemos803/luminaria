@@ -2,49 +2,10 @@ import Foundation
 
 // MARK: - Amigos
 
-/// Modelo de dados pra lista de amigos — item 2a do terreno social/gamificação.
-///
-/// **Não existe backend nem autenticação no app hoje** (toda a persistência é
-/// `UserDefaults` local + `NSUbiquitousKeyValueStore`, que é privado por conta iCloud,
-/// não compartilhável entre pessoas). Uma feature de amigos de verdade precisa de:
-/// 1. Uma identidade real de usuário (Sign in with Apple é o caminho de menor fricção).
-/// 2. Um backend pro grafo social — CloudKit (banco público/compartilhado via
-///    `CKShare`, grátis dentro de limites generosos, sem servidor próprio) ou um
-///    backend dedicado (Firebase/Supabase/API própria). CloudKit é a recomendação,
-///    dado que o projeto já não tem nenhuma infra paga até agora.
-///
-/// Este arquivo só define a FORMA dos dados — nenhuma implementação de rede.
-struct Friend: Identifiable, Codable, Equatable {
-    /// ID estável vindo de uma identidade real (registro CloudKit, Sign in with
-    /// Apple, etc.) — só um placeholder de tipo por enquanto, o formato final
-    /// depende de qual backend for escolhido.
-    var id: String
-    var displayName: String
-    var connectedAt: Date
-}
-
-enum FriendInviteStatus: String, Codable {
-    case pending, accepted, declined
-}
-
-struct FriendInvite: Identifiable, Codable, Equatable {
-    var id: UUID = UUID()
-    var fromDisplayName: String
-    /// E-mail, número ou identificador de convite — formato final depende do backend.
-    var toIdentifier: String
-    var status: FriendInviteStatus
-    var createdAt: Date
-}
-
-/// Qualquer fonte de dados de amigos (local/mock hoje, CloudKit ou backend próprio
-/// depois) implementa isso — a UI programa contra o protocolo, não contra a
-/// implementação, então trocar de local pra CloudKit não deveria exigir tocar nas
-/// telas que já existirem quando isso for construído de verdade.
-protocol FriendsRepository {
-    func fetchFriends() async throws -> [Friend]
-    func sendInvite(to identifier: String) async throws -> FriendInvite
-    func respondToInvite(_ invite: FriendInvite, accept: Bool) async throws
-}
+// Amigos e ranking foram implementados de verdade em `FriendsStore.swift` (CloudKit,
+// banco público, amizade por código sem aceite) e `FriendsView.swift`. Os modelos
+// provisórios que ficavam aqui (`Friend`, `FriendInvite`, `FriendsRepository`) saíram —
+// nunca foram usados por nenhuma tela.
 
 // MARK: - Ranking de detox de tela
 

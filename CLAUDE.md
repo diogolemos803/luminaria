@@ -299,11 +299,25 @@ depende de CI num runner macOS na nuvem (GitHub Actions) e de sideload via AltSt
   entrada + decolagem roda de novo com o céu já no lugar (`Frame.skyInPlace`) — a Terra
   sobe com um foguete novo na plataforma e ele decola. Não validado visualmente num device ainda (sem Mac/simulador aqui)
   — só compilação no CI.
-- `Luminaria/SocialModels.swift` (novo, terreno pro item "amigos" e "ranking de
-  detox" — só modelos de dados, sem UI final nem rede) — `Friend`/`FriendInvite`/
-  `FriendInviteStatus` (`Codable` puro) e `protocol FriendsRepository` (qualquer
-  fonte de dados — local, CloudKit, backend próprio — implementa isso depois, a UI
-  programa contra o protocolo). `enum DetoxStats` com `longestCleanDayStreak(in:)`
+- `Luminaria/FriendsStore.swift` / `FriendsView.swift` — **amigos e ranking de detox
+  (2026-09-26)**, sobre o **banco público do CloudKit** (container
+  `iCloud.com.luminaria.app`, identidade = conta iCloud do iPhone, sem login extra).
+  Decisões do usuário: **amizade por código, sem aceite** (cada perfil tem um código de 6
+  caracteres sem letras ambíguas; adicionar = digitar o código; a lista de amigos é só
+  local, "quem eu acompanho") e **ranking pela sequência atual de noites limpas**
+  (`DetoxStats.currentCleanDayStreak`), recorde como desempate. Registro `Profile`
+  (recordName `profile_<userRecordID>`, estável entre reinstalações): `displayName`,
+  `friendCode` (único campo consultável), `currentStreak`, `longestStreak`,
+  `totalCleanNights`, `lastCleanNight`, `updatedAt`. `FriendProfile.effectiveStreak()`
+  zera a sequência de quem não tem noite limpa desde anteontem (o número publicado só
+  atualiza quando a pessoa usa o app). Perfil republicado ao abrir a tela e a cada noite
+  registrada (`SleepReportStore.recordSession` → `publishMyStatsQuietly`). Convite é
+  texto com o código (`ShareLink`) — link clicável exigiria domínio próprio, igual ao
+  NFC em segundo plano. Aberta pelo card "Amigos" em `SettingsView`. Ver pendência
+  "Amigos (CloudKit)" abaixo pros passos fora do código.
+- `Luminaria/SocialModels.swift` — `enum DetoxStats` (os modelos provisórios
+  `Friend`/`FriendInvite`/`FriendsRepository` saíram quando amigos virou de verdade,
+  ver `FriendsStore.swift`). `enum DetoxStats` com `longestCleanDayStreak(in:)`
   (recorde histórico), `longestUninterruptedStreak(in:)` e `currentCleanDayStreak
   (in:asOf:)` (sequência ATUAL, contando pra trás a partir de hoje — usada por
   `GrowthDestinations` em `GrowthEngine.swift` pra decidir qual planeta está
@@ -507,7 +521,7 @@ Fluxo usado pra testar de verdade, todo do Windows:
 
 - **`Luminaria.xcodeproj/project.pbxproj` foi escrito à mão**, linha por linha — não existe
   Xcode/macOS neste ambiente de desenvolvimento (Windows). IDs de objeto seguem o padrão
-  `AAAAAAAAAAAAAAAAAAAAAA` + 2 dígitos hex incrementais (maior em uso: `8A`); qualquer
+  `AAAAAAAAAAAAAAAAAAAAAA` + 2 dígitos hex incrementais (maior em uso: `8E`); qualquer
   novo arquivo precisa de entradas em `PBXBuildFile`, `PBXFileReference`, no grupo, e na
   build phase certa (`Sources` pra `.swift`, `Resources` pra assets/sons). Sempre
   verificar balanço de chaves/parênteses e contagem de referências de cada ID novo
@@ -1126,6 +1140,29 @@ Arquitetura acima pro porquê da decisão de usar link em vez de botão interati
 4. Teste real só depois disso: adicionar o widget na Tela Bloqueada manualmente (passo
    único, como o Atalho), confirmar que mostra o horário certo e que tocar nele abre o
    app direto na tela de "Parar" com o alarme tocando — mesmo com um Foco ativo.
+
+## ⚠️ Pendência de Amigos (CloudKit) — passos fora do código (não esquecer)
+
+`Luminaria.entitlements` agora declara `com.apple.developer.icloud-services` (CloudKit) e
+`com.apple.developer.icloud-container-identifiers` (`iCloud.com.luminaria.app`). **Até
+os passos 1–2 serem feitos, o build assinado do Codemagic falha** (perfil sem a
+capability); o `build.yml` do GitHub compila sem assinar e não é afetado.
+1. developer.apple.com → Identifiers → aba "iCloud Containers" → criar
+   `iCloud.com.luminaria.app`. Depois, no App ID `com.luminaria.app`, marcar **iCloud**
+   com **CloudKit** e associar esse container (aproveitar pra conferir "Key-value storage"
+   também — ver pendência do backup abaixo).
+2. Regenerar o provisioning profile "App Store" do app e subir de novo no Codemagic
+   (mesmo passo já feito pra Family Controls).
+3. icloud.developer.apple.com (CloudKit Console) → container → ambiente **Development** →
+   Schema → Record Types → criar `Profile` com os campos: `displayName` (String),
+   `friendCode` (String), `currentStreak` (Int64), `longestStreak` (Int64),
+   `totalCleanNights` (Int64), `lastCleanNight` (Date/Time), `updatedAt` (Date/Time).
+   Em Indexes, adicionar `friendCode` como **Queryable** (é o que permite achar amigo
+   pelo código). Depois **Deploy Schema Changes** pra Production — builds do TestFlight
+   usam produção, que NÃO cria tipos de registro sozinha (em desenvolvimento o CloudKit
+   cria na primeira gravação; em produção a gravação falharia).
+4. Teste real: dois iPhones (ou duas contas iCloud) com o build novo — cada um abre
+   Menu → Amigos, define apelido, um adiciona o código do outro, conferir o ranking.
 
 ## ⚠️ Pendência do backup no iCloud (não esquecer)
 

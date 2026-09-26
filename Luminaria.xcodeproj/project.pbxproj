@@ -54,6 +54,8 @@
 		AAAAAAAAAAAAAAAAAAAAAA5C /* GrowthEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA5B /* GrowthEngine.swift */; };
 		AAAAAAAAAAAAAAAAAAAAAA60 /* RocketScenes.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA5F /* RocketScenes.swift */; };
 		AAAAAAAAAAAAAAAAAAAAAA62 /* SystemAlarm.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA61 /* SystemAlarm.swift */; };
+		AAAAAAAAAAAAAAAAAAAAAA8C /* FriendsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA8B /* FriendsStore.swift */; };
+		AAAAAAAAAAAAAAAAAAAAAA8E /* FriendsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA8D /* FriendsView.swift */; };
 		AAAAAAAAAAAAAAAAAAAAAA5E /* SocialModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA5D /* SocialModels.swift */; };
 /* End PBXBuildFile section */
 
@@ -133,6 +135,8 @@
 		AAAAAAAAAAAAAAAAAAAAAA5B /* GrowthEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrowthEngine.swift; sourceTree = "<group>"; };
 		AAAAAAAAAAAAAAAAAAAAAA5F /* RocketScenes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RocketScenes.swift; sourceTree = "<group>"; };
 		AAAAAAAAAAAAAAAAAAAAAA61 /* SystemAlarm.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemAlarm.swift; sourceTree = "<group>"; };
+		AAAAAAAAAAAAAAAAAAAAAA8B /* FriendsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendsStore.swift; sourceTree = "<group>"; };
+		AAAAAAAAAAAAAAAAAAAAAA8D /* FriendsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendsView.swift; sourceTree = "<group>"; };
 		AAAAAAAAAAAAAAAAAAAAAA5D /* SocialModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SocialModels.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -196,6 +200,8 @@
 				AAAAAAAAAAAAAAAAAAAAAA5B /* GrowthEngine.swift */,
 				AAAAAAAAAAAAAAAAAAAAAA5F /* RocketScenes.swift */,
 				AAAAAAAAAAAAAAAAAAAAAA61 /* SystemAlarm.swift */,
+				AAAAAAAAAAAAAAAAAAAAAA8B /* FriendsStore.swift */,
+				AAAAAAAAAAAAAAAAAAAAAA8D /* FriendsView.swift */,
 				AAAAAAAAAAAAAAAAAAAAAA5D /* SocialModels.swift */,
 				AAAAAAAAAAAAAAAAAAAAAA1D /* Assets.xcassets */,
 				AAAAAAAAAAAAAAAAAAAAAA21 /* silence_loop.wav */,
@@ -385,6 +391,8 @@
 				AAAAAAAAAAAAAAAAAAAAAA5C /* GrowthEngine.swift in Sources */,
 				AAAAAAAAAAAAAAAAAAAAAA60 /* RocketScenes.swift in Sources */,
 				AAAAAAAAAAAAAAAAAAAAAA62 /* SystemAlarm.swift in Sources */,
+				AAAAAAAAAAAAAAAAAAAAAA8C /* FriendsStore.swift in Sources */,
+				AAAAAAAAAAAAAAAAAAAAAA8E /* FriendsView.swift in Sources */,
 				AAAAAAAAAAAAAAAAAAAAAA5E /* SocialModels.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
