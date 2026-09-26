@@ -149,7 +149,7 @@ struct LuminariaWidgetView: View {
                 .font(.system(size: 11, weight: .semibold))
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
-                .minimumScaleFactor(0.85)
+                .minimumScaleFactor(0.75)
         }
     }
 
@@ -196,7 +196,8 @@ struct LuminariaWidgetView: View {
         }
         let missing = next.requiredStreakDays - entry.streak
         if let alarm = alarmTimeText {
-            return "faltam \(nights(missing)) · acorda \(alarm)"
+            // curto: "faltam 5 noites · acorda 20:09" cortava no teste no iPhone
+            return "faltam \(missing) · acorda \(alarm)"
         }
         return "\(next.name) em \(missing) · recorde \(entry.longestStreak)"
     }
