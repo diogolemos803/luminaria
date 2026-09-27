@@ -1,6 +1,7 @@
 import CloudKit
 import Combine
 import Foundation
+import WidgetKit
 
 /// Amigos e ranking de detox (pedido do usuário, 2026-09-26), sobre o **banco público do
 /// CloudKit** — sem servidor próprio, sem login extra: a identidade é a conta iCloud do
@@ -98,18 +99,24 @@ final class FriendsStore: ObservableObject {
             }
             try await publishMyProfile()
             try await fetchFriends()
+            publishRankingToWidget()
             status = .ready
         } catch {
             status = .failed(Self.describe(error))
         }
     }
 
-    /// Chamado quando uma noite termina (`SleepReportStore.recordSession`) — mantém os
-    /// números do meu perfil em dia pros amigos. Silencioso: falha aqui não incomoda
-    /// ninguém, a próxima abertura da tela de amigos tenta de novo.
+    /// Chamado ao abrir o app e quando uma noite termina (`SleepReportStore.recordSession`)
+    /// — mantém os números do meu perfil em dia pros amigos e o ranking do widget da tela
+    /// bloqueada. Busca os amigos também: sem isso, logo depois de abrir o app a lista em
+    /// memória está vazia e o widget diria que eu sou o 1º. Silencioso: falha aqui não
+    /// incomoda ninguém, a próxima abertura tenta de novo.
     func publishMyStatsQuietly() async {
         guard (try? await container.accountStatus()) == .available else { return }
         try? await publishMyProfile()
+        if (try? await fetchFriends()) != nil {
+            publishRankingToWidget()
+        }
     }
 
     func setDisplayName(_ name: String) async {
@@ -149,6 +156,7 @@ final class FriendsStore: ObservableObject {
         friendIDs.append(profile.id)
         persistFriendIDs()
         friends.append(profile)
+        publishRankingToWidget()
         return profile
     }
 
@@ -156,6 +164,36 @@ final class FriendsStore: ObservableObject {
         friendIDs.removeAll { $0 == id }
         friends.removeAll { $0.id == id }
         persistFriendIDs()
+        publishRankingToWidget()
+    }
+
+    /// Minha posição, quem está logo à frente e logo atrás — pro retângulo da tela
+    /// bloqueada mostrar à noite (ver `SharedWidgetData.rank*`). Sem amigos, posição 0.
+    private func publishRankingToWidget() {
+        guard let defaults = UserDefaults(suiteName: SharedWidgetData.suiteName) else { return }
+        let list = ranking
+        let aheadKeys = [SharedWidgetData.rankAheadNameKey, SharedWidgetData.rankAheadStreakKey]
+        let behindKeys = [SharedWidgetData.rankBehindNameKey, SharedWidgetData.rankBehindStreakKey]
+        if let me, list.count > 1, let index = list.firstIndex(where: { $0.id == me.id }) {
+            defaults.set(index + 1, forKey: SharedWidgetData.rankPositionKey)
+            defaults.set(list.count, forKey: SharedWidgetData.rankTotalKey)
+            if index > 0 {
+                defaults.set(list[index - 1].displayName, forKey: SharedWidgetData.rankAheadNameKey)
+                defaults.set(list[index - 1].effectiveStreak(), forKey: SharedWidgetData.rankAheadStreakKey)
+            } else {
+                aheadKeys.forEach { defaults.removeObject(forKey: $0) }
+            }
+            if index + 1 < list.count {
+                defaults.set(list[index + 1].displayName, forKey: SharedWidgetData.rankBehindNameKey)
+                defaults.set(list[index + 1].effectiveStreak(), forKey: SharedWidgetData.rankBehindStreakKey)
+            } else {
+                behindKeys.forEach { defaults.removeObject(forKey: $0) }
+            }
+        } else {
+            defaults.set(0, forKey: SharedWidgetData.rankPositionKey)
+            (aheadKeys + behindKeys).forEach { defaults.removeObject(forKey: $0) }
+        }
+        WidgetCenter.shared.reloadTimelines(ofKind: SharedWidgetData.widgetKind)
     }
 
     // MARK: - CloudKit

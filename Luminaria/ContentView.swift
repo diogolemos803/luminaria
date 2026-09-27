@@ -84,6 +84,8 @@ struct ContentView: View {
                 // despertador tocar no silencioso, com Foco e com o app fechado.
                 alarmManager.requestSystemAlarmPermission()
                 WidgetBridge.publishStats()
+                // perfil e ranking dos amigos em dia pro widget da tela bloqueada
+                Task { await FriendsStore.shared.publishMyStatsQuietly() }
                 screenTimeManager.refreshAuthorizationStatus()
                 // Cobre o app sendo aberto do zero (cold launch): onChange(of: scenePhase)
                 // só reage a mudanças, não à primeira transição pra .active.

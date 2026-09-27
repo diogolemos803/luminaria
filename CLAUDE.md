@@ -364,10 +364,24 @@ depende de CI num runner macOS na nuvem (GitHub Actions) e de sideload via AltSt
   app e a cada noite registrada; `startNightActivity` no reconhecimento da luminária,
   `markImpact` no meteoro via `registerTouchEvent`, `endNightActivity` em
   `removeShield`); `LuminariaWidget/AlarmWidget.swift` (mesmo `kind` do widget antigo,
-  agora `.accessoryCircular`/`.accessoryRectangular`/`.accessoryInline` — sequência,
-  anel/barra até o próximo planeta, despertador; timeline com entrada extra à
-  meia-noite porque a sequência pode quebrar sem o app abrir) e
-  `LuminariaWidget/NightLiveActivityWidget.swift` (cartão colorido + Dynamic Island;
+  agora `.accessoryCircular`/`.accessoryRectangular`/`.accessoryInline`; timeline com
+  entrada extra à meia-noite porque a sequência pode quebrar sem o app abrir). **v2
+  (2026-09-27, pedido do usuário — "a informação está meio repetitiva")**: um papel pra
+  cada widget — círculo = sequência + anel até o planeta (único lugar com o número);
+  retângulo = jornada de dia ("Rumo a X · faltam N noites") e **ranking dos amigos à
+  noite** (a jornada já está no cartão ao vivo; sem amigos volta pra jornada); linha =
+  recorde de dia, despertador à noite. O ranking vem de `FriendsStore.
+  publishRankingToWidget()` (posição, quem está logo à frente/atrás, em
+  `SharedWidgetData.rank*`), chamado no refresh da tela Amigos, ao adicionar/remover
+  amigo e em `publishMyStatsQuietly` (que agora também busca os amigos e roda ao abrir
+  o app). Fundo de vidro do sistema (`AccessoryWidgetBackground`) no círculo e no
+  retângulo — sem ele o texto sumia em papéis de parede claros (achado no iPhone) — e
+  margem interna pequena (o iOS já recua o conteúdo). Os tamanhos são fixos pelo iOS: o
+  retângulo já é o maior widget possível na tela bloqueada. E
+  `LuminariaWidget/NightLiveActivityWidget.swift` (cartão colorido + Dynamic Island; v2:
+  rota com Terra 22pt, foguete deitado com chama (`SidewaysRocket`, parado de propósito
+  — ver limite abaixo), barra do sistema esticada 2,4× na vertical (não há altura
+  configurável) e planetas maiores com detalhe (`PlanetGlyph`);
   contagem e barra andam pelo relógio do sistema via `Text(_:style:)`/
   `ProgressView(timerInterval:)`, sem o app rodar). Limites da plataforma: widgets da
   tela bloqueada são desenhados em tom único pelo iOS (só a Atividade ao Vivo tem cor);

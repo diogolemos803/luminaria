@@ -18,6 +18,17 @@ enum SharedWidgetData {
     static let currentStreakKey = "widget.currentStreak"
     static let longestStreakKey = "widget.longestStreak"
     static let lastCleanNightKey = "widget.lastCleanNight"
+
+    /// Ranking dos amigos (escrito por `FriendsStore`) — o retângulo mostra à noite.
+    /// Posição 0 = sem ranking (sem amigos ou ainda não carregado).
+    static let rankPositionKey = "widget.rank.position"
+    static let rankTotalKey = "widget.rank.total"
+    /// Quem está logo à frente (nil se eu sou o 1º).
+    static let rankAheadNameKey = "widget.rank.aheadName"
+    static let rankAheadStreakKey = "widget.rank.aheadStreak"
+    /// Quem está logo atrás (usado quando eu sou o 1º).
+    static let rankBehindNameKey = "widget.rank.behindName"
+    static let rankBehindStreakKey = "widget.rank.behindStreak"
 }
 
 /// Planetas desbloqueados pela sequência de noites limpas (0/7/15/30). Fonte única dos

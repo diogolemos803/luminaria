@@ -38,6 +38,7 @@ struct NightLiveActivityWidget: Widget {
                 if context.state.impactAt == nil {
                     RocketGlyph()
                         .fill(NightPalette.moon, style: FillStyle(eoFill: true))
+                        .rotationEffect(.degrees(90))
                         .frame(width: 13, height: 13)
                 } else {
                     BoomGlyph().frame(width: 13, height: 13)
@@ -51,6 +52,7 @@ struct NightLiveActivityWidget: Widget {
             } minimal: {
                 RocketGlyph()
                     .fill(NightPalette.moon, style: FillStyle(eoFill: true))
+                    .rotationEffect(.degrees(90))
                     .frame(width: 12, height: 12)
             }
             .widgetURL(URL(string: "luminaria://open"))
@@ -160,14 +162,18 @@ private struct NightCountdown: View {
     }
 }
 
-/// Terra ——— barra que enche pelo relógio ——— planeta de destino.
+/// Rota da noite (protótipo v2): Terra · foguete deitado com chama, apontando pro planeta ·
+/// barra que enche pelo relógio · planeta de destino. O foguete fica parado de propósito:
+/// a barra é desenhada pelo iOS e anda sozinha, mas desenhos do app só mudam quando o app
+/// roda — um foguete "andando" ficaria preso no começo enquanto a barra avança.
 private struct NightTrack: View {
     let attributes: NightSessionActivityAttributes
     let state: NightSessionActivityAttributes.ContentState
 
     var body: some View {
-        HStack(spacing: 8) {
-            PlanetGlyph(id: "earth").frame(width: 14, height: 14)
+        HStack(spacing: 6) {
+            PlanetGlyph(id: "earth").frame(width: 22, height: 22)
+            SidewaysRocket(showsFlame: true).frame(width: 27, height: 16)
             ProgressView(timerInterval: travelInterval, countsDown: false) {
                 EmptyView()
             } currentValueLabel: {
@@ -175,7 +181,10 @@ private struct NightTrack: View {
             }
             .progressViewStyle(.linear)
             .tint(state.impactAt == nil ? NightPalette.moon : NightPalette.impact)
-            PlanetGlyph(id: attributes.destinationID).frame(width: 22, height: 14)
+            // barra mais grossa: não existe altura configurável pra essa barra do sistema,
+            // o jeito que funciona é esticar na vertical
+            .scaleEffect(x: 1, y: 2.4, anchor: .center)
+            PlanetGlyph(id: attributes.destinationID).frame(width: 34, height: 22)
         }
     }
 
@@ -187,7 +196,43 @@ private struct NightTrack: View {
     }
 }
 
-/// Planetas desenhados com formas simples (sem imagem), nas cores da cena do app.
+/// Foguete de lado (bico pro planeta) com uma chaminha atrás.
+private struct SidewaysRocket: View {
+    let showsFlame: Bool
+
+    var body: some View {
+        HStack(spacing: -3) {
+            if showsFlame {
+                ZStack {
+                    FlameTail().fill(Color(red: 1, green: 0.71, blue: 0.36).opacity(0.9))
+                    FlameTail().fill(Color(red: 1, green: 0.95, blue: 0.81)).scaleEffect(x: 0.6, y: 0.5, anchor: .trailing)
+                }
+                .frame(width: 10, height: 7)
+            }
+            RocketGlyph()
+                .fill(Color(red: 0.95, green: 0.93, blue: 0.89), style: FillStyle(eoFill: true))
+                .rotationEffect(.degrees(90))
+                .frame(width: 17, height: 17)
+        }
+    }
+}
+
+/// Chama deitada: ponta fina à esquerda, larga encostada no foguete.
+private struct FlameTail: Shape {
+    func path(in rect: CGRect) -> Path {
+        var p = Path()
+        p.move(to: CGPoint(x: rect.minX, y: rect.midY))
+        p.addQuadCurve(to: CGPoint(x: rect.maxX, y: rect.minY), control: CGPoint(x: rect.midX, y: rect.minY + rect.height * 0.1))
+        p.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
+        p.addQuadCurve(to: CGPoint(x: rect.minX, y: rect.midY), control: CGPoint(x: rect.midX, y: rect.maxY - rect.height * 0.1))
+        p.closeSubpath()
+        return p
+    }
+}
+
+/// Planetas desenhados com formas simples (sem imagem), nas cores da cena do app — maiores
+/// e com mais detalhe na v2 (continente na Terra, crateras em Marte, faixas e anel em
+/// Saturno). Corpo sempre com 20pt; Saturno usa a largura extra pro anel.
 private struct PlanetGlyph: View {
     let id: String
 
@@ -195,19 +240,47 @@ private struct PlanetGlyph: View {
         ZStack {
             switch id {
             case "earth":
-                Circle().fill(Color(red: 0.31, green: 0.50, blue: 0.37))
-                Circle().fill(Color(red: 0.16, green: 0.34, blue: 0.56)).scaleEffect(0.5).offset(x: 2, y: -2)
+                Circle().fill(Color(red: 0.25, green: 0.44, blue: 0.31)).frame(width: 20, height: 20)
+                Ellipse().fill(Color(red: 0.16, green: 0.34, blue: 0.56))
+                    .frame(width: 12, height: 8).rotationEffect(.degrees(-20)).offset(x: 2, y: -2)
+                Ellipse().fill(Color(red: 0.16, green: 0.34, blue: 0.56))
+                    .frame(width: 6, height: 4).offset(x: -5, y: 5)
+                Circle().stroke(Color(red: 0.72, green: 0.84, blue: 0.76).opacity(0.5), lineWidth: 1).frame(width: 20, height: 20)
             case "mars":
-                Circle().fill(Color(red: 0.80, green: 0.42, blue: 0.30)).padding(2)
+                Circle().fill(Color(red: 0.80, green: 0.42, blue: 0.30)).frame(width: 20, height: 20)
+                Circle().fill(Color(red: 0.62, green: 0.30, blue: 0.21)).frame(width: 5, height: 5).offset(x: -4, y: -3)
+                Circle().fill(Color(red: 0.62, green: 0.30, blue: 0.21)).frame(width: 3.5, height: 3.5).offset(x: 4, y: 4)
+                Circle().fill(Color(red: 0.62, green: 0.30, blue: 0.21)).frame(width: 2.5, height: 2.5).offset(x: 5, y: -4)
             case "saturn":
-                Circle().fill(Color(red: 0.86, green: 0.72, blue: 0.48)).padding(.vertical, 2.5).padding(.horizontal, 6)
-                Ellipse().stroke(Color(red: 0.88, green: 0.78, blue: 0.56), lineWidth: 1.4).padding(.vertical, 4.5)
+                Ellipse().stroke(Color(red: 0.91, green: 0.83, blue: 0.64), lineWidth: 1.8).frame(width: 33, height: 9)
+                Circle().fill(Color(red: 0.86, green: 0.72, blue: 0.48)).frame(width: 16, height: 16)
+                Rectangle().fill(Color(red: 0.72, green: 0.58, blue: 0.35)).frame(width: 15, height: 1.2).offset(y: -2)
+                Rectangle().fill(Color(red: 0.72, green: 0.58, blue: 0.35)).frame(width: 15, height: 1.2).offset(y: 2)
+                // metade da frente do anel passa por cima do planeta
+                SaturnRingFront().stroke(Color(red: 0.91, green: 0.83, blue: 0.64), lineWidth: 1.8).frame(width: 33, height: 9)
             case "neptune":
-                Circle().fill(NightPalette.moon).padding(2)
-            default:
-                Circle().fill(Color(red: 0.82, green: 0.82, blue: 0.80)).padding(2)
+                Circle().fill(NightPalette.moon).frame(width: 20, height: 20)
+                Capsule().fill(Color(red: 0.72, green: 0.80, blue: 0.91).opacity(0.7)).frame(width: 14, height: 2.5).offset(y: -2)
+            default: // Lua
+                Circle().fill(Color(red: 0.82, green: 0.82, blue: 0.80)).frame(width: 20, height: 20)
+                Circle().fill(Color(red: 0.62, green: 0.63, blue: 0.64)).frame(width: 5, height: 5).offset(x: -4, y: -2)
+                Circle().fill(Color(red: 0.62, green: 0.63, blue: 0.64)).frame(width: 3, height: 3).offset(x: 4, y: 4)
             }
         }
+    }
+}
+
+/// Metade de baixo da elipse do anel (a que fica na frente do planeta).
+private struct SaturnRingFront: Shape {
+    func path(in rect: CGRect) -> Path {
+        var p = Path()
+        p.addArc(center: CGPoint(x: rect.midX, y: rect.midY), radius: rect.width / 2,
+                 startAngle: .degrees(0), endAngle: .degrees(180), clockwise: false)
+        return p.applying(
+            CGAffineTransform(translationX: rect.midX, y: rect.midY)
+                .scaledBy(x: 1, y: rect.height / rect.width)
+                .translatedBy(x: -rect.midX, y: -rect.midY)
+        )
     }
 }
 
@@ -226,7 +299,8 @@ private struct BoomGlyph: View {
 }
 
 /// Foguete do protótipo (caminho SVG 24×24 convertido), com a janela vazada (eoFill).
-private struct RocketGlyph: Shape {
+/// Também usado pelo retângulo da tela bloqueada (`AlarmWidget`), por isso não é privado.
+struct RocketGlyph: Shape {
     func path(in rect: CGRect) -> Path {
         let s = min(rect.width, rect.height) / 24
         let ox = rect.midX - 12 * s
