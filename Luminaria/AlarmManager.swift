@@ -69,6 +69,9 @@ final class AlarmManager: NSObject, ObservableObject {
     /// — é o que impede o esquema antigo de começar a tocar som por cima.
     private var systemAlarmID: UUID?
     private var systemAlarmUpdatesTask: Task<Void, Never>?
+    /// O próprio app está tocando o som do alarme (esquema antigo). Com o AlarmKit — ou
+    /// na tela do pouso reaberta depois — quem toca é o sistema, e o app fica calado.
+    private var isOwnSoundRinging = false
     /// Alarme de sistema que já passou de 12h sem ninguém abrir o app: desarma calado
     /// em vez de mostrar o pouso na noite seguinte.
     private static let staleSystemAlarmInterval: TimeInterval = 12 * 60 * 60
@@ -83,6 +86,9 @@ final class AlarmManager: NSObject, ObservableObject {
     private static let soundKey = "com.luminaria.alarm.sound"
     private static let nextFireKey = "com.luminaria.alarm.nextFire"
     private static let systemAlarmIDKey = "com.luminaria.alarm.systemAlarmID"
+    /// Instante em que o despertador tocou — a noite já acabou (nada armado), mas a tela
+    /// do pouso ainda deve aparecer quando a pessoa abrir o app (até 12h depois).
+    private static let landingPendingKey = "com.luminaria.alarm.landingPending"
     private static let alarmCategoryID = "com.luminaria.alarmCategory"
 
     /// App Group compartilhado com a `LuminariaWidgetExtension` — só pra ela saber o
@@ -164,8 +170,10 @@ final class AlarmManager: NSObject, ObservableObject {
     }
 
     func armAlarm(hour: Int, minute: Int, soundFileName: String) {
-        // Um alarme de sistema de uma leitura anterior da mesma noite não pode sobrar.
-        cancelSystemAlarm()
+        // Nenhum alarme de sistema antigo pode sobrar — cancela TODOS os do app, não só o
+        // último conhecido (achado real: despertador tocando numa noite sem leitura do NFC).
+        cancelAllSystemAlarms()
+        UserDefaults.standard.removeObject(forKey: Self.landingPendingKey)
         scheduledHour = hour
         scheduledMinute = minute
         scheduledSoundFileName = soundFileName
@@ -217,10 +225,11 @@ final class AlarmManager: NSObject, ObservableObject {
         startLegacyAlarm(hour: hour, minute: minute, soundFileName: soundFileName)
     }
 
-    private func cancelSystemAlarm() {
+    private func cancelAllSystemAlarms() {
         if let id = systemAlarmID {
             SystemAlarm.cancel(id: id)
         }
+        SystemAlarm.cancelAll()
         systemAlarmID = nil
     }
 
@@ -257,7 +266,8 @@ final class AlarmManager: NSObject, ObservableObject {
     }
 
     func disarmAlarm() {
-        cancelSystemAlarm()
+        cancelAllSystemAlarms()
+        UserDefaults.standard.removeObject(forKey: Self.landingPendingKey)
         scheduledHour = nil
         scheduledMinute = nil
         scheduledSoundFileName = nil
@@ -344,6 +354,8 @@ final class AlarmManager: NSObject, ObservableObject {
         // Com alarme de sistema, o som é do iOS — nada de loop próprio por cima.
         guard systemAlarmID == nil else { return }
         if isAlarmRinging {
+            // tela do pouso reaberta depois do alarme: nada de som
+            guard isOwnSoundRinging else { return }
             if let alarmPlayer, !alarmPlayer.isPlaying {
                 alarmPlayer.play()
             } else if alarmPlayer == nil, let soundFileName = scheduledSoundFileName {
@@ -414,6 +426,30 @@ final class AlarmManager: NSObject, ObservableObject {
         if systemAlarmID == nil {
             startAlarmPlayer(soundFileName: soundFileName)
         }
+        endNightAfterAlarm()
+    }
+
+    /// Quando o despertador toca, a noite acabou — não espera o "Parar" da tela do pouso
+    /// (achado real: parando pela tela bloqueada, o widget e a tela de dia continuavam
+    /// mostrando o despertador armado). Some de tudo na hora; só fica marcado que o pouso
+    /// ainda deve aparecer quando a pessoa abrir o app.
+    private func endNightAfterAlarm() {
+        nextFireDate = nil
+        scheduledHour = nil
+        scheduledMinute = nil
+        if !isOwnSoundRinging {
+            // com o AlarmKit o timer não tem mais nada pra fazer (no esquema antigo ele
+            // continua, pra retomar o som se uma interrupção o pausar)
+            checkTimer?.invalidate()
+            checkTimer = nil
+        }
+        UNUserNotificationCenter.current()
+            .removePendingNotificationRequests(withIdentifiers: [Self.notificationID, Self.notificationID2])
+        let defaults = UserDefaults.standard
+        defaults.set(false, forKey: Self.armedKey)
+        defaults.removeObject(forKey: Self.systemAlarmIDKey)
+        defaults.set(Date().timeIntervalSince1970, forKey: Self.landingPendingKey)
+        updateWidgetState(isArmed: false, nextFireDate: nil)
     }
 
     private func startAlarmPlayer(soundFileName: String) {
@@ -422,6 +458,7 @@ final class AlarmManager: NSObject, ObservableObject {
         alarmPlayer?.numberOfLoops = -1
         alarmPlayer?.volume = 1.0
         alarmPlayer?.play()
+        isOwnSoundRinging = true
     }
 
     /// Próxima ocorrência de `hour:minute` estritamente depois de `date` — se já passou
@@ -444,6 +481,7 @@ final class AlarmManager: NSObject, ObservableObject {
     private func stopAlarmSound() {
         alarmPlayer?.stop()
         alarmPlayer = nil
+        isOwnSoundRinging = false
     }
 
     private func scheduleBackupNotification(hour: Int, minute: Int, soundFileName: String) {
@@ -516,6 +554,16 @@ final class AlarmManager: NSObject, ObservableObject {
     /// não saberia qual som tocar nem o timer teria o que comparar.
     private func restorePersistedState() {
         let defaults = UserDefaults.standard
+        // Despertador já tocou (noite encerrada) e o app foi reaberto: mostra o pouso,
+        // sem armar nada de novo. Depois de 12h, esquece.
+        if !defaults.bool(forKey: Self.armedKey), let rangAt = defaults.object(forKey: Self.landingPendingKey) as? Double {
+            if Date().timeIntervalSince1970 - rangAt < Self.staleSystemAlarmInterval {
+                isAlarmRinging = true
+            } else {
+                defaults.removeObject(forKey: Self.landingPendingKey)
+            }
+            return
+        }
         guard defaults.bool(forKey: Self.armedKey) else { return }
         guard defaults.object(forKey: Self.hourKey) != nil,
               defaults.object(forKey: Self.minuteKey) != nil,

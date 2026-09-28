@@ -86,7 +86,15 @@ depende de CI num runner macOS na nuvem (GitHub Actions) e de sideload via AltSt
   toca ou é parado pela interface do sistema; sem permissão, iOS < 26 ou se o AlarmKit
   recusar o agendamento, cai no esquema antigo descrito a seguir. Alarme de sistema com
   mais de 12h sem ninguém abrir o app é desarmado calado no relançamento (sem pouso
-  atrasado). Permissão pedida em `ContentView.onAppear` junto com a de notificações. Singleton (`AlarmManager.shared`) que conforma
+  atrasado). Permissão pedida em `ContentView.onAppear` junto com a de notificações. **Desde 2026-09-28** (usuário via o despertador "sempre ativo": aparecendo de
+  dia, tocando numa noite sem NFC e continuando armado depois de tocar): (1) a noite
+  termina NO INSTANTE em que o alarme toca (`endNightAfterAlarm` — limpa horário,
+  estado armado e widget; só grava `landingPendingKey` pra tela do pouso aparecer ao
+  abrir o app nas 12h seguintes, sem som — `isOwnSoundRinging` distingue o som próprio
+  do esquema antigo); (2) armar e desligar cancelam TODOS os alarmes de sistema do app
+  (`SystemAlarm.cancelAll`), não só o último ID conhecido; (3) `ContentView` avisa
+  quando o despertador cai a mais de 14h da leitura — o "tocou sem NFC" era uma rotina
+  às 20:09 lida às 22:37, que armava pro dia seguinte às 8 da noite. Singleton (`AlarmManager.shared`) que conforma
   `UNUserNotificationCenterDelegate`: reage imediatamente à entrega/toque da notificação
   de alarme (em vez de depender só de um `Timer` de 15s, que exige o processo vivo).
   Persiste o estado armado (hora, minuto, som escolhido) em `UserDefaults`, restaurado no

@@ -113,6 +113,20 @@ enum SystemAlarm {
         #endif
     }
 
+    /// Para e remove TODOS os alarmes do app no sistema — rede de segurança pra não sobrar
+    /// alarme de uma noite antiga (ex.: ID perdido entre versões do app).
+    static func cancelAll() {
+        #if canImport(AlarmKit)
+        if #available(iOS 26.0, *) {
+            let manager = AlarmKit.AlarmManager.shared
+            for alarm in (try? manager.alarms) ?? [] {
+                try? manager.stop(id: alarm.id)
+                try? manager.cancel(id: alarm.id)
+            }
+        }
+        #endif
+    }
+
     static func stop(id: UUID) {
         #if canImport(AlarmKit)
         if #available(iOS 26.0, *) {

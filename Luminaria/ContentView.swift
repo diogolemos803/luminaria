@@ -24,6 +24,10 @@ struct ContentView: View {
     // Instante em que a cena de decolagem começa a entrar; `nil` = app reaberto no
     // meio de uma sessão (mostra direto o foguete em voo, sem repetir a entrada).
     @State private var sceneStartDate: Date?
+    /// Aviso quando o despertador da rotina cai muitas horas depois da leitura (achado
+    /// real: rotina às 20:09 lida às 22:37 armava pro dia seguinte às 8 da noite, e o
+    /// alarme parecia tocar "sem ter lido o NFC").
+    @State private var longNightWarning: String?
 
     /// Alterna entre a tela principal nova (SOVEE) e a antiga (Zleepy Lamp) — pedido
     /// explícito do usuário: "crie uma nova, mas deixe no código uma opção de
@@ -122,6 +126,11 @@ struct ContentView: View {
                         screenTimeManager.applyShield(selection: routine.appSelection)
                         // cartão da noite na tela bloqueada (ver WidgetBridge)
                         WidgetBridge.startNightActivity(alarmDate: alarmManager.nextFireDate)
+                        if let fire = alarmManager.nextFireDate, fire.timeIntervalSinceNow > 14 * 3600 {
+                            let hours = Int(fire.timeIntervalSinceNow / 3600)
+                            let time = fire.formatted(date: .omitted, time: .shortened)
+                            longNightWarning = "O despertador da rotina \"\(routine.name)\" está às \(time), daqui a \(hours) horas. Se não for isso, ajuste o horário em Menu → Rotina de sono e leia a luminária de novo."
+                        }
                     }
                     // Sequência visual (relógio próprio, independente da consulta ao
                     // calendário acima): disparada direto aqui — no exato instante da
@@ -185,6 +194,14 @@ struct ContentView: View {
                 // Callback do x-callback-url do Atalhos (luminaria://shortcut-done|shortcut-error).
                 // Nada a fazer além de aceitar a volta ao app; existe só pra não abrir o app
                 // Atalhos por completo ao disparar o Atalho.
+            }
+            .alert("Despertador daqui a muitas horas", isPresented: Binding(
+                get: { longNightWarning != nil },
+                set: { if !$0 { longNightWarning = nil } }
+            )) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(longNightWarning ?? "")
             }
             .sheet(isPresented: $showSettings) {
                 SettingsView(
