@@ -6,7 +6,9 @@ import WidgetKit
 /// cartão colorido na tela bloqueada + Dynamic Island, do reconhecimento da luminária até
 /// o fim da noite. A contagem (`Text(_:style: .relative/.timer)`) e a barra
 /// (`ProgressView(timerInterval:)`) andam pelo relógio do sistema, sem o app rodar. O app
-/// (`WidgetBridge`) inicia, marca o impacto do meteoro e encerra.
+/// (`WidgetBridge`) inicia, marca o impacto do meteoro e encerra. Depois do meteoro o cartão
+/// passa pro estado "em obras" (protótipo `design/meteoro_prototipo.html`): o foguete é
+/// reconstruído até o despertador e a noite não conta pra sequência.
 ///
 /// Limite da plataforma: a barra enche sozinha, mas nenhum desenho próprio (o foguete)
 /// consegue andar junto com ela — por isso a Terra e o planeta ficam nas pontas.
@@ -24,7 +26,7 @@ struct NightLiveActivityWidget: Widget {
                         .padding(.leading, 4)
                 }
                 DynamicIslandExpandedRegion(.trailing) {
-                    NightStreak(streak: context.state.streak)
+                    NightStreak(state: context.state)
                         .padding(.trailing, 4)
                 }
                 DynamicIslandExpandedRegion(.bottom) {
@@ -41,7 +43,7 @@ struct NightLiveActivityWidget: Widget {
                         .rotationEffect(.degrees(90))
                         .frame(width: 13, height: 13)
                 } else {
-                    BoomGlyph().frame(width: 13, height: 13)
+                    BuildGlyph(size: 12)
                 }
             } compactTrailing: {
                 Text(context.attributes.alarmDate, style: .timer)
@@ -50,10 +52,14 @@ struct NightLiveActivityWidget: Widget {
                     .foregroundStyle(NightPalette.moon)
                     .frame(maxWidth: 52)
             } minimal: {
-                RocketGlyph()
-                    .fill(NightPalette.moon, style: FillStyle(eoFill: true))
-                    .rotationEffect(.degrees(90))
-                    .frame(width: 12, height: 12)
+                if context.state.impactAt == nil {
+                    RocketGlyph()
+                        .fill(NightPalette.moon, style: FillStyle(eoFill: true))
+                        .rotationEffect(.degrees(90))
+                        .frame(width: 12, height: 12)
+                } else {
+                    BuildGlyph(size: 11)
+                }
             }
             .widgetURL(URL(string: "luminaria://open"))
             .keylineTint(NightPalette.moon)
@@ -72,7 +78,7 @@ private struct NightLiveActivityCard: View {
             HStack {
                 NightKicker(state: state, compact: false)
                 Spacer(minLength: 8)
-                NightStreak(streak: state.streak)
+                NightStreak(state: state)
             }
             NightCountdown(alarmDate: attributes.alarmDate)
             NightTrack(attributes: attributes, state: state)
@@ -89,7 +95,7 @@ private struct NightLiveActivityCard: View {
 
     private var footerLeft: Text {
         if let impact = state.impactAt {
-            return Text("Foguete novo lançado ") + Text(impact, style: .time)
+            return Text("Em obras desde ") + Text(impact, style: .time)
         }
         return Text("Desde ") + Text(attributes.sessionStart, style: .time) + Text(" sem mexer")
     }
@@ -104,6 +110,8 @@ private enum NightPalette {
     static let cream = Color(red: 0.992, green: 0.973, blue: 0.780)  // SoveeColor.creme
     static let terra = Color(red: 0.859, green: 0.506, blue: 0.286)  // SoveeColor.terracota
     static let impact = Color(red: 1.0, green: 0.725, blue: 0.541)
+    /// Amarelo dos capacetes/guindaste do canteiro de obras.
+    static let build = Color(red: 0.957, green: 0.753, blue: 0.180)
     static let muted = Color(red: 0.60, green: 0.63, blue: 0.68)
 }
 
@@ -119,27 +127,33 @@ private struct NightKicker: View {
                     .frame(width: 14, height: 14)
                 Text("Foguete em voo")
             } else {
-                BoomGlyph().frame(width: 16, height: 16)
-                Text(compact ? "Meteoro!" : "Um meteoro atingiu o foguete")
+                BuildGlyph(size: 13)
+                Text(compact ? "Em obras" : "Foguete em obras")
             }
         }
         .font(.system(size: 13, weight: .bold))
-        .foregroundStyle(state.impactAt == nil ? NightPalette.cream : NightPalette.impact)
+        .foregroundStyle(state.impactAt == nil ? NightPalette.cream : NightPalette.build)
         .lineLimit(1)
     }
 }
 
+/// Sequência de noites limpas — depois do meteoro a noite já não conta, então mostra que
+/// a sequência foi perdida (o número salvo só zera quando a noite termina).
 private struct NightStreak: View {
-    let streak: Int
+    let state: NightSessionActivityAttributes.ContentState
 
     var body: some View {
         Label {
-            Text(streak == 1 ? "1 noite" : "\(streak) noites")
+            if state.impactAt != nil {
+                Text("Sequência perdida")
+            } else {
+                Text(state.streak == 1 ? "1 noite" : "\(state.streak) noites")
+            }
         } icon: {
-            Image(systemName: "flame.fill")
+            Image(systemName: state.impactAt == nil ? "flame.fill" : "flame")
         }
         .font(.system(size: 12, weight: .bold))
-        .foregroundStyle(NightPalette.terra)
+        .foregroundStyle(state.impactAt == nil ? NightPalette.terra : NightPalette.muted)
         .labelStyle(.titleAndIcon)
         .lineLimit(1)
     }
@@ -171,6 +185,14 @@ private struct NightTrack: View {
     let state: NightSessionActivityAttributes.ContentState
 
     var body: some View {
+        if state.impactAt == nil {
+            flightTrack
+        } else {
+            constructionTrack
+        }
+    }
+
+    private var flightTrack: some View {
         HStack(spacing: 6) {
             PlanetGlyph(id: "earth").frame(width: 22, height: 22)
             SidewaysRocket(showsFlame: true).frame(width: 27, height: 16)
@@ -188,7 +210,26 @@ private struct NightTrack: View {
         }
     }
 
-    /// Depois de um meteoro a viagem recomeça do impacto.
+    /// Em obras: martelo · barra amarela enchendo do impacto até o despertador (a obra) ·
+    /// o foguete de pé, que fica pronto pra próxima noite.
+    private var constructionTrack: some View {
+        HStack(spacing: 6) {
+            BuildGlyph(size: 16).frame(width: 22, height: 22)
+            ProgressView(timerInterval: travelInterval, countsDown: false) {
+                EmptyView()
+            } currentValueLabel: {
+                EmptyView()
+            }
+            .progressViewStyle(.linear)
+            .tint(NightPalette.build)
+            .scaleEffect(x: 1, y: 2.4, anchor: .center)
+            RocketGlyph()
+                .fill(Color(red: 0.95, green: 0.93, blue: 0.89), style: FillStyle(eoFill: true))
+                .frame(width: 22, height: 22)
+        }
+    }
+
+    /// Voo: do início da noite até o despertador. Obra: do impacto até o despertador.
     private var travelInterval: ClosedRange<Date> {
         let start = state.impactAt ?? attributes.sessionStart
         let end = attributes.alarmDate
@@ -284,17 +325,14 @@ private struct SaturnRingFront: Shape {
     }
 }
 
-/// Clarão laranja do meteoro.
-private struct BoomGlyph: View {
+/// Martelo amarelo do canteiro de obras.
+private struct BuildGlyph: View {
+    let size: CGFloat
+
     var body: some View {
-        Circle().fill(
-            RadialGradient(
-                colors: [Color(red: 1, green: 0.95, blue: 0.81), Color(red: 1, green: 0.76, blue: 0.35), Color(red: 0.94, green: 0.44, blue: 0.18)],
-                center: .center,
-                startRadius: 0,
-                endRadius: 8
-            )
-        )
+        Image(systemName: "hammer.fill")
+            .font(.system(size: size, weight: .bold))
+            .foregroundStyle(NightPalette.build)
     }
 }
 

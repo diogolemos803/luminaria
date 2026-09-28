@@ -118,11 +118,15 @@ final class ScreenTimeManager: ObservableObject {
         WidgetBridge.endNightActivity()
         isShieldActive = false
         let duration = shieldEngagedAt.map { Date().timeIntervalSince($0) } ?? 0
+        // noite em que o foguete foi destruído não é limpa, mesmo com o despertador tocando
+        let endReason: DetoxSessionEndReason = (reason == .alarmFired && NightSessionActivityTracker.shared.isRocketDestroyed)
+            ? .rocketDestroyed
+            : reason
         let longestUninterrupted = NightSessionActivityTracker.shared.sessionDidEnd()
         SleepReportStore.shared.recordSession(
             appCount: lastAppliedCount,
             duration: duration,
-            endReason: reason,
+            endReason: endReason,
             longestUninterruptedSeconds: longestUninterrupted
         )
         shieldEngagedAt = nil

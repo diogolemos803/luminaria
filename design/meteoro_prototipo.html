@@ -1,0 +1,430 @@
+<title>Meteoro e Canteiro de Obras</title>
+<style>
+  :root{ color-scheme:dark; --bg:#0b0e14; --ink:#e8e6df; --ink-muted:#9aa0ad; --frame:#050608; }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--bg); color:var(--ink); font-family:"Iowan Old Style","Palatino Linotype",Palatino,serif;
+    display:flex; flex-direction:column; align-items:center; gap:22px; padding-block:40px 72px; padding-inline:16px;}
+  h1{font-size:1.5rem; font-weight:600; margin:0; text-align:center; text-wrap:balance;}
+  p.sub{margin:0; max-width:620px; text-align:center; color:var(--ink-muted); font-size:.95rem; line-height:1.5;}
+  .phone-frame{width:300px; height:649px; background:var(--frame); border-radius:46px; padding:10px;
+    box-shadow:0 30px 60px rgba(0,0,0,.55), inset 0 0 0 1px rgba(255,255,255,.04);}
+  .phone-screen{position:relative; width:100%; height:100%; border-radius:36px; overflow:hidden; background:#0c1120;}
+  canvas{width:100%; height:100%; display:block;}
+  .notch{position:absolute; top:10px; left:50%; transform:translateX(-50%); width:90px; height:22px; background:var(--frame); border-radius:14px; z-index:5;}
+  .buttons{display:flex; gap:8px; flex-wrap:wrap; justify-content:center;}
+  button{padding:8px 16px; border-radius:999px; border:1px solid #333c4c; background:#171c28; color:var(--ink); font-family:inherit; font-size:.85rem; cursor:pointer;}
+  button:hover{background:#1f2536;}
+  button:focus-visible{outline:2px solid #8fb3ff; outline-offset:2px;}
+  .phase{font-size:.8rem; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-muted); min-height:1.2em; font-variant-numeric:tabular-nums;}
+  .notes{max-width:640px; display:grid; gap:10px; grid-template-columns:repeat(auto-fit,minmax(220px,1fr));}
+  .note{background:#121722; border:1px solid #1e2533; border-radius:14px; padding:14px 16px; font-size:.86rem; line-height:1.5; color:#c9ccd3;}
+  .note b{color:var(--ink); display:block; margin-bottom:4px; font-size:.9rem;}
+</style>
+
+<h1>Meteoro e Canteiro de Obras</h1>
+<p class="sub">Quando a pessoa mexe no celular durante a noite: o meteoro atinge o foguete, ele explode em pedaços,
+  e a Terra volta sem foguete — um canteiro de obras noturno onde quatro bonequinhos reconstroem o foguete em loop
+  até o fim da noite.</p>
+
+<div class="phone-frame"><div class="phone-screen">
+  <div class="notch"></div>
+  <canvas id="scene" aria-label="Animação: meteoro atinge o foguete, explosão e canteiro de obras"></canvas>
+</div></div>
+<div class="phase" id="phase"></div>
+<div class="buttons">
+  <button id="replay">↻ Reiniciar</button>
+  <button id="impact">⏩ Ir pro impacto</button>
+  <button id="site">⏩ Ir pro canteiro</button>
+</div>
+
+<div class="notes">
+  <div class="note"><b>Meteoro</b>Rocha irregular com crateras e borda incandescente, crescendo enquanto se aproxima, rastro de fogo em três camadas e fagulhas soltando pelo caminho.</div>
+  <div class="note"><b>Explosão</b>Clarão, onda de choque, bola de fogo que escurece em fumaça, o foguete partindo em seis pedaços (bico, corpo, janela, barbatanas) e a tela tremendo.</div>
+  <div class="note"><b>Canteiro</b>Andaime com holofotes, guindaste levantando o bico, foguete pela metade, cones, fita zebrada e placa. Um martela, um solda, um carrega peças, um orienta o guindaste.</div>
+</div>
+
+<script>
+(() => {
+  // ====== tempo da sequência (segundos) ======
+  const METEOR_START = 0.8, METEOR_TRAVEL = 1.5;
+  const IMPACT = METEOR_START + METEOR_TRAVEL;        // 2.3
+  const EXPLOSION = 2.2;                              // até a fumaça sumir
+  const RISE_START = IMPACT + 1.5, RISE = 1.9;        // Terra volta com o canteiro
+  const RL = 0.6, PIVOT = [195, 692];
+  const SITE_ZOOM = 1.5;                              // canteiro visto de mais perto                 // foguete 40% menor (igual ao app)
+  const LIFT = -164 - (692 - 586.5) * (1 - RL);       // câmera: foguete no centro
+
+  const canvas = document.getElementById('scene');
+  const ctx = canvas.getContext('2d');
+  const phaseEl = document.getElementById('phase');
+  let W = 0, H = 0, DPR = 1;
+  function resize(){
+    const r = canvas.getBoundingClientRect();
+    DPR = Math.min(window.devicePixelRatio || 1, 2);
+    W = r.width; H = r.height;
+    canvas.width = Math.round(W * DPR); canvas.height = Math.round(H * DPR);
+  }
+  window.addEventListener('resize', resize); resize();
+
+  // ====== utilitários ======
+  const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+  const prog = (t, d, dur) => clamp((t - d) / dur);
+  const easeOut = p => 1 - Math.pow(1 - p, 3);
+  const easeIn = p => p * p * p;
+  const easeInOut = p => p < .5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
+  function bezier(x1, y1, x2, y2){ // cubic-bezier do CSS
+    return p => { if (p <= 0 || p >= 1) return p; let lo = 0, hi = 1, u = p;
+      for (let i = 0; i < 22; i++){ u = (lo + hi) / 2; const x = 3*(1-u)*(1-u)*u*x1 + 3*(1-u)*u*u*x2 + u*u*u; if (x < p) lo = u; else hi = u; }
+      return 3*(1-u)*(1-u)*u*y1 + 3*(1-u)*u*u*y2 + u*u*u; }; }
+  const entranceCurve = bezier(.3, 0, .2, 1);
+  const rnd = i => { const x = Math.sin(i * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); }; // pseudo-aleatório fixo
+  const P = d => new Path2D(d);
+
+  // ====== desenhos do foguete (mesmas coordenadas do app) ======
+  const HULL = P('M195 481 C214 490 231 530 232 580 C233 620 228 650 225 665 L165 665 C162 650 157 620 158 580 C159 530 176 490 195 481 Z');
+  const FIN_L = P('M160 596 C136 606 124 640 126 692 C136 678 150 668 167 662 Z');
+  const FIN_R = P('M230 596 C254 606 266 640 264 692 C254 678 240 668 223 662 Z');
+  const NOZZLE = P('M182 664 L208 664 L204 675 L186 675 Z');
+  const CAP = P('M140 470 L250 470 L250 516 Q195 534 140 516 Z');
+  const FL_OUT = P('M179 672 C170 694 183 728 195 764 C207 728 220 694 211 672 Z');
+  const FL_MID = P('M184 672 C178 692 188 720 195 745 C202 720 212 692 206 672 Z');
+  const FL_CORE = P('M188 672 C185 686 191 704 195 720 C199 704 205 686 202 672 Z');
+  const BLOB = P('M-34 8 C-37 -9 -19 -19 -5 -14 C-3 -29 20 -31 26 -16 C41 -21 50 -2 39 8 C47 19 36 32 21 27 C17 38 -6 37 -11 25 C-28 31 -39 19 -34 8 Z');
+
+  function red(c, x0, y0, x1, y1){ const g = c.createLinearGradient(x0, y0, x1, y1); g.addColorStop(0, '#ec6b4c'); g.addColorStop(1, '#cc4a33'); return g; }
+  function hullFill(c){ const g = c.createLinearGradient(157.5, 0, 233, 0); g.addColorStop(0, '#e6e0d4'); g.addColorStop(.45, '#f8f4ec'); g.addColorStop(1, '#dcd5c7'); return g; }
+
+  // corpo inteiro (sem barbatanas), opcionalmente recortado numa faixa horizontal
+  function drawBody(c, band){
+    c.save();
+    if (band){ c.beginPath(); c.rect(100, band[0], 200, band[1] - band[0]); c.clip(); }
+    c.fillStyle = hullFill(c); c.fill(HULL);
+    c.save(); c.clip(HULL);
+    c.fillStyle = red(c, 140, 470, 250, 534); c.fill(CAP);
+    c.fillStyle = 'rgba(0,0,0,.07)'; c.fillRect(215, 470, 30, 200);
+    c.restore();
+    c.fillStyle = '#d4d8dd'; c.beginPath(); c.arc(195, 566, 19, 0, 7); c.fill();
+    const gl = c.createLinearGradient(181, 552, 209, 580); gl.addColorStop(0, '#46668a'); gl.addColorStop(1, '#28405a');
+    c.fillStyle = gl; c.beginPath(); c.arc(195, 566, 14, 0, 7); c.fill();
+    c.fillStyle = 'rgba(127,155,184,.7)'; c.beginPath(); c.ellipse(189, 560, 5, 4, 0, 0, 7); c.fill();
+    c.fillStyle = 'rgba(255,255,255,.8)'; c.beginPath(); c.arc(187, 558, 1.6, 0, 7); c.fill();
+    c.fillStyle = '#ece6da'; roundRect(c, 181, 592, 28, 34, 6); c.fill();
+    c.strokeStyle = '#b9b2a4'; c.lineWidth = 1.2; roundRect(c, 181, 592, 28, 34, 6); c.stroke();
+    c.fillStyle = red(c, 191, 628, 199, 694); roundRect(c, 191, 628, 8, 66, 4); c.fill();
+    c.restore();
+  }
+  function drawFins(c){ c.fillStyle = red(c, 124, 596, 167, 692); c.fill(FIN_L); c.fillStyle = red(c, 223, 596, 266, 692); c.fill(FIN_R); c.fillStyle = '#4d525b'; c.fill(NOZZLE); }
+  function roundRect(c, x, y, w, h, r){ c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); }
+  function rocketSpace(c){ c.translate(0, LIFT); c.translate(PIVOT[0], PIVOT[1]); c.scale(RL, RL); c.translate(-PIVOT[0], -PIVOT[1]); }
+
+  function drawFlame(c, clock, k = 1){
+    c.save(); c.translate(195, 672); c.rotate((Math.sin(clock * 2) * .6) * Math.PI / 180); c.scale(k, k); c.translate(-195, -672);
+    const layer = (path, amp, per, fill) => { c.save(); c.translate(195, 672); c.scale(1, 1 + amp * (.5 - .5 * Math.cos(clock * 2 * Math.PI / per))); c.translate(-195, -672); c.fillStyle = fill; c.fill(path); c.restore(); };
+    const go = c.createLinearGradient(0, 672, 0, 764); go.addColorStop(0, '#ffcf6e'); go.addColorStop(.6, '#f7a53f'); go.addColorStop(1, 'rgba(236,127,44,.7)');
+    const gm = c.createLinearGradient(0, 672, 0, 745); gm.addColorStop(0, '#fff0c4'); gm.addColorStop(1, '#ffd27a');
+    layer(FL_OUT, .05, .7, go); layer(FL_MID, .06, .5, gm); layer(FL_CORE, .07, .36, '#fffaf0');
+    c.restore();
+  }
+
+  // ====== céu ======
+  const STARS = [[30,70,1.6,.85],[70,140,1.1,.5],[130,50,1.6,.75],[180,180,1.1,.4],[230,90,1.8,.9],[280,150,1.2,.55],[330,60,1.6,.7],[360,190,1.2,.6],[55,250,1.2,.45],[110,300,1.6,.6],[195,270,1.2,.5],[250,260,1.1,.4],[300,310,1.6,.6],[20,340,1.1,.4],[150,360,1.6,.5],[345,350,1.2,.5],[90,400,1.1,.4],[260,410,1.4,.5],[36,446,1.3,.5],[128,468,1.1,.4],[232,452,1.5,.6],[318,478,1.1,.45],[372,430,1.4,.55],[80,500,1.1,.35],[290,514,1.2,.35]];
+  function drawSky(c){
+    const g = c.createLinearGradient(0, 0, 0, 844); g.addColorStop(0, '#0c1120'); g.addColorStop(.55, '#161c31'); g.addColorStop(1, '#232a42');
+    c.fillStyle = '#0c1120'; c.fillRect(-200, -400, 790, 400); c.fillStyle = g; c.fillRect(-200, 0, 790, 844); c.fillStyle = '#232a42'; c.fillRect(-200, 844, 790, 500);
+    for (const [x, y, r, a] of STARS){ c.fillStyle = `rgba(255,255,255,${a})`; c.beginPath(); c.arc(x, y, r, 0, 7); c.fill(); }
+    c.fillStyle = '#b7c6dd'; c.beginPath(); c.arc(45, 60, 13, 0, 7); c.fill();
+  }
+
+  // ====== terreno + base (mesmos do app) ======
+  const HORIZON = 'M -20 700 C 55 700 95 668 155 660 C 185 656 205 656 235 660 C 275 665 325 682 410 700';
+  function drawTerrain(c){
+    const glow = c.createRadialGradient(195, 700, 0, 195, 700, 230); glow.addColorStop(0, 'rgba(58,74,114,.55)'); glow.addColorStop(1, 'rgba(58,74,114,0)');
+    c.fillStyle = glow; c.fillRect(0, 500, 390, 200);
+    const land = P(HORIZON + ' L 410 1260 L -20 1260 Z');
+    const g = c.createLinearGradient(0, 656, 0, 1260); g.addColorStop(0, '#4f7f5f'); g.addColorStop(.12, '#3f7050'); g.addColorStop(.45, '#2c5039'); g.addColorStop(1, '#1a3325');
+    c.fillStyle = g; c.fill(land);
+    c.strokeStyle = 'rgba(184,214,194,.35)'; c.lineWidth = 1.5; c.stroke(P(HORIZON));
+    const pad = P('M 73 688 C 100 677 130 667 155 665 C 180 662 210 662 235 665 C 262 669 285 674 306 681 C 280 692 240 696 195 696 C 150 696 105 694 73 688 Z');
+    const pg = c.createLinearGradient(0, 662, 0, 696); pg.addColorStop(0, '#948b76'); pg.addColorStop(1, '#6d6858'); c.fillStyle = pg; c.fill(pad);
+    c.fillStyle = 'rgba(28,56,38,.6)'; for (const [x, y, r] of [[60,770,3],[95,790,2.2],[280,800,2.6],[330,760,3],[360,810,2.2],[20,815,2.4]]){ c.beginPath(); c.arc(x, y, r, 0, 7); c.fill(); }
+    c.fillStyle = '#1d3a28'; for (const [x, y, r] of [[4,698,6],[-4,700,5],[330,684,4],[360,690,5.5],[352,693,4],[386,697,6]]){ c.beginPath(); c.arc(x, y, r, 0, 7); c.fill(); }
+    // deck, prédio, torre de lançamento e tanques (a base continua lá — só o foguete sumiu)
+    c.fillStyle = '#2c3037'; for (const x of [70, 130, 256, 316]) c.fillRect(x, 694, 4, 8);
+    c.fillStyle = '#3b4049'; roundRect(c, 58, 688, 276, 7, 1.5); c.fill(); c.fillStyle = '#5a606b'; c.fillRect(58, 688, 276, 2);
+    c.fillStyle = '#474c56'; c.fillRect(10, 678, 46, 20); c.fillStyle = '#5d636e'; c.fillRect(10, 678, 46, 4);
+    c.fillStyle = 'rgba(232,184,101,.85)'; for (const x of [15, 24, 33, 45]) c.fillRect(x, 686, 5, 3);
+    c.fillStyle = '#454a54'; c.fill(P('M 158 666 L 232 666 L 244 688 L 146 688 Z')); c.fillStyle = '#5f6570'; c.fillRect(158, 666, 74, 3);
+    c.fillStyle = '#17191d'; c.fill(P('M 181 672 L 209 672 L 213 688 L 177 688 Z'));
+    c.fillStyle = '#5a606b'; roundRect(c, 268, 668, 48, 18, 9); c.fill(); c.beginPath(); c.arc(342, 664, 14, 0, 7); c.fill();
+    c.fillStyle = '#3a3f48'; c.fillRect(333, 674, 3, 15); c.fillRect(348, 674, 3, 15); c.fillRect(276, 685, 3, 4); c.fillRect(304, 685, 3, 4);
+  }
+
+  // ====== canteiro de obras ======
+  const HAT = '#f4c02e', VEST = '#f08a2c', SKIN = '#f0c39b', PANTS = '#2f3d5c';
+  function drawCone(c, x, y){ c.fillStyle = '#f08a2c'; c.beginPath(); c.moveTo(x - 4, y); c.lineTo(x, y - 11); c.lineTo(x + 4, y); c.closePath(); c.fill();
+    c.fillStyle = '#f3eee4'; c.fillRect(x - 2.4, y - 6.5, 4.8, 1.8); c.fillStyle = '#3b4049'; c.fillRect(x - 5.5, y - .8, 11, 1.6); }
+  function drawTape(c, x0, x1, y){ // fita zebrada entre duas estacas
+    c.fillStyle = '#6b6f78'; c.fillRect(x0 - 1, y - 2, 2, 12); c.fillRect(x1 - 1, y - 2, 2, 12);
+    c.save(); c.beginPath(); c.rect(x0, y, x1 - x0, 3.2); c.clip(); c.fillStyle = '#f4c02e'; c.fillRect(x0, y, x1 - x0, 3.2);
+    c.fillStyle = '#1f2228'; for (let x = x0 - 6; x < x1 + 6; x += 6){ c.beginPath(); c.moveTo(x, y + 3.2); c.lineTo(x + 3, y); c.lineTo(x + 6, y); c.lineTo(x + 3, y + 3.2); c.closePath(); c.fill(); }
+    c.restore(); }
+  function drawSign(c, x, y){ c.fillStyle = '#6b6f78'; c.fillRect(x - .8, y - 18, 1.6, 18);
+    c.fillStyle = '#f4c02e'; roundRect(c, x - 13, y - 30, 26, 13, 2); c.fill(); c.strokeStyle = '#1f2228'; c.lineWidth = 1; roundRect(c, x - 13, y - 30, 26, 13, 2); c.stroke();
+    c.fillStyle = '#1f2228'; c.font = 'bold 5.4px -apple-system, system-ui, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('EM OBRAS', x, y - 23.5); }
+
+  // bonequinho de capacete (pés em x,y; ~24 unidades de altura). pose: função que devolve ângulos dos braços/pernas
+  function drawWorker(c, x, y, facing, pose, extra){
+    c.save(); c.translate(x, y); c.scale(facing, 1);
+    const limb = (x0, y0, len, ang, color, w = 2.6) => { c.save(); c.translate(x0, y0); c.rotate(ang); c.strokeStyle = color; c.lineWidth = w; c.lineCap = 'round'; c.beginPath(); c.moveTo(0, 0); c.lineTo(0, len); c.stroke(); c.restore(); };
+    limb(-1.8, -9, 8.5, pose.legB || 0, PANTS); // perna de trás
+    limb(1.8, -9, 8.5, pose.legA || 0, PANTS);
+    c.fillStyle = '#3a2f28'; c.fillRect(-4.3 + Math.sin(pose.legB || 0) * -6, -1.4, 4, 2); c.fillRect(0 + Math.sin(pose.legA || 0) * -6, -1.4, 4, 2); // botas
+    limb(-3.2, -16.5, 7, pose.armB || .2, VEST); // braço de trás
+    c.fillStyle = VEST; roundRect(c, -4.5, -18, 9, 10, 2.5); c.fill(); // colete
+    c.fillStyle = 'rgba(243,238,228,.9)'; c.fillRect(-4.5, -13.2, 9, 1.4);                // faixa refletiva
+    c.fillStyle = SKIN; c.beginPath(); c.arc(0, -21.5, 3.6, 0, 7); c.fill();              // cabeça
+    c.fillStyle = '#2a2320'; c.fillRect(1.2, -22.3, 1, 1.2);                              // olho
+    c.fillStyle = HAT; c.beginPath(); c.arc(0, -22.6, 4.1, Math.PI, 0); c.fill(); c.fillRect(-4.1, -23, 9.6, 1.3); // capacete
+    if (extra) extra(c);                                                                   // ferramenta na mão da frente
+    limb(3.2, -16.5, 7, pose.armA || -.2, VEST);                                           // braço da frente
+    c.fillStyle = SKIN; const ax = 3.2 + Math.sin(-(pose.armA || -.2)) * 7, ay = -16.5 + Math.cos(pose.armA || -.2) * 7; c.beginPath(); c.arc(ax, ay, 1.4, 0, 7); c.fill();
+    c.restore();
+    return [x + facing * (3.2 + Math.sin(-(pose.armA || -.2)) * 7), y - 16.5 + Math.cos(pose.armA || -.2) * 7]; // mão da frente (coords do chão)
+  }
+
+  // foguete pela metade: parte de baixo pronta, de cima só o contorno tracejado
+  function drawRocketInProgress(c, t){
+    c.save(); c.translate(PIVOT[0], PIVOT[1]); c.scale(RL, RL); c.translate(-PIVOT[0], -PIVOT[1]);
+    drawFins(c); drawBody(c, [600, 700]);
+    c.setLineDash([6, 5]); c.strokeStyle = 'rgba(243,238,228,.55)'; c.lineWidth = 2.2; c.stroke(HULL); c.setLineDash([]);
+    // costelas da estrutura na parte de cima
+    c.strokeStyle = 'rgba(160,168,180,.7)'; c.lineWidth = 2;
+    for (const y of [520, 550, 580]){ c.beginPath(); c.moveTo(166, y); c.lineTo(224, y); c.stroke(); }
+    c.beginPath(); c.moveTo(195, 486); c.lineTo(195, 600); c.stroke();
+    c.restore();
+  }
+
+  function drawScaffold(c, clock){
+    // postes, tábuas e travas em X dos dois lados do foguete
+    c.strokeStyle = '#8d939c'; c.lineWidth = 2;
+    for (const x of [146, 170, 220, 244]){ c.beginPath(); c.moveTo(x, 688); c.lineTo(x, 572); c.stroke(); }
+    c.lineWidth = 1.1; c.strokeStyle = 'rgba(141,147,156,.8)';
+    for (const [a, b] of [[146, 170], [220, 244]]) for (let y = 688; y > 580; y -= 28){ c.beginPath(); c.moveTo(a, y); c.lineTo(b, y - 28); c.moveTo(b, y); c.lineTo(a, y - 28); c.stroke(); }
+    c.fillStyle = '#9b7a4f'; for (const y of [632, 600]){ c.fillRect(143, y, 30, 3); c.fillRect(217, y, 30, 3); }
+    // holofotes no topo, apontados pro foguete
+    for (const [x, dir] of [[146, 1], [244, -1]]){
+      c.save(); c.globalCompositeOperation = 'lighter';
+      const g = c.createRadialGradient(x, 570, 0, x, 570, 90); g.addColorStop(0, 'rgba(255,236,170,.34)'); g.addColorStop(1, 'rgba(255,236,170,0)');
+      c.fillStyle = g; c.beginPath(); c.moveTo(x, 570); c.lineTo(x + dir * 70, 610); c.lineTo(x + dir * 40, 690); c.closePath(); c.fill(); c.restore();
+      c.fillStyle = '#3b4049'; c.fillRect(x - 4, 566, 8, 5); c.fillStyle = '#fff2c4'; c.fillRect(x - 3, 570, 6, 1.6);
+    }
+  }
+
+  function drawCrane(c, t, clock){
+    const mastX = 308;
+    c.strokeStyle = '#d2a53a'; c.lineWidth = 2;
+    c.beginPath(); c.moveTo(mastX - 4, 688); c.lineTo(mastX - 4, 470); c.moveTo(mastX + 4, 688); c.lineTo(mastX + 4, 470); c.stroke();
+    c.lineWidth = 1; for (let y = 688; y > 478; y -= 12){ c.beginPath(); c.moveTo(mastX - 4, y); c.lineTo(mastX + 4, y - 12); c.moveTo(mastX + 4, y); c.lineTo(mastX - 4, y - 12); c.stroke(); }
+    c.lineWidth = 2; c.beginPath(); c.moveTo(mastX + 20, 470); c.lineTo(182, 470); c.moveTo(mastX + 20, 476); c.lineTo(190, 476); c.stroke();
+    c.lineWidth = .9; for (let x = 190; x < mastX + 20; x += 10){ c.beginPath(); c.moveTo(x, 476); c.lineTo(x + 5, 470); c.lineTo(x + 10, 476); c.stroke(); }
+    c.fillStyle = '#5a606b'; c.fillRect(mastX + 8, 476, 12, 10);                 // contrapeso
+    c.fillStyle = '#3b4049'; c.fillRect(mastX - 7, 478, 14, 10);                  // cabine
+    c.fillStyle = 'rgba(232,184,101,.9)'; c.fillRect(mastX - 5, 480, 10, 4);
+    const blink = (clock % 1.2) < .5; c.fillStyle = blink ? '#ff4a3a' : 'rgba(255,74,58,.18)'; c.beginPath(); c.arc(mastX, 466, 2.2, 0, 7); c.fill();
+    // carrinho + cabo + bico vermelho subindo/descendo devagar (loop de 6s)
+    const cyc = (clock % 6) / 6, lower = easeInOut(cyc < .5 ? cyc * 2 : 2 - cyc * 2);
+    const hookY = 500 + 42 * lower, sway = Math.sin(clock * 1.3) * 2.4;
+    c.fillStyle = '#3b4049'; c.fillRect(191, 476, 8, 4);
+    c.strokeStyle = '#c9ccd1'; c.lineWidth = .8; c.beginPath(); c.moveTo(195, 480); c.lineTo(195 + sway, hookY); c.stroke();
+    c.save(); c.translate(195 + sway, hookY); c.rotate(sway * .02);
+    c.strokeStyle = '#c9ccd1'; c.beginPath(); c.moveTo(0, 0); c.lineTo(-7, 6); c.moveTo(0, 0); c.lineTo(7, 6); c.stroke();
+    c.scale(RL, RL); c.translate(-195, -512); // bico do foguete pendurado
+    c.save(); c.clip(P('M 167 512 C 172 494 183 485 195 481 C 207 485 218 494 223 512 Q 195 524 167 512 Z')); c.fillStyle = red(c, 160, 480, 230, 525); c.fillRect(150, 470, 90, 60); c.restore();
+    c.restore();
+  }
+
+  function drawSite(c, t, clock){
+    drawScaffold(c, clock);
+    drawRocketInProgress(c, t);
+    drawCrane(c, t, clock);
+    // pilha de peças + caixa de ferramentas
+    c.fillStyle = '#e6e0d4'; c.fillRect(256, 676, 18, 4); c.fillRect(258, 672, 16, 4); c.fillStyle = '#cfc8ba'; c.fillRect(259, 668, 13, 4);
+    c.fillStyle = red(c, 274, 668, 286, 686); c.fill(P('M 274 686 C 276 677 281 671 286 669 L 285 686 Z'));
+    c.fillStyle = '#c4422a'; c.fillRect(120, 681, 12, 7); c.fillStyle = '#8f2f1f'; c.fillRect(123, 679, 6, 2);
+    drawCone(c, 110, 688); drawCone(c, 252, 688); drawCone(c, 138, 688);
+    drawTape(c, 96, 136, 679); drawSign(c, 86, 688);
+
+    // 1) martelando no andaime da esquerda
+    const hit = (clock * 2.2) % 1, hammer = -2.3 + 1.5 * (hit < .35 ? easeIn(hit / .35) : 1 - easeOut((hit - .35) / .65));
+    const hand1 = drawWorker(c, 160, 632, 1, { armA: hammer, armB: .5 }, null);
+    c.save(); c.translate(hand1[0], hand1[1]); c.rotate(hammer + Math.PI); c.fillStyle = '#6b4a2e'; c.fillRect(-.8, -1, 1.6, 7); c.fillStyle = '#9aa0ab'; c.fillRect(-2.5, 5, 5, 2.4); c.restore();
+    if (hit > .33 && hit < .45){ c.save(); c.globalCompositeOperation = 'lighter'; c.fillStyle = 'rgba(255,230,160,.9)'; for (let i = 0; i < 4; i++){ c.fillRect(172 + i * 1.6, 614 - i * 2, 1.2, 1.2); } c.restore(); }
+
+    // 2) soldando no andaime da direita, com faíscas
+    const hand2 = drawWorker(c, 232, 600, -1, { armA: -1.1 + Math.sin(clock * 3) * .06, armB: .6 }, null);
+    c.save(); c.translate(hand2[0], hand2[1]); c.fillStyle = '#4d525b'; c.fillRect(-3, -1, 4, 2); c.restore();
+    const tip = [hand2[0] - 4, hand2[1]];
+    c.save(); c.globalCompositeOperation = 'lighter';
+    const flick = .6 + .4 * Math.abs(Math.sin(clock * 37));
+    const wg = c.createRadialGradient(tip[0], tip[1], 0, tip[0], tip[1], 14); wg.addColorStop(0, `rgba(170,210,255,${.7 * flick})`); wg.addColorStop(1, 'rgba(170,210,255,0)');
+    c.fillStyle = wg; c.beginPath(); c.arc(tip[0], tip[1], 14, 0, 7); c.fill();
+    for (let i = 0; i < 9; i++){ const life = ((clock * 1.6 + rnd(i)) % 1), a = -Math.PI * (.2 + rnd(i + 9) * .6), sp = 12 + rnd(i + 3) * 14;
+      const sx = tip[0] + Math.cos(a) * sp * life, sy = tip[1] + Math.sin(a) * sp * life + 30 * life * life;
+      c.fillStyle = `rgba(255,${200 - 80 * life | 0},90,${1 - life})`; c.fillRect(sx, sy, 1.3, 1.3); }
+    c.restore();
+
+    // 3) carregando painel entre a pilha e o andaime (ida com carga, volta vazio)
+    const cyc3 = (clock % 5) / 5, going = cyc3 < .5, p3 = easeInOut(going ? cyc3 * 2 : (cyc3 - .5) * 2);
+    const x3 = going ? 262 - 32 * p3 : 230 + 32 * p3, step = Math.sin(clock * 9) * .45;
+    const hand3 = drawWorker(c, x3, 688, going ? -1 : 1, { legA: step, legB: -step, armA: going ? -1.35 : -.2 + step * .3, armB: going ? -1.2 : .2 - step * .3 }, null);
+    if (going){ c.fillStyle = '#ece6da'; c.fillRect(x3 - 9, hand3[1] - 6, 18, 5); c.strokeStyle = '#b9b2a4'; c.lineWidth = .6; c.strokeRect(x3 - 9, hand3[1] - 6, 18, 5); }
+
+    // 4) orientando o guindaste perto da torre (acenando com os dois braços)
+    const wave = Math.sin(clock * 2.4);
+    drawWorker(c, 294, 688, -1, { armA: -2.6 + wave * .35, armB: -2.5 - wave * .35 }, null);
+  }
+
+  // ====== meteoro ======
+  const ROCK = [[0,-1],[.62,-.78],[1,-.18],[.86,.46],[.38,.94],[-.3,.9],[-.86,.52],[-1,-.08],[-.7,-.66]];
+  function drawMeteor(c, p, clock){
+    const start = [-70, -40], end = [192, 405];
+    const e = bezier(.55, 0, .9, .5)(p);                         // acelera chegando
+    const x = start[0] + (end[0] - start[0]) * e, y = start[1] + (end[1] - start[1]) * e;
+    const dx = end[0] - start[0], dy = end[1] - start[1], len = Math.hypot(dx, dy), ux = dx / len, uy = dy / len;
+    const r = 3 + 9 * easeIn(p);                                 // cresce se aproximando
+    // rastro em 3 camadas (haze vermelho, laranja, núcleo branco)
+    c.save(); c.globalCompositeOperation = 'lighter';
+    for (const [lenK, widK, col] of [[16, 2.6, 'rgba(255,80,40,'], [11, 1.7, 'rgba(255,150,60,'], [6, .8, 'rgba(255,240,200,']]){
+      const L = r * lenK + 40 * p, Wd = r * widK, tx = x - ux * L, ty = y - uy * L;
+      const g = c.createLinearGradient(x, y, tx, ty); g.addColorStop(0, col + '.9)'); g.addColorStop(1, col + '0)');
+      c.fillStyle = g; c.beginPath(); c.moveTo(x - uy * Wd, y + ux * Wd); c.lineTo(tx, ty); c.lineTo(x + uy * Wd, y - ux * Wd); c.closePath(); c.fill();
+    }
+    // fagulhas soltando pelo caminho
+    for (let i = 0; i < 16; i++){ const life = ((clock * 2.2 + rnd(i)) % 1); const back = life * (60 + r * 4);
+      const off = (rnd(i + 20) - .5) * r * 2.4 + (rnd(i + 40) - .5) * 14 * life;
+      const sx = x - ux * back - uy * off, sy = y - uy * back + ux * off + 10 * life * life;
+      c.fillStyle = `rgba(255,${190 - 90 * life | 0},80,${(1 - life) * .9})`; c.fillRect(sx, sy, 1.4, 1.4); }
+    const halo = c.createRadialGradient(x, y, 0, x, y, r * 3.2); halo.addColorStop(0, 'rgba(255,190,110,.75)'); halo.addColorStop(1, 'rgba(255,120,60,0)');
+    c.fillStyle = halo; c.beginPath(); c.arc(x, y, r * 3.2, 0, 7); c.fill();
+    c.restore();
+    // rocha irregular girando, borda da frente incandescente
+    c.save(); c.translate(x, y); c.rotate(clock * 2.6);
+    c.beginPath(); ROCK.forEach(([a, b], i) => { const rr = r * (1 + (rnd(i + 70) - .5) * .25); i ? c.lineTo(a * rr, b * rr) : c.moveTo(a * rr, b * rr); }); c.closePath();
+    const rg = c.createRadialGradient(-r * .3, -r * .3, 0, 0, 0, r * 1.2); rg.addColorStop(0, '#8a7a6e'); rg.addColorStop(1, '#3f3530');
+    c.fillStyle = rg; c.fill(); c.strokeStyle = 'rgba(255,170,90,.8)'; c.lineWidth = Math.max(.8, r * .14); c.stroke();
+    c.fillStyle = '#2f2724'; for (const [a, b, k] of [[.3, .2, .22], [-.35, .35, .16], [.1, -.45, .13]]){ c.beginPath(); c.arc(a * r, b * r, k * r, 0, 7); c.fill(); }
+    c.restore();
+  }
+
+  // ====== explosão ======
+  const PIECES = [ // pedaços do foguete (faixas do corpo + barbatanas), velocidades em unidades do foguete
+    { kind: 'band', band: [470, 525], vx: -40, vy: -250, spin: -5.5 },   // bico
+    { kind: 'band', band: [525, 590], vx: 170, vy: -140, spin: 4.2 },    // corpo com a janela
+    { kind: 'band', band: [590, 670], vx: -150, vy: -60, spin: -3.4 },   // corpo com a porta
+    { kind: 'finL', vx: -230, vy: 40, spin: -6.8 },
+    { kind: 'finR', vx: 230, vy: 20, spin: 7.2 },
+    { kind: 'nozzle', vx: 30, vy: 200, spin: 3 },
+  ];
+  function drawExplosion(c, q, clock){
+    const cx = 195, cy = 405;
+    // fumaça escura (fica por último, sobe e se desfaz)
+    c.save();
+    for (let i = 0; i < 10; i++){ const a = rnd(i) * 7, d = (18 + rnd(i + 1) * 40) * easeOut(clamp(q * 1.4)), s = (.35 + rnd(i + 2) * .5) * (.6 + 1.5 * easeOut(q));
+      const op = .55 * clamp((q - .08) * 4) * (1 - clamp((q - .45) / .55));
+      if (op <= 0) continue; c.globalAlpha = op; c.fillStyle = i % 2 ? '#3a3d45' : '#51555e';
+      c.save(); c.translate(cx + Math.cos(a) * d, cy + Math.sin(a) * d - 45 * q); c.scale(s, s); c.fill(BLOB); c.restore(); }
+    c.restore();
+    // pedaços do foguete voando, girando, com gravidade e brasa
+    for (let i = 0; i < PIECES.length; i++){
+      const pc = PIECES[i], tt = q * EXPLOSION, fade = 1 - clamp((q - .6) / .4);
+      if (fade <= 0) continue;
+      c.save(); c.globalAlpha = fade; rocketSpace(c);
+      const ox = pc.vx * tt, oy = pc.vy * tt + 260 * tt * tt;
+      const center = pc.kind === 'band' ? [195, (pc.band[0] + pc.band[1]) / 2] : pc.kind === 'finL' ? [148, 650] : pc.kind === 'finR' ? [242, 650] : [195, 670];
+      c.translate(center[0] + ox, center[1] + oy); c.rotate(pc.spin * tt); c.translate(-center[0], -center[1]);
+      if (pc.kind === 'band') drawBody(c, pc.band);
+      else if (pc.kind === 'finL'){ c.fillStyle = red(c, 124, 596, 167, 692); c.fill(FIN_L); }
+      else if (pc.kind === 'finR'){ c.fillStyle = red(c, 223, 596, 266, 692); c.fill(FIN_R); }
+      else { c.fillStyle = '#4d525b'; c.fill(NOZZLE); }
+      // brasa no pedaço
+      c.globalCompositeOperation = 'lighter'; c.globalAlpha = fade * (1 - q) * .8;
+      const eg = c.createRadialGradient(center[0], center[1], 0, center[0], center[1], 40); eg.addColorStop(0, 'rgba(255,140,60,.9)'); eg.addColorStop(1, 'rgba(255,90,40,0)');
+      c.fillStyle = eg; c.beginPath(); c.arc(center[0], center[1], 40, 0, 7); c.fill();
+      c.restore();
+    }
+    // bola de fogo: camadas que crescem e escurecem
+    const fb = clamp(q / .5), fop = 1 - clamp((q - .15) / .45);
+    if (fop > 0){ c.save(); c.globalAlpha = fop;
+      for (let i = 0; i < 7; i++){ const a = rnd(i + 50) * 7, d = 24 * fb * rnd(i + 60), s = (.6 + rnd(i + 70) * .5) * (.35 + 1.6 * easeOut(fb));
+        c.save(); c.translate(cx + Math.cos(a) * d, cy + Math.sin(a) * d); c.scale(s, s);
+        const g = c.createRadialGradient(0, 0, 0, 0, 0, 44); g.addColorStop(0, '#fff6d8'); g.addColorStop(.3, '#ffc85a'); g.addColorStop(.65, '#f0702e'); g.addColorStop(1, 'rgba(160,50,30,0)');
+        c.fillStyle = g; c.fill(BLOB); c.restore(); }
+      c.restore(); }
+    // onda de choque (dois anéis)
+    c.save(); c.globalCompositeOperation = 'lighter';
+    for (const [delay, maxR, w] of [[0, 150, 3], [.08, 110, 1.5]]){ const p = clamp((q - delay) / .35); if (p <= 0 || p >= 1) continue;
+      c.shadowColor = 'rgba(255,150,70,.9)'; c.shadowBlur = 12; c.strokeStyle = `rgba(255,200,140,${.7 * (1 - p)})`; c.lineWidth = w * 2 * (1 - p) + .5; c.beginPath(); c.ellipse(cx, cy, maxR * easeOut(p), maxR * .8 * easeOut(p), 0, 0, 7); c.stroke(); }
+    // fagulhas com arrasto
+    for (let i = 0; i < 44; i++){ const a = rnd(i + 100) * 7, sp = 90 + rnd(i + 200) * 150, life = clamp(q / (.4 + rnd(i + 300) * .5));
+      if (life >= 1) continue; const d = sp * (1 - Math.pow(1 - life, 2)) * .6;
+      const x0 = cx + Math.cos(a) * d, y0 = cy + Math.sin(a) * d + 40 * life * life;
+      c.strokeStyle = `rgba(255,${210 - 110 * life | 0},90,${1 - life})`; c.lineWidth = 1.2;
+      c.beginPath(); c.moveTo(x0, y0); c.lineTo(x0 - Math.cos(a) * 6 * (1 - life), y0 - Math.sin(a) * 6 * (1 - life)); c.stroke(); }
+    c.restore();
+  }
+
+  // ====== quadro ======
+  function frame(t){
+    const clock = t;
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+    // câmera: 390×844 preenchendo a tela, foguete no centro
+    const s = Math.max(W / 390, H / 844);
+    ctx.translate(W / 2 - 195 * s, H / 2 - 422 * s); ctx.scale(s, s);
+    // tremor na explosão
+    const shake = clamp(1 - (t - IMPACT) / .6) * (t >= IMPACT ? 1 : 0);
+    if (shake > 0) ctx.translate(Math.sin(t * 90) * 5 * shake, Math.cos(t * 77) * 4 * shake);
+
+    drawSky(ctx);
+
+    // Terra voltando com o canteiro (entra de baixo, igual à entrada da cena)
+    const rise = entranceCurve(prog(t, RISE_START, RISE));
+    if (t >= RISE_START){
+      ctx.save(); ctx.translate(0, 844 * (1 - rise));
+      ctx.translate(195, 422); ctx.scale(SITE_ZOOM, SITE_ZOOM); ctx.translate(-195, -640); // câmera mais perto do canteiro
+      drawTerrain(ctx); drawSite(ctx, t, clock);
+      ctx.restore();
+    }
+
+    // foguete em voo até o impacto
+    if (t < IMPACT){
+      ctx.save(); rocketSpace(ctx);
+      // brilho do motor
+      ctx.save(); ctx.globalCompositeOperation = 'lighter'; const gg = ctx.createRadialGradient(195, 688, 0, 195, 688, 60); gg.addColorStop(0, 'rgba(255,207,122,.55)'); gg.addColorStop(1, 'rgba(255,154,69,0)'); ctx.fillStyle = gg; ctx.beginPath(); ctx.ellipse(195, 702, 40, 46, 0, 0, 7); ctx.fill(); ctx.restore();
+      drawFlame(ctx, clock); drawFins(ctx); drawBody(ctx, null);
+      ctx.restore();
+      if (t >= METEOR_START) drawMeteor(ctx, prog(t, METEOR_START, METEOR_TRAVEL), clock);
+    } else {
+      const q = clamp((t - IMPACT) / EXPLOSION);
+      if (q < 1) drawExplosion(ctx, q, clock);
+    }
+
+    // clarão da tela inteira no impacto
+    const flash = t >= IMPACT ? clamp(1 - (t - IMPACT) / .18) : 0;
+    if (flash > 0){ ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.fillStyle = `rgba(255,226,180,${.75 * flash})`; ctx.fillRect(0, 0, W, H); }
+
+    phaseEl.textContent = t < METEOR_START ? 'foguete em voo' : t < IMPACT ? 'meteoro chegando' : t < RISE_START ? 'explosão' : t < RISE_START + RISE ? 'voltando pra Terra' : 'canteiro de obras (loop)';
+  }
+
+  // ====== relógio ======
+  let t0 = performance.now(), offset = 0;
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function loop(now){ frame(offset + (now - t0) / 1000); if (!reduce) requestAnimationFrame(loop); }
+  function jump(t){ offset = t; t0 = performance.now(); if (reduce) frame(t); }
+  document.getElementById('replay').onclick = () => jump(0);
+  document.getElementById('impact').onclick = () => jump(IMPACT - .5);
+  document.getElementById('site').onclick = () => jump(RISE_START + RISE);
+  window.__seek = jump; // usado só pra inspecionar quadros
+  if (reduce) frame(RISE_START + RISE + 1); else requestAnimationFrame(loop);
+})();
+</script>

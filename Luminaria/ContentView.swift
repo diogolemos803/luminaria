@@ -253,7 +253,7 @@ struct ContentView: View {
                     GeometryReader { proxy in
                         ScrollView(.vertical, showsIndicators: false) {
                             VStack(spacing: 0) {
-                                RocketGrowthVisual(sceneStart: sceneStartDate, explosionDate: growthTracker.lastExplosionDate)
+                                RocketGrowthVisual(sceneStart: sceneStartDate, destroyedAt: growthTracker.rocketDestroyedAt)
                                     .render(phase: growthTracker.phase, destination: destination, theme: theme)
                                     .frame(width: proxy.size.width, height: proxy.size.height)
 
@@ -507,9 +507,14 @@ struct ContentView: View {
 /// significa que `AlarmManager.triggerAlarm()` registrou a sessão como
 /// `.alarmFired`), então o foguete pousa, o astronauta sai e crava a bandeira com o
 /// número de dias da sequência atual.
+///
+/// Se a pessoa mexeu no celular durante a noite, o foguete foi destruído e NÃO há pouso
+/// (pedido do usuário, 2026-09-28): a tela mostra o canteiro de obras ainda trabalhando —
+/// o foguete só fica pronto pra próxima ativação.
 struct AlarmRingingView: View {
     @ObservedObject var alarmManager: AlarmManager
     @ObservedObject var sleepReportStore: SleepReportStore = .shared
+    @ObservedObject var growthTracker: NightSessionActivityTracker = .shared
 
     private let theme = ModeTheme.zleepy
 
@@ -521,17 +526,34 @@ struct AlarmRingingView: View {
         ZStack {
             theme.stage.ignoresSafeArea()
 
-            MoonLandingScene(streakDays: streakDays)
-                .ignoresSafeArea()
-                .allowsHitTesting(false)
+            Group {
+                if growthTracker.lastNightRocketDestroyed {
+                    LaunchScene(
+                        badgeColor: GrowthDestinations.furthestUnlocked(currentStreak: streakDays).color,
+                        sceneStart: nil,
+                        destroyedAt: .distantPast
+                    )
+                } else {
+                    MoonLandingScene(streakDays: streakDays)
+                }
+            }
+            .ignoresSafeArea()
+            .allowsHitTesting(false)
 
             VStack {
                 Spacer()
                 Text("Hora de acordar")
                     .font(.soveeDisplay(size: 28, weight: .bold))
                     .foregroundStyle(theme.ink)
-                    // fica sobre o chão cinza da Lua — sombra leve pra manter leitura
+                    // fica sobre o chão (Lua ou canteiro) — sombra leve pra manter leitura
                     .shadow(color: .black.opacity(0.35), radius: 6, x: 0, y: 2)
+                if growthTracker.lastNightRocketDestroyed {
+                    Text("O foguete fica pronto pra próxima noite.")
+                        .font(.soveeBody(.subheadline, weight: .medium))
+                        .foregroundStyle(theme.ink.opacity(0.85))
+                        .shadow(color: .black.opacity(0.35), radius: 6, x: 0, y: 2)
+                        .padding(.top, 2)
+                }
                 Button {
                     alarmManager.stopRingingAlarm()
                 } label: {

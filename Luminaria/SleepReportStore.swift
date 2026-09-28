@@ -7,6 +7,11 @@ enum DetoxSessionEndReason: String, Codable {
     case alarmFired
     case manualDisarm
     case emergencyPass
+    /// O despertador tocou, mas a pessoa mexeu no celular durante a noite e o meteoro
+    /// destruiu o foguete — não conta como noite limpa (pedido do usuário, 2026-09-28:
+    /// "só perde a streak"). Versões antigas do app leem este valor como `.alarmFired`
+    /// (decode tolerante abaixo), sem quebrar o histórico.
+    case rocketDestroyed
 }
 
 /// Um registro de uma sessão de bloqueio de apps (do reconhecimento NFC até

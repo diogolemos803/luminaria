@@ -438,40 +438,42 @@ struct ScenePuff {
 /// assentada a decolagem começa. `sceneStart == nil` = app reaberto no meio da
 /// sessão: mostra direto o foguete já em voo, sem repetir nada.
 ///
-/// `explosionDate` = último "toque" da pessoa no celular (ver
-/// `NightSessionActivityTracker.registerTouchEvent`). A partir dele (pedido do usuário,
-/// 2026-09-26): um meteoro atravessa o céu e atinge o foguete (`LaunchPainter.
-/// meteorTravel`), o foguete explode, e então a Terra volta a subir com um foguete novo
-/// na plataforma e ele decola de novo — a mesma entrada + decolagem, só que com o céu
-/// já no lugar (`relaunchDelay` depois do meteoro sair).
+/// `destroyedAt` = instante em que o meteoro destruiu o foguete nesta noite (primeiro
+/// "toque" da pessoa no celular, ver `NightSessionActivityTracker.registerTouchEvent`).
+/// A partir dele (protótipo aprovado em `design/meteoro_prototipo.html`, 2026-09-28): um
+/// meteoro atravessa o céu e atinge o foguete (`LaunchPainter.meteorTravel`), o foguete
+/// explode em pedaços, e a Terra volta SEM foguete — um canteiro de obras onde quatro
+/// bonequinhos reconstroem o foguete em loop até o fim da noite (`ConstructionSiteArt`).
+/// O foguete só fica pronto pra próxima ativação.
 ///
 /// O foguete NUNCA se move na tela (decisão do usuário) — só o cenário se move.
 struct LaunchScene: View {
     let badgeColor: Color
     let sceneStart: Date?
-    let explosionDate: Date?
+    let destroyedAt: Date?
 
     @State private var isResting = false
 
     private struct AnimationKey: Equatable {
         let sceneStart: Date?
-        let explosionDate: Date?
+        let destroyedAt: Date?
     }
 
     var body: some View {
         TimelineView(.animation(minimumInterval: isResting ? 1.0 / 30.0 : nil)) { timeline in
-            let frame = LaunchPainter.frame(at: timeline.date, sceneStart: sceneStart, explosionDate: explosionDate)
+            let frame = LaunchPainter.frame(at: timeline.date, sceneStart: sceneStart, destroyedAt: destroyedAt)
             let clock = timeline.date.timeIntervalSinceReferenceDate
             Canvas { context, size in
                 LaunchPainter.draw(in: &context, size: size, frame: frame, clock: clock, badgeColor: badgeColor)
             }
         }
-        .task(id: AnimationKey(sceneStart: sceneStart, explosionDate: explosionDate)) {
+        .task(id: AnimationKey(sceneStart: sceneStart, destroyedAt: destroyedAt)) {
             isResting = false
-            var settleAt = sceneStart.map { $0.addingTimeInterval(LaunchPainter.settleTime) }
-            if let explosionDate {
-                let relaunchSettled = explosionDate.addingTimeInterval(LaunchPainter.relaunchDelay + LaunchPainter.settleTime)
-                settleAt = max(settleAt ?? relaunchSettled, relaunchSettled)
+            let settleAt: Date?
+            if let destroyedAt {
+                settleAt = destroyedAt.addingTimeInterval(LaunchPainter.siteSettledTime)
+            } else {
+                settleAt = sceneStart.map { $0.addingTimeInterval(LaunchPainter.settleTime) }
             }
             if let settleAt {
                 let wait = settleAt.timeIntervalSinceNow
@@ -480,7 +482,11 @@ struct LaunchScene: View {
                 }
                 if Task.isCancelled { return }
             }
-            NightSessionActivityTracker.shared.liftoffAnimationCompleted()
+            // com o foguete destruído quem muda a fase (pra `.rebuilding`) é o rastreador
+            if destroyedAt == nil {
+                NightSessionActivityTracker.shared.liftoffAnimationCompleted()
+            }
+            // em repouso (voo ou canteiro) 30 quadros por segundo bastam
             isResting = true
         }
     }
@@ -495,10 +501,19 @@ enum LaunchPainter {
     /// foguete voando no céu (estado da noite inteira).
     static let settleTime: Double = launchDelay + 7.6
     /// Meteoro: tempo de travessia até atingir o foguete.
-    static let meteorTravel: Double = 0.8
-    /// Explosão depois do impacto, até a Terra começar a voltar com o foguete novo.
-    static let explosionLength: Double = 1.3
-    static let relaunchDelay: Double = meteorTravel + explosionLength
+    static let meteorTravel: Double = 1.5
+    /// Explosão depois do impacto (clarão, bola de fogo, pedaços, fumaça sumindo).
+    static let explosionLength: Double = 2.2
+    /// A Terra volta com o canteiro de obras 1,5s depois do impacto (ainda com a fumaça
+    /// se desfazendo), subindo em 1,9s com a mesma curva da entrada.
+    static let siteRiseDelay: Double = meteorTravel + 1.5
+    static let siteRiseLength: Double = 1.9
+    static let siteSettledTime: Double = siteRiseDelay + siteRiseLength
+    /// Câmera do canteiro: 1,5× mais perto do chão (senão os bonequinhos somem), com o
+    /// ponto y 640 do chão no centro da tela.
+    private static let siteZoom: Double = 1.5
+    private static let siteFocusY: Double = 640
+    private static let entranceCurve = SceneCurve(x1: 0.3, y1: 0, x2: 0.2, y2: 1)
 
     /// Câmera: o protótipo usava -164 com o foguete no tamanho original; com o foguete
     /// menor, sobe mais um pouco pra ele continuar no centro da tela.
@@ -512,36 +527,59 @@ enum LaunchPainter {
     struct Frame {
         /// Relógio da entrada + decolagem (0 = começa a entrar).
         var sceneTime: Double
-        /// Relançamento depois de uma explosão: o céu já está no lugar, só a Terra sobe.
-        var skyInPlace: Bool
-        /// Segundos desde que o meteoro apareceu, enquanto meteoro/explosão estão em cena.
-        var meteorTime: Double?
+        /// Segundos desde que o meteoro apareceu (foguete destruído); `nil` = foguete inteiro.
+        var destroyedTime: Double?
     }
 
-    static func frame(at now: Date, sceneStart: Date?, explosionDate: Date?) -> Frame {
+    static func frame(at now: Date, sceneStart: Date?, destroyedAt: Date?) -> Frame {
         let sceneTime = sceneStart.map { now.timeIntervalSince($0) } ?? 600
-        guard let explosionDate, now >= explosionDate else {
-            return Frame(sceneTime: sceneTime, skyInPlace: false, meteorTime: nil)
+        guard let destroyedAt, now >= destroyedAt else {
+            return Frame(sceneTime: sceneTime, destroyedTime: nil)
         }
-        let e = now.timeIntervalSince(explosionDate)
-        if e < relaunchDelay {
-            return Frame(sceneTime: sceneTime, skyInPlace: false, meteorTime: e)
-        }
-        return Frame(sceneTime: e - relaunchDelay, skyInPlace: true, meteorTime: nil)
+        return Frame(sceneTime: sceneTime, destroyedTime: now.timeIntervalSince(destroyedAt))
     }
 
     static func draw(in ctx: inout GraphicsContext, size: CGSize, frame: Frame, clock: Double, badgeColor: Color) {
+        let screen = ctx
         S.applyCamera(&ctx, size: size)
 
-        let sceneTime = frame.sceneTime
-        let entrance = SceneCurve(x1: 0.3, y1: 0, x2: 0.2, y2: 1).value(SceneTime.progress(sceneTime, delay: 0.12, duration: 1.6))
+        let d = frame.destroyedTime
+        // a tela treme logo depois do impacto
+        if let d, d >= meteorTravel {
+            let shake = max(0, 1 - (d - meteorTravel) / 0.6)
+            if shake > 0 {
+                ctx.translateBy(x: sin(clock * 90) * 5 * shake, y: cos(clock * 77) * 4 * shake)
+            }
+        }
+
+        if let d, d >= siteRiseDelay {
+            drawSky(&ctx, badgeColor: badgeColor)
+            drawSite(&ctx, destroyedTime: d, clock: clock)
+        } else {
+            drawFlight(&ctx, sceneTime: frame.sceneTime, showsRocket: d.map { $0 < meteorTravel } ?? true, clock: clock, badgeColor: badgeColor)
+        }
+
+        guard let d else { return }
+        if d < meteorTravel {
+            drawMeteor(&ctx, progress: d / meteorTravel, clock: clock)
+        } else if d < meteorTravel + explosionLength {
+            drawExplosion(&ctx, progress: (d - meteorTravel) / explosionLength, clock: clock)
+        }
+        // clarão curto e quente na tela inteira no instante do impacto
+        let flash = d >= meteorTravel ? max(0, 1 - (d - meteorTravel) / 0.18) : 0
+        if flash > 0.001 {
+            var fl = screen
+            fl.fill(Path(CGRect(origin: .zero, size: size)), with: .color(Color(sceneHex: 0xFFE2B4, opacity: 0.75 * flash)))
+        }
+    }
+
+    /// Entrada + decolagem + voo (a noite normal).
+    private static func drawFlight(_ ctx: inout GraphicsContext, sceneTime: Double, showsRocket: Bool, clock: Double, badgeColor: Color) {
+        let entrance = entranceCurve.value(SceneTime.progress(sceneTime, delay: 0.12, duration: 1.6))
         let t = sceneTime - launchDelay
-        let showsRocket = frame.meteorTime.map { $0 < meteorTravel } ?? true
 
         var sky = ctx
-        if !frame.skyInPlace {
-            sky.translateBy(x: 0, y: -1260 * (1 - entrance))
-        }
+        sky.translateBy(x: 0, y: -1260 * (1 - entrance))
         drawSky(&sky, badgeColor: badgeColor)
 
         var world = ctx
@@ -573,14 +611,19 @@ enum LaunchPainter {
             RocketArt.drawGlow(&rocket, opacity: 0.8 * glowIn * pulseOpacity, scale: pulseScale)
             RocketArt.drawRocket(&rocket, doorOpen: 0)
         }
+    }
 
-        if let m = frame.meteorTime {
-            if m < meteorTravel {
-                drawMeteor(&world, progress: m / meteorTravel)
-            } else {
-                drawExplosion(&world, progress: (m - meteorTravel) / explosionLength)
-            }
-        }
+    /// A Terra volta sem foguete, com a câmera mais perto: canteiro de obras em loop.
+    private static func drawSite(_ ctx: inout GraphicsContext, destroyedTime d: Double, clock: Double) {
+        let rise = entranceCurve.value(SceneTime.progress(d, delay: siteRiseDelay, duration: siteRiseLength))
+        var site = ctx
+        site.translateBy(x: 0, y: 844 * (1 - rise))
+        site.translateBy(x: 195, y: 422)
+        site.scaleBy(x: siteZoom, y: siteZoom)
+        site.translateBy(x: -195, y: -siteFocusY)
+        drawTerrain(&site)
+        drawLaunchBase(&site, clock: clock, withTower: false)
+        ConstructionSiteArt.draw(&site, clock: clock)
     }
 
     /// Chão parado na ignição, depois desce acelerando a partir do repouso e sai de
@@ -604,12 +647,23 @@ enum LaunchPainter {
 
     // MARK: Meteoro e explosão
 
-    /// Meteoro atravessando o céu do canto superior esquerdo até o foguete, com rastro
-    /// incandescente. Acelera um pouco no fim (entrando na "atmosfera").
-    static func drawMeteor(_ w: inout GraphicsContext, progress: Double) {
-        let start = CGPoint(x: -50, y: 70)
-        let end = impactPoint
-        let e = SceneCurve.easeIn.value(progress)
+    private static func clamp01(_ v: Double) -> Double { min(max(v, 0), 1) }
+    private static func easeOut3(_ p: Double) -> Double { 1 - pow(1 - p, 3) }
+    private static let rnd = ConstructionSiteArt.rnd
+
+    /// Contorno irregular da rocha (raio 1), deformado por ponto.
+    private static let rockOutline: [(Double, Double)] = [
+        (0, -1), (0.62, -0.78), (1, -0.18), (0.86, 0.46), (0.38, 0.94),
+        (-0.3, 0.9), (-0.86, 0.52), (-1, -0.08), (-0.7, -0.66),
+    ]
+
+    /// Meteoro do canto superior esquerdo até o foguete: rocha irregular girando, com
+    /// crateras e borda incandescente, crescendo e acelerando enquanto chega; rastro de
+    /// fogo em três camadas e fagulhas soltando pelo caminho.
+    static func drawMeteor(_ w: inout GraphicsContext, progress p: Double, clock: Double) {
+        let start = CGPoint(x: -70, y: -40)
+        let end = CGPoint(x: impactPoint.x - 3, y: impactPoint.y - 1)
+        let e = SceneCurve(x1: 0.55, y1: 0, x2: 0.9, y2: 0.5).value(p)
         let x = start.x + (end.x - start.x) * e
         let y = start.y + (end.y - start.y) * e
         let dx = end.x - start.x
@@ -617,107 +671,198 @@ enum LaunchPainter {
         let length = (dx * dx + dy * dy).squareRoot()
         let ux = dx / length
         let uy = dy / length
+        let r = 3 + 9 * p * p * p
+        let head = CGPoint(x: x, y: y)
 
-        // rastro: triângulo afinando pra trás, do laranja pro transparente
-        let trail = 90.0
-        let tailX = x - ux * trail
-        let tailY = y - uy * trail
-        var tail = Path()
-        tail.move(to: CGPoint(x: x - uy * 7, y: y + ux * 7))
-        tail.addLine(to: CGPoint(x: tailX, y: tailY))
-        tail.addLine(to: CGPoint(x: x + uy * 7, y: y - ux * 7))
-        tail.closeSubpath()
-        var glow = w
-        glow.blendMode = .screen
-        glow.addFilter(.blur(radius: 3))
-        glow.fill(tail, with: .linearGradient(
-            Gradient(stops: [
-                .init(color: Color(sceneHex: 0xFFD27A, opacity: 0.95), location: 0),
-                .init(color: Color(sceneHex: 0xFF8A3D, opacity: 0.55), location: 0.35),
-                .init(color: Color(sceneHex: 0xFF5A2C, opacity: 0), location: 1),
-            ]),
-            startPoint: CGPoint(x: x, y: y),
-            endPoint: CGPoint(x: tailX, y: tailY)
-        ))
-        glow.fill(S.circle(x, y, 16), with: S.radial([
-            .init(color: Color(sceneHex: 0xFFB45C, opacity: 0.8), location: 0),
-            .init(color: Color(sceneHex: 0xFF7A33, opacity: 0), location: 1),
-        ], center: CGPoint(x: x, y: y), radius: 16))
+        var fire = w
+        fire.blendMode = .plusLighter
+        // rastro: halo vermelho, laranja e núcleo claro
+        let layers: [(Double, Double, UInt32)] = [(16, 2.6, 0xFF5028), (11, 1.7, 0xFF963C), (6, 0.8, 0xFFF0C8)]
+        for layer in layers {
+            let trail = r * layer.0 + 40 * p
+            let width = r * layer.1
+            let tail = CGPoint(x: x - ux * trail, y: y - uy * trail)
+            var tri = Path()
+            tri.move(to: CGPoint(x: x - uy * width, y: y + ux * width))
+            tri.addLine(to: tail)
+            tri.addLine(to: CGPoint(x: x + uy * width, y: y - ux * width))
+            tri.closeSubpath()
+            fire.fill(tri, with: .linearGradient(
+                Gradient(colors: [Color(sceneHex: layer.2, opacity: 0.9), Color(sceneHex: layer.2, opacity: 0)]),
+                startPoint: head,
+                endPoint: tail
+            ))
+        }
+        for i in 0..<16 {
+            let life = SceneTime.loop(clock * 2.2 + rnd(i), period: 1)
+            let back = life * (60 + r * 4)
+            let off = (rnd(i + 20) - 0.5) * r * 2.4 + (rnd(i + 40) - 0.5) * 14 * life
+            let sx = x - ux * back - uy * off
+            let sy = y - uy * back + ux * off + 10 * life * life
+            fire.fill(S.rect(sx, sy, 1.4, 1.4), with: .color(Color(.sRGB, red: 1, green: (190 - 90 * life) / 255, blue: 80.0 / 255, opacity: (1 - life) * 0.9)))
+        }
+        fire.fill(S.circle(x, y, r * 3.2), with: S.radial([
+            .init(color: Color(sceneHex: 0xFFBE6E, opacity: 0.75), location: 0),
+            .init(color: Color(sceneHex: 0xFF783C, opacity: 0), location: 1),
+        ], center: head, radius: r * 3.2))
 
-        // a rocha
-        w.fill(S.circle(x, y, 8), with: S.radial([
+        var rock = w
+        rock.translateBy(x: x, y: y)
+        rock.rotate(by: .radians(clock * 2.6))
+        var outline = Path()
+        for (i, point) in rockOutline.enumerated() {
+            let rr = r * (1 + (rnd(i + 70) - 0.5) * 0.25)
+            let pt = CGPoint(x: point.0 * rr, y: point.1 * rr)
+            if i == 0 { outline.move(to: pt) } else { outline.addLine(to: pt) }
+        }
+        outline.closeSubpath()
+        rock.fill(outline, with: S.radial([
             .init(color: Color(sceneHex: 0x8A7A6E), location: 0),
-            .init(color: Color(sceneHex: 0x4E433D), location: 1),
-        ], center: CGPoint(x: x - 2.5, y: y - 2.5), radius: 10))
-        w.fill(S.circle(x + 2.5, y + 1.5, 2), with: .color(Color(sceneHex: 0x3C332E)))
-        w.fill(S.circle(x - 2, y + 3, 1.4), with: .color(Color(sceneHex: 0x3C332E)))
-        w.stroke(S.circle(x, y, 8), with: .color(Color(sceneHex: 0xFFB45C, opacity: 0.55)), lineWidth: 1.2)
+            .init(color: Color(sceneHex: 0x3F3530), location: 1),
+        ], center: CGPoint(x: -r * 0.3, y: -r * 0.3), radius: r * 1.2))
+        rock.stroke(outline, with: .color(Color(sceneHex: 0xFFAA5A, opacity: 0.8)), lineWidth: max(0.8, r * 0.14))
+        for crater in [(0.3, 0.2, 0.22), (-0.35, 0.35, 0.16), (0.1, -0.45, 0.13)] {
+            rock.fill(S.circle(crater.0 * r, crater.1 * r, crater.2 * r), with: .color(Color(sceneHex: 0x2F2724)))
+        }
     }
 
-    /// Explosão no ponto do impacto: clarão, bola de fogo, destroços com as cores do
-    /// foguete caindo com gravidade e fumaça se desfazendo. `progress` 0...1.
-    static func drawExplosion(_ w: inout GraphicsContext, progress: Double) {
-        let q = min(max(progress, 0), 1)
-        let c = impactPoint
+    /// Pedaço do foguete voando na explosão, em unidades do desenho do foguete.
+    private struct Piece {
+        enum Kind { case band(Double, Double), leftFin, rightFin, nozzle }
+        let kind: Kind
+        let vx: Double, vy: Double, spin: Double
 
-        // fumaça (por baixo do fogo), cresce devagar e some
-        let smokeOpacity = 0.55 * (1 - q)
-        if smokeOpacity > 0.01 {
+        var center: CGPoint {
+            switch kind {
+            case .band(let top, let bottom): return CGPoint(x: 195, y: (top + bottom) / 2)
+            case .leftFin: return CGPoint(x: 148, y: 650)
+            case .rightFin: return CGPoint(x: 242, y: 650)
+            case .nozzle: return CGPoint(x: 195, y: 670)
+            }
+        }
+    }
+
+    private static let pieces: [Piece] = [
+        Piece(kind: .band(470, 525), vx: -40, vy: -250, spin: -5.5),   // bico
+        Piece(kind: .band(525, 590), vx: 170, vy: -140, spin: 4.2),    // corpo com a janela
+        Piece(kind: .band(590, 670), vx: -150, vy: -60, spin: -3.4),   // corpo com a porta
+        Piece(kind: .leftFin, vx: -230, vy: 40, spin: -6.8),
+        Piece(kind: .rightFin, vx: 230, vy: 20, spin: 7.2),
+        Piece(kind: .nozzle, vx: 30, vy: 200, spin: 3),
+    ]
+
+    /// Explosão no ponto do impacto: fumaça escura subindo, o foguete partido em seis
+    /// pedaços (bico, corpo, barbatanas, bocal) girando e caindo com brasa, bola de fogo
+    /// que escurece, duas ondas de choque e fagulhas com rastro. `progress` 0...1 ao longo
+    /// de `explosionLength`.
+    static func drawExplosion(_ w: inout GraphicsContext, progress: Double, clock: Double) {
+        let q = clamp01(progress)
+        let c = CGPoint(x: 195, y: impactPoint.y)
+
+        // fumaça escura
+        let smokeOpacity = 0.55 * clamp01((q - 0.08) * 4) * (1 - clamp01((q - 0.45) / 0.55))
+        if smokeOpacity > 0.001 {
             var smoke = w
             smoke.opacity *= smokeOpacity
-            smoke.addFilter(.blur(radius: 2))
-            let offsets: [(Double, Double, Double)] = [(-16, -6, 0.5), (14, -10, 0.45), (0, 12, 0.55), (-10, 16, 0.4), (18, 8, 0.42)]
-            for (i, o) in offsets.enumerated() {
-                let grow = 0.6 + 1.1 * SceneCurve.easeOut.value(q)
-                let drift = -18 * q
+            for i in 0..<10 {
+                let a = rnd(i) * 7
+                let dist = (18 + rnd(i + 1) * 40) * easeOut3(min(q * 1.4, 1))
+                let s = (0.35 + rnd(i + 2) * 0.5) * (0.6 + 1.5 * easeOut3(q))
                 smoke.fill(
-                    S.blobPath(at: c.x + o.0 * grow, c.y + o.1 * grow + drift, scale: o.2 * grow),
-                    with: .color(Color(sceneHex: i % 2 == 0 ? 0x7A7F8A : 0x5F646E))
+                    S.blobPath(at: c.x + cos(a) * dist, c.y + sin(a) * dist - 45 * q, scale: s),
+                    with: .color(Color(sceneHex: i % 2 == 1 ? 0x3A3D45 : 0x51555E))
                 )
             }
         }
 
-        // bola de fogo
-        let fire = SceneCurve.easeOut.value(min(q / 0.55, 1))
-        let fireOpacity = max(0, 1 - q / 0.7)
-        if fireOpacity > 0.01 {
-            var f = w
-            f.opacity *= fireOpacity
-            f.fill(S.circle(c.x, c.y, 10 + 34 * fire), with: S.radial([
-                .init(color: Color(sceneHex: 0xFFF3CF), location: 0),
-                .init(color: Color(sceneHex: 0xFFC25A), location: 0.35),
-                .init(color: Color(sceneHex: 0xF0702E), location: 0.75),
-                .init(color: Color(sceneHex: 0xC4422A, opacity: 0), location: 1),
-            ], center: c, radius: 10 + 34 * fire))
-        }
-
-        // clarão rápido
-        let flash = max(0, 1 - q / 0.25)
-        if flash > 0.01 {
-            var fl = w
-            fl.blendMode = .screen
-            fl.opacity *= flash
-            fl.addFilter(.blur(radius: 6))
-            fl.fill(S.circle(c.x, c.y, 26 + 60 * q), with: .color(Color(sceneHex: 0xFFE8B0)))
-        }
-
-        // destroços: pedaços brancos e vermelhos do foguete voando com gravidade
-        let debrisOpacity = max(0, 1 - q)
-        if debrisOpacity > 0.01 {
-            var d = w
-            d.opacity *= debrisOpacity
-            for i in 0..<12 {
-                let angle = Double(i) / 12 * 2 * .pi + 0.3 * sin(Double(i) * 1.7)
-                let speed = 70 + 45 * (0.5 + 0.5 * sin(Double(i) * 2.3))
-                let dist = speed * SceneCurve.easeOut.value(q)
-                let px = c.x + cos(angle) * dist
-                let py = c.y + sin(angle) * dist + 60 * q * q
-                var piece = d
-                piece.translateBy(x: px, y: py)
-                piece.rotate(by: .radians(angle + q * 6))
-                let color: Color = i % 3 == 0 ? RocketArt.red0 : (i % 3 == 1 ? Color(sceneHex: 0xF3EEE4) : Color(sceneHex: 0x9CA2AA))
-                piece.fill(S.rrect(-2.5, -1.5, 5, 3, 0.8), with: .color(color))
+        // pedaços do foguete
+        let fade = 1 - clamp01((q - 0.6) / 0.4)
+        if fade > 0.001 {
+            var rocketSpace = w
+            rocketSpace.translateBy(x: 0, y: rocketLift)
+            RocketArt.applyScale(&rocketSpace)
+            let tt = q * explosionLength
+            for piece in pieces {
+                let center = piece.center
+                var pc = rocketSpace
+                pc.opacity *= fade
+                pc.translateBy(x: center.x + piece.vx * tt, y: center.y + piece.vy * tt + 260 * tt * tt)
+                pc.rotate(by: .radians(piece.spin * tt))
+                pc.translateBy(x: -center.x, y: -center.y)
+                switch piece.kind {
+                case .band(let top, let bottom):
+                    var band = pc
+                    band.clip(to: RocketArt.hull)
+                    band.clip(to: S.rect(100, top, 200, bottom - top))
+                    RocketArt.drawRocket(&band, doorOpen: 0)
+                case .leftFin:
+                    pc.fill(RocketArt.leftFin, with: S.diagonal(RocketArt.red0, RocketArt.red1, in: RocketArt.leftFin.boundingRect))
+                case .rightFin:
+                    pc.fill(RocketArt.rightFin, with: S.diagonal(RocketArt.red0, RocketArt.red1, in: RocketArt.rightFin.boundingRect))
+                case .nozzle:
+                    pc.fill(S.polygon([(182, 664), (208, 664), (204, 675), (186, 675)]), with: .color(Color(sceneHex: 0x4D525B)))
+                }
+                // brasa no pedaço
+                var ember = pc
+                ember.blendMode = .plusLighter
+                ember.opacity *= (1 - q) * 0.8
+                ember.fill(S.circle(center.x, center.y, 40), with: S.radial([
+                    .init(color: Color(sceneHex: 0xFF8C3C, opacity: 0.9), location: 0),
+                    .init(color: Color(sceneHex: 0xFF5A28, opacity: 0), location: 1),
+                ], center: center, radius: 40))
             }
+        }
+
+        // bola de fogo: camadas que crescem e escurecem
+        let fb = clamp01(q / 0.5)
+        let fireOpacity = 1 - clamp01((q - 0.15) / 0.45)
+        if fireOpacity > 0.001 {
+            var fire = w
+            fire.opacity *= fireOpacity
+            for i in 0..<7 {
+                let a = rnd(i + 50) * 7
+                let dist = 24 * fb * rnd(i + 60)
+                let s = (0.6 + rnd(i + 70) * 0.5) * (0.35 + 1.6 * easeOut3(fb))
+                var ball = fire
+                ball.translateBy(x: c.x + cos(a) * dist, y: c.y + sin(a) * dist)
+                ball.scaleBy(x: s, y: s)
+                ball.fill(S.blob, with: S.radial([
+                    .init(color: Color(sceneHex: 0xFFF6D8), location: 0),
+                    .init(color: Color(sceneHex: 0xFFC85A), location: 0.3),
+                    .init(color: Color(sceneHex: 0xF0702E), location: 0.65),
+                    .init(color: Color(sceneHex: 0xA0321E, opacity: 0), location: 1),
+                ], center: .zero, radius: 44))
+            }
+        }
+
+        var light = w
+        light.blendMode = .plusLighter
+        // ondas de choque quentes, com brilho
+        for ring in [(0.0, 150.0, 3.0), (0.08, 110, 1.5)] {
+            let p = clamp01((q - ring.0) / 0.35)
+            guard p > 0, p < 1 else { continue }
+            let radius = ring.1 * easeOut3(p)
+            let shape = S.ellipse(c.x, c.y, radius, radius * 0.8)
+            var halo = light
+            halo.addFilter(.blur(radius: 6))
+            halo.stroke(shape, with: .color(Color(sceneHex: 0xFF9646, opacity: 0.9 * (1 - p))), lineWidth: ring.2 * 2 * (1 - p) + 3)
+            light.stroke(shape, with: .color(Color(sceneHex: 0xFFC88C, opacity: 0.7 * (1 - p))), lineWidth: ring.2 * 2 * (1 - p) + 0.5)
+        }
+        // fagulhas com rastro
+        for i in 0..<44 {
+            let life = clamp01(q / (0.4 + rnd(i + 300) * 0.5))
+            guard life < 1 else { continue }
+            let a = rnd(i + 100) * 7
+            let speed = 90 + rnd(i + 200) * 150
+            let dist = speed * (1 - pow(1 - life, 2)) * 0.6
+            let x0 = c.x + cos(a) * dist
+            let y0 = c.y + sin(a) * dist + 40 * life * life
+            let streak = 6 * (1 - life)
+            light.stroke(
+                S.line(x0, y0, x0 - cos(a) * streak, y0 - sin(a) * streak),
+                with: .color(Color(.sRGB, red: 1, green: (210 - 110 * life) / 255, blue: 90.0 / 255, opacity: 1 - life)),
+                lineWidth: 1.2
+            )
         }
     }
 
@@ -911,7 +1056,8 @@ enum LaunchPainter {
 
     // MARK: Base de lançamento (atrás da fumaça)
 
-    static func drawLaunchBase(_ b: inout GraphicsContext, clock: Double) {
+    /// `withTower: false` = canteiro de obras (a torre ficaria atrás do andaime e da placa).
+    static func drawLaunchBase(_ b: inout GraphicsContext, clock: Double, withTower: Bool = true) {
         func fill(_ path: Path, _ hex: UInt32, _ opacity: Double = 1) {
             b.fill(path, with: .color(Color(sceneHex: hex, opacity: opacity)))
         }
@@ -928,6 +1074,47 @@ enum LaunchPainter {
         for x in [15.0, 24, 33, 45] { fill(S.rect(x, 686, 5, 3), 0xE8B865, 0.85) }
         fill(S.rect(60, 662, 3, 12), 0x3A3F48)
         fill(S.rect(66, 658, 3, 16), 0x3A3F48)
+
+        if withTower {
+            drawTower(&b, clock: clock)
+        }
+
+        // mesa de lançamento com a boca do fosso de chamas, garras
+        fill(S.polygon([(158, 666), (232, 666), (244, 688), (146, 688)]), 0x454A54)
+        fill(S.rect(158, 666, 74, 3), 0x5F6570)
+        fill(S.polygon([(181, 672), (209, 672), (213, 688), (177, 688)]), 0x17191D)
+        fill(S.rect(166, 652, 5, 16), 0x353A42)
+        fill(S.rect(219, 652, 5, 16), 0x353A42)
+
+        // tubulação
+        if withTower {
+            b.stroke(S.line(126, 676, 150, 676), with: .color(Color(sceneHex: 0x50565F)), style: StrokeStyle(lineWidth: 3, lineCap: .round))
+            b.stroke(S.line(126, 682, 148, 682), with: .color(Color(sceneHex: 0x3F444C)), style: StrokeStyle(lineWidth: 2, lineCap: .round))
+        }
+        b.stroke(S.line(268, 680, 242, 680), with: .color(Color(sceneHex: 0x50565F)), style: StrokeStyle(lineWidth: 3, lineCap: .round))
+
+        // tanques de combustível
+        fill(S.rect(276, 685, 3, 4), 0x3A3F48)
+        fill(S.rect(304, 685, 3, 4), 0x3A3F48)
+        fill(S.rrect(268, 668, 48, 18, 9), 0x5A606B)
+        fill(S.rrect(272, 670, 40, 4, 2), 0x727985, 0.8)
+        fill(S.rect(333, 674, 3, 15), 0x3A3F48)
+        fill(S.rect(348, 674, 3, 15), 0x3A3F48)
+        fill(S.circle(342, 664, 14), 0x5A606B)
+        var tankShine = Path()
+        tankShine.move(to: S.pt(331, 657))
+        tankShine.addQuadCurve(to: S.pt(348, 652), control: S.pt(338, 649))
+        b.stroke(tankShine, with: .color(Color(sceneHex: 0x7D8490, opacity: 0.75)), lineWidth: 2)
+
+        // poste com luz
+        fill(S.rect(372, 612, 3, 78), 0x4A4F58)
+        fill(S.circle(373.5, 611, 2.2), 0xFFD27A)
+    }
+
+    private static func drawTower(_ b: inout GraphicsContext, clock: Double) {
+        func fill(_ path: Path, _ hex: UInt32, _ opacity: Double = 1) {
+            b.fill(path, with: .color(Color(sceneHex: hex, opacity: opacity)))
+        }
 
         // torre treliçada
         fill(S.rect(72, 670, 54, 20), 0x262A31)
@@ -957,35 +1144,6 @@ enum LaunchPainter {
             .init(color: Color(sceneHex: 0xFF5A44, opacity: 0), location: 1),
         ], center: S.pt(99, 432), radius: 12))
         light.fill(S.circle(99, 432, 3), with: .color(Color(sceneHex: 0xFF4A3A)))
-
-        // mesa de lançamento com a boca do fosso de chamas, garras
-        fill(S.polygon([(158, 666), (232, 666), (244, 688), (146, 688)]), 0x454A54)
-        fill(S.rect(158, 666, 74, 3), 0x5F6570)
-        fill(S.polygon([(181, 672), (209, 672), (213, 688), (177, 688)]), 0x17191D)
-        fill(S.rect(166, 652, 5, 16), 0x353A42)
-        fill(S.rect(219, 652, 5, 16), 0x353A42)
-
-        // tubulação
-        b.stroke(S.line(126, 676, 150, 676), with: .color(Color(sceneHex: 0x50565F)), style: StrokeStyle(lineWidth: 3, lineCap: .round))
-        b.stroke(S.line(126, 682, 148, 682), with: .color(Color(sceneHex: 0x3F444C)), style: StrokeStyle(lineWidth: 2, lineCap: .round))
-        b.stroke(S.line(268, 680, 242, 680), with: .color(Color(sceneHex: 0x50565F)), style: StrokeStyle(lineWidth: 3, lineCap: .round))
-
-        // tanques de combustível
-        fill(S.rect(276, 685, 3, 4), 0x3A3F48)
-        fill(S.rect(304, 685, 3, 4), 0x3A3F48)
-        fill(S.rrect(268, 668, 48, 18, 9), 0x5A606B)
-        fill(S.rrect(272, 670, 40, 4, 2), 0x727985, 0.8)
-        fill(S.rect(333, 674, 3, 15), 0x3A3F48)
-        fill(S.rect(348, 674, 3, 15), 0x3A3F48)
-        fill(S.circle(342, 664, 14), 0x5A606B)
-        var tankShine = Path()
-        tankShine.move(to: S.pt(331, 657))
-        tankShine.addQuadCurve(to: S.pt(348, 652), control: S.pt(338, 649))
-        b.stroke(tankShine, with: .color(Color(sceneHex: 0x7D8490, opacity: 0.75)), lineWidth: 2)
-
-        // poste com luz
-        fill(S.rect(372, 612, 3, 78), 0x4A4F58)
-        fill(S.circle(373.5, 611, 2.2), 0xFFD27A)
     }
 
     // MARK: Coluna de fumaça (presa ao chão, visível só abaixo do bocal)

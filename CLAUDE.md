@@ -282,10 +282,19 @@ depende de CI num runner macOS na nuvem (GitHub Actions) e de sideload via AltSt
   só repassa pra `LaunchScene` em `RocketScenes.swift`; o destino desbloqueado vira a
   cor do selo no céu). Renderizado em tela cheia em `ContentView.soveeMainScreen`
   depois que o botão redondo sai — só com `screenTimeManager.isShieldActive`, mesma
-  condição do passe de emergência. Guarda `lastExplosionDate` (instante do último
-  "toque") pra cena desenhar meteoro/explosão/relançamento; depois da explosão a fase
-  volta pra `.liftoff` (o foguete novo decola de novo). `ExplosionBurst` foi removido —
-  a explosão agora é desenhada dentro da própria cena.
+  condição do passe de emergência. **Desde 2026-09-28 o foguete destruído fica em obras
+  até o fim da noite** (pedido do usuário): o PRIMEIRO "toque" grava
+  `rocketDestroyedAt` e a fase vai `.exploded` → `.rebuilding` (canteiro de obras, ver
+  `ConstructionSiteArt.swift`); toques seguintes só alimentam a métrica. O foguete só fica
+  pronto na próxima ativação — nada de relançar na mesma noite. Sessão, último toque,
+  maior intervalo e `rocketDestroyedAt` são persistidos (o iOS pode matar o app de
+  madrugada e ao reabrir tem que continuar em obras). `lastNightRocketDestroyed`
+  (persistido) diz se a noite que acabou teve o foguete destruído: a tela do despertador
+  (`AlarmRingingView`) mostra o canteiro com "O foguete fica pronto pra próxima noite."
+  em vez do pouso na Lua. E a noite **perde a sequência**: `ScreenTimeManager.
+  removeShield` troca `.alarmFired` por `.rocketDestroyed` (caso novo de
+  `DetoxSessionEndReason`, fora das noites limpas; versões antigas leem como
+  `.alarmFired` pelo decode tolerante).
 - `Luminaria/RocketScenes.swift` — tradução em SwiftUI dos três protótipos aprovados
   (`design/entrada_prototipo.html`, `decolagem_prototipo.html`, `pouso_prototipo.html`).
   Tudo num `Canvas` dentro de `TimelineView(.animation)`, desenhado no MESMO espaço de
@@ -306,12 +315,23 @@ depende de CI num runner macOS na nuvem (GitHub Actions) e de sideload via AltSt
   pouco mais no começo); chama, brilho, porta, rampa e o astronauta do pouso vão na mesma
   escala, o trajeto do astronauta e as pegadas foram recalculados, a bandeira não mudou;
   a descida do chão na decolagem recalcula o trecho linear pra continuar emendando com a
-  mesma velocidade; (2) explosão por meteoro: no "toque" (`explosionDate`), um meteoro
-  cruza do canto superior esquerdo até o foguete (`meteorTravel` 0,8s), explosão com
-  clarão/bola de fogo/destroços/fumaça (`explosionLength` 1,3s), e então a MESMA
-  entrada + decolagem roda de novo com o céu já no lugar (`Frame.skyInPlace`) — a Terra
-  sobe com um foguete novo na plataforma e ele decola. Não validado visualmente num device ainda (sem Mac/simulador aqui)
+  mesma velocidade; (2) meteoro + explosão + canteiro de obras (protótipo
+  `design/meteoro_prototipo.html`, 2026-09-28): a partir de `destroyedAt` uma rocha
+  irregular girando, com crateras, borda em brasa, rastro de fogo em 3 camadas e
+  fagulhas cruza até o foguete (`meteorTravel` 1,5s); no impacto clarão na tela inteira,
+  tremor, fumaça escura, o foguete partido em 6 pedaços (bico/corpo/barbatanas/bocal,
+  recortados do próprio desenho) girando e caindo com brasa, bola de fogo, 2 ondas de
+  choque e fagulhas (`explosionLength` 2,2s); 1,5s depois do impacto a Terra volta sem
+  foguete, com a câmera 1,5× mais perto (`siteZoom`/`siteFocusY`), num canteiro de obras
+  que roda em loop até o fim da noite (`drawLaunchBase(withTower: false)` +
+  `ConstructionSiteArt`). Não validado visualmente num device ainda (sem Mac/simulador aqui)
   — só compilação no CI.
+- `Luminaria/ConstructionSiteArt.swift` — canteiro de obras noturno do foguete destruído
+  (protótipo aprovado `design/meteoro_prototipo.html`): andaime com holofotes, foguete pela
+  metade (parte de baixo pronta, de cima tracejada), guindaste subindo e descendo o bico,
+  cones, fita zebrada, placa "EM OBRAS", pilha de peças e 4 bonequinhos de capacete e
+  colete em loop — um martela, um solda (faíscas), um carrega painéis, um sinaliza pro
+  guindaste. Tudo função do relógio, no espaço de coordenadas do chão da decolagem.
 - `Luminaria/FriendsStore.swift` / `FriendsView.swift` — **amigos e ranking de detox
   (2026-09-26)**, sobre o **banco público do CloudKit** (container
   `iCloud.com.luminaria.app`, identidade = conta iCloud do iPhone, sem login extra).
@@ -396,7 +416,11 @@ depende de CI num runner macOS na nuvem (GitHub Actions) e de sideload via AltSt
   — ver limite abaixo), barra do sistema esticada 2,4× na vertical (não há altura
   configurável) e planetas maiores com detalhe (`PlanetGlyph`);
   contagem e barra andam pelo relógio do sistema via `Text(_:style:)`/
-  `ProgressView(timerInterval:)`, sem o app rodar). Limites da plataforma: widgets da
+  `ProgressView(timerInterval:)`, sem o app rodar). Depois do meteoro o cartão vira "em
+  obras" (2026-09-28): martelo amarelo, "Foguete em obras", "Sequência perdida", barra
+  amarela do impacto até o despertador terminando no foguete de pé, "Em obras desde
+  HH:mm" — os widgets da tela bloqueada NÃO mostram obra (decisão do usuário), só perdem a
+  sequência de manhã. Limites da plataforma: widgets da
   tela bloqueada são desenhados em tom único pelo iOS (só a Atividade ao Vivo tem cor);
   nenhum desenho próprio anda junto com a barra (Terra e planeta ficam nas pontas); a
   Apple encerra a Atividade ao Vivo sozinha depois de ~8h ativa (noites mais longas
@@ -452,6 +476,12 @@ depende de CI num runner macOS na nuvem (GitHub Actions) e de sideload via AltSt
   3s depois o botão e a tagline saem pela esquerda, o céu desce de cima e a Terra com o
   foguete sobe de baixo → só com a cena assentada a decolagem começa. Usa cópias dos
   ícones em `design/logo_sono.png`/`logo_acordado.png` (recoloridos via CSS mask).
+- `design/meteoro_prototipo.html` — protótipo aprovado (2026-09-28) do meteoro, da
+  explosão e do canteiro de obras (4 bonequinhos reconstruindo o foguete). Canvas 2D no
+  mesmo espaço 390×844; botões pra pular pro impacto e pro canteiro. Traduzido em
+  `RocketScenes.swift` (meteoro/explosão) e `ConstructionSiteArt.swift`. O navegador de
+  preview desta sessão não captura bem o canvas em screenshot: o jeito que funcionou foi
+  `window.__seek(t)` + salvar quadros em PNG via um endpoint POST no servidor de preview.
 - `design/pouso_prototipo.html` — protótipo animado do pouso (tela do despertador, quando
   a pessoa aguentou a noite): mesmo estilo e mesma regra da decolagem (foguete fixo e
   centralizado, só o cenário se move). Lua sobe por baixo desacelerando, poeira lunar,
@@ -570,7 +600,7 @@ Fluxo usado pra testar de verdade, todo do Windows:
 
 - **`Luminaria.xcodeproj/project.pbxproj` foi escrito à mão**, linha por linha — não existe
   Xcode/macOS neste ambiente de desenvolvimento (Windows). IDs de objeto seguem o padrão
-  `AAAAAAAAAAAAAAAAAAAAAA` + 2 dígitos hex incrementais (maior em uso: `9D`); qualquer
+  `AAAAAAAAAAAAAAAAAAAAAA` + 2 dígitos hex incrementais (maior em uso: `9F`); qualquer
   novo arquivo precisa de entradas em `PBXBuildFile`, `PBXFileReference`, no grupo, e na
   build phase certa (`Sources` pra `.swift`, `Resources` pra assets/sons). Sempre
   verificar balanço de chaves/parênteses e contagem de referências de cada ID novo
