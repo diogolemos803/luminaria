@@ -117,34 +117,55 @@ extension EnvironmentValues {
     }
 }
 
+/// Tipografia: **DM Sans em todo o app** (decisão do usuário, 2026-09-28). Os arquivos
+/// estão em `Luminaria/Fonts/` (Regular, Medium e Bold do repositório oficial
+/// googlefonts/dm-fonts, licença SIL OFL em `DMSans-OFL.txt` — uso comercial liberado),
+/// registrados em `Info.plist` (`UIAppFonts`). A Neue Machina do brief SOVEE ficou de
+/// fora: é grátis só pra uso pessoal (e dentro do Canva, que licencia pra uso na própria
+/// plataforma); embutir num app exige licença comercial da Pangram Pangram.
+///
+/// Se a fonte não estiver disponível (ex.: dentro da extensão do widget, que compila
+/// este arquivo mas não embute as fontes), cai pra fonte do sistema.
 extension Font {
+    /// Fonte de texto de todas as telas (antes: arredondada do sistema). Acompanha o
+    /// Dynamic Type (`relativeTo:`).
     static func luminaria(_ style: Font.TextStyle, weight: Font.Weight = .regular) -> Font {
-        .system(style, design: .rounded).weight(weight)
-    }
-
-    /// Fonte de destaque da marca SOVEE (Neue Machina) — usada em títulos grandes,
-    /// tagline ("hora de desligar."). **Os arquivos da fonte (.otf/.ttf) ainda não
-    /// estão no projeto** — não é possível baixar uma fonte licenciada de terceiros
-    /// sem indicação de fonte pelo usuário. Enquanto os arquivos não forem
-    /// adicionados (+ registrados em `Info.plist` `UIAppFonts` + `project.pbxproj`,
-    /// manual, sem Xcode), isso cai automaticamente pra uma serifada do sistema, que
-    /// aproxima o peso editorial de um display type sem fingir ser a fonte real.
-    static func soveeDisplay(size: CGFloat, weight: Font.Weight = .bold) -> Font {
-        guard UIFont(name: "NeueMachina-Bold", size: size) != nil else {
-            return .system(size: size, weight: weight, design: .serif)
+        guard hasDMSans else {
+            return .system(style, design: .rounded).weight(weight)
         }
-        return .custom("NeueMachina-Bold", size: size)
+        return .custom(dmSansName(for: weight), size: baseSize(for: style), relativeTo: style)
     }
 
-    /// Fonte de corpo da marca SOVEE (DM Sans). Mesma ressalva do `soveeDisplay`
-    /// acima — cai pro sistema (design `.default`) até os arquivos da fonte
-    /// existirem no bundle. Usa `Font.custom(_:size:relativeTo:)` pra manter suporte
-    /// a Dynamic Type quando a fonte de verdade entrar.
+    /// Títulos e tagline ("hora de desligar."), em tamanho fixo — DM Sans no peso
+    /// pedido (Bold por padrão).
+    static func soveeDisplay(size: CGFloat, weight: Font.Weight = .bold) -> Font {
+        guard hasDMSans else {
+            return .system(size: size, weight: weight)
+        }
+        return .custom(dmSansName(for: weight), size: size)
+    }
+
+    /// Texto da tela principal — mesma DM Sans de `luminaria`.
     static func soveeBody(_ style: Font.TextStyle, weight: Font.Weight = .regular) -> Font {
-        guard UIFont(name: "DMSans-Regular", size: 17) != nil else {
+        guard hasDMSans else {
             return .system(style, design: .default).weight(weight)
         }
-        return .custom("DMSans-Regular", size: Self.baseSize(for: style), relativeTo: style)
+        return .custom(dmSansName(for: weight), size: baseSize(for: style), relativeTo: style)
+    }
+
+    private static let hasDMSans = UIFont(name: "DMSans-Regular", size: 12) != nil
+
+    /// Só existem três pesos no projeto: semibold e acima viram Bold; light e abaixo,
+    /// Regular.
+    private static func dmSansName(for weight: Font.Weight) -> String {
+        switch weight {
+        case .medium:
+            return "DMSans-Medium"
+        case .semibold, .bold, .heavy, .black:
+            return "DMSans-Bold"
+        default:
+            return "DMSans-Regular"
+        }
     }
 
     private static func baseSize(for style: Font.TextStyle) -> CGFloat {

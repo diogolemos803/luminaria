@@ -32,6 +32,12 @@
     <string>Usamos o Calendário só para trocar automaticamente de rotina de sono (ex.: detectar viagem ou fim de semana), se você ativar isso.</string>
     <key>NSCalendarsFullAccessUsageDescription</key>
     <string>Usamos o Calendário só para trocar automaticamente de rotina de sono (ex.: detectar viagem ou fim de semana), se você ativar isso.</string>
+    <key>UIAppFonts</key>
+    <array>
+        <string>DMSans-Regular.ttf</string>
+        <string>DMSans-Medium.ttf</string>
+        <string>DMSans-Bold.ttf</string>
+    </array>
     <key>NSAlarmKitUsageDescription</key>
     <string>O despertador da sua rotina de sono toca como um alarme do iPhone, mesmo no modo silencioso ou com o Foco ativado.</string>
     <key>NSSupportsLiveActivities</key>

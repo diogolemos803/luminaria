@@ -166,11 +166,16 @@ depende de CI num runner macOS na nuvem (GitHub Actions) e de sideload via AltSt
   `LockedView`/`AlarmRingingView` sem precisar editar cada uma. A paleta antiga
   continua existindo como `.legacyLiving`/`.legacyZleepy` — não usada em lugar
   nenhum, só uma opção de volta rápida (pedido explícito do usuário). Também define
-  `Font.soveeDisplay`/`Font.soveeBody` (Neue Machina/DM Sans) — **os arquivos de
-  fonte reais ainda não existem no projeto** (não são baixados de fonte nenhuma sem
-  indicação do usuário), então esses helpers checam `UIFont(name:...)` e caem pro
-  sistema (serifada/`.default`) enquanto os arquivos não forem adicionados +
-  registrados em `Info.plist`/`project.pbxproj`. Também define a `EnvironmentKey`
+  `Font.luminaria`/`Font.soveeDisplay`/`Font.soveeBody` — **desde 2026-09-28, DM Sans
+  em todo o app** (decisão do usuário): Regular/Medium/Bold oficiais (googlefonts/
+  dm-fonts) em `Luminaria/Fonts/`, licença SIL OFL em `DMSans-OFL.txt` (também vai no
+  bundle), registradas em `Info.plist` (`UIAppFonts`); semibold e acima viram Bold.
+  Cai pra fonte do sistema se não achar a fonte (ex.: na extensão do widget, que
+  compila este arquivo mas não embute as fontes). **A Neue Machina do brief ficou de
+  fora**: o usuário mandou o zip do Befonts, com licença "Personal Use Only"; a
+  Pangram Pangram só libera uso pessoal (o Canva licencia pra uso dentro do Canva, não
+  dá direito de embutir num app), e o repositório é público — embutir exige licença
+  comercial. Também define a `EnvironmentKey`
   `isNightModeArmed`, que propaga se o modo noite está armado pras telas secundárias
   sem precisar passar o bool por parâmetro em cada `init` — setada uma vez no
   `.sheet`/`.environment` de `ContentView`.
@@ -557,7 +562,7 @@ Fluxo usado pra testar de verdade, todo do Windows:
 
 - **`Luminaria.xcodeproj/project.pbxproj` foi escrito à mão**, linha por linha — não existe
   Xcode/macOS neste ambiente de desenvolvimento (Windows). IDs de objeto seguem o padrão
-  `AAAAAAAAAAAAAAAAAAAAAA` + 2 dígitos hex incrementais (maior em uso: `95`); qualquer
+  `AAAAAAAAAAAAAAAAAAAAAA` + 2 dígitos hex incrementais (maior em uso: `9D`); qualquer
   novo arquivo precisa de entradas em `PBXBuildFile`, `PBXFileReference`, no grupo, e na
   build phase certa (`Sources` pra `.swift`, `Resources` pra assets/sons). Sempre
   verificar balanço de chaves/parênteses e contagem de referências de cada ID novo

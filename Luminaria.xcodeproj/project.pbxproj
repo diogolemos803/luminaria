@@ -60,6 +60,10 @@
 		AAAAAAAAAAAAAAAAAAAAAA91 /* WidgetShared.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA8F /* WidgetShared.swift */; };
 		AAAAAAAAAAAAAAAAAAAAAA93 /* WidgetBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA92 /* WidgetBridge.swift */; };
 		AAAAAAAAAAAAAAAAAAAAAA95 /* NightLiveActivityWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA94 /* NightLiveActivityWidget.swift */; };
+		AAAAAAAAAAAAAAAAAAAAAA97 /* DMSans-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA96 /* DMSans-Regular.ttf */; };
+		AAAAAAAAAAAAAAAAAAAAAA99 /* DMSans-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA98 /* DMSans-Medium.ttf */; };
+		AAAAAAAAAAAAAAAAAAAAAA9B /* DMSans-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA9A /* DMSans-Bold.ttf */; };
+		AAAAAAAAAAAAAAAAAAAAAA9D /* DMSans-OFL.txt in Resources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA9C /* DMSans-OFL.txt */; };
 		AAAAAAAAAAAAAAAAAAAAAA5E /* SocialModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA5D /* SocialModels.swift */; };
 /* End PBXBuildFile section */
 
@@ -144,6 +148,10 @@
 		AAAAAAAAAAAAAAAAAAAAAA8F /* WidgetShared.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetShared.swift; sourceTree = "<group>"; };
 		AAAAAAAAAAAAAAAAAAAAAA92 /* WidgetBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetBridge.swift; sourceTree = "<group>"; };
 		AAAAAAAAAAAAAAAAAAAAAA94 /* NightLiveActivityWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NightLiveActivityWidget.swift; sourceTree = "<group>"; };
+		AAAAAAAAAAAAAAAAAAAAAA96 /* DMSans-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = Fonts/DMSans-Regular.ttf; sourceTree = "<group>"; };
+		AAAAAAAAAAAAAAAAAAAAAA98 /* DMSans-Medium.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = Fonts/DMSans-Medium.ttf; sourceTree = "<group>"; };
+		AAAAAAAAAAAAAAAAAAAAAA9A /* DMSans-Bold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = Fonts/DMSans-Bold.ttf; sourceTree = "<group>"; };
+		AAAAAAAAAAAAAAAAAAAAAA9C /* DMSans-OFL.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = Fonts/DMSans-OFL.txt; sourceTree = "<group>"; };
 		AAAAAAAAAAAAAAAAAAAAAA5D /* SocialModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SocialModels.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -211,6 +219,10 @@
 				AAAAAAAAAAAAAAAAAAAAAA8D /* FriendsView.swift */,
 				AAAAAAAAAAAAAAAAAAAAAA8F /* WidgetShared.swift */,
 				AAAAAAAAAAAAAAAAAAAAAA92 /* WidgetBridge.swift */,
+				AAAAAAAAAAAAAAAAAAAAAA96 /* DMSans-Regular.ttf */,
+				AAAAAAAAAAAAAAAAAAAAAA98 /* DMSans-Medium.ttf */,
+				AAAAAAAAAAAAAAAAAAAAAA9A /* DMSans-Bold.ttf */,
+				AAAAAAAAAAAAAAAAAAAAAA9C /* DMSans-OFL.txt */,
 				AAAAAAAAAAAAAAAAAAAAAA5D /* SocialModels.swift */,
 				AAAAAAAAAAAAAAAAAAAAAA1D /* Assets.xcassets */,
 				AAAAAAAAAAAAAAAAAAAAAA21 /* silence_loop.wav */,
@@ -345,6 +357,10 @@
 			buildActionMask = 2147483647;
 			files = (
 				AAAAAAAAAAAAAAAAAAAAAA1E /* Assets.xcassets in Resources */,
+				AAAAAAAAAAAAAAAAAAAAAA97 /* DMSans-Regular.ttf in Resources */,
+				AAAAAAAAAAAAAAAAAAAAAA99 /* DMSans-Medium.ttf in Resources */,
+				AAAAAAAAAAAAAAAAAAAAAA9B /* DMSans-Bold.ttf in Resources */,
+				AAAAAAAAAAAAAAAAAAAAAA9D /* DMSans-OFL.txt in Resources */,
 				AAAAAAAAAAAAAAAAAAAAAA22 /* silence_loop.wav in Resources */,
 				AAAAAAAAAAAAAAAAAAAAAA24 /* alarm_tone.wav in Resources */,
 				AAAAAAAAAAAAAAAAAAAAAA2E /* alarm_alvorada.wav in Resources */,
