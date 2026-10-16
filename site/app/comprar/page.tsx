@@ -4,8 +4,8 @@ import Link from "next/link";
 import { FormEvent, useState } from "react";
 import LampDrawing from "@/components/LampDrawing";
 
-// Valor provisório: troque aqui quando o preço for definido.
-const PRICE = 890;
+// Preço da luminária (R$).
+const PRICE = 649;
 const brl = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 const inbox = [
