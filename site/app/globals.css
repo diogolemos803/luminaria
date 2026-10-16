@@ -111,5 +111,5 @@ body {
 .buy-done{display:flex;flex-direction:column;gap:14px;align-items:flex-start;padding:24px;border-radius:22px;background:rgba(253,248,199,.08)}
 .buy-done h2{margin:0;font-size:26px;font-weight:500;letter-spacing:0;text-transform:none;opacity:1}
 .buy-done p{margin:0;font-size:16px;line-height:1.45}
-@media (max-width:860px){.buy-grid{grid-template-columns:minmax(0,1fr);gap:24px}.buy-photo{position:relative;top:0;aspect-ratio:1/1}.buy-photo img{object-position:50% 58%}.buy-pay{grid-template-columns:1fr}}
+@media (max-width:860px){.buy-grid{grid-template-columns:minmax(0,1fr);gap:24px}.buy-photo{position:relative;top:0;aspect-ratio:1/1}.buy-photo img{object-position:50% 50%}.buy-pay{grid-template-columns:1fr}}
 @media (prefers-reduced-motion:reduce){.buy-cta,.buy-btn,.buy-photo-on{transition:none}}
