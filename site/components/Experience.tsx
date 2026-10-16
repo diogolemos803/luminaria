@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import Loading, { Logo } from "./Loading";
+import Loading from "./Loading";
 import Menu from "./Menu";
 import { lampColors, rooms, type Mode } from "./palette";
 
@@ -44,9 +44,11 @@ export default function Experience() {
   const [picked, setPicked] = useState(0); // cor fixa escolhida
   const [cycleIndex, setCycleIndex] = useState(0);
   const [paused, setPaused] = useState(false); // parou o ciclo ao escolher uma cor
+  const [menuOpen, setMenuOpen] = useState(false);
   const [auto, setAuto] = useState(false); // "alternar sozinha": cicla sem precisar do cartão aberto
   const leaveTimer = useRef<ReturnType<typeof setTimeout>>();
   const pointerType = useRef("mouse");
+  const menuOpenRef = useRef(false);
   const ready = minTime && loaded >= Object.keys(PHOTOS).length;
 
   // Loading: no mínimo ~1,2s, mesmo com as fotos já carregadas.
@@ -82,19 +84,30 @@ export default function Experience() {
   const colorIndex = mode === "night" ? ((lampActive || auto) && !paused ? cycleIndex : picked) : 0;
 
   const hoverIn = useCallback(() => {
+    if (menuOpenRef.current) return;
     clearTimeout(leaveTimer.current);
     setLampActive(true);
   }, []);
   const hoverOut = useCallback(() => {
     leaveTimer.current = setTimeout(() => setLampActive(false), 250);
   }, []);
+  const handleMenuOpen = useCallback((o: boolean) => {
+    menuOpenRef.current = o;
+    setMenuOpen(o);
+    if (o) {
+      clearTimeout(leaveTimer.current);
+      setLampActive(false);
+    }
+  }, []);
   const toggleMode = useCallback(() => setMode((m) => (m === "night" ? "day" : "night")), []);
 
   const c = rooms[mode];
+  const hovering = lampActive && !menuOpen;
   const night = mode === "night";
   const lampColor = lampColors[colorIndex];
 
   // respiração: cópia da foto mascarada só na pessoa, que sobe e desce de leve
+  const focusMask = "radial-gradient(ellipse 15% 21% at 52% 50%, #000 58%, transparent 100%)";
   const breathMask = "radial-gradient(ellipse 30% 40% at 85% 68%, #000 35%, transparent 100%)";
 
   return (
@@ -116,17 +129,27 @@ export default function Experience() {
             animate={reduced ? undefined : { scale: [1, 1.025, 1] }}
             transition={reduced ? undefined : { duration: 36, repeat: Infinity, ease: "easeInOut" }}
           >
-            <Layers mode={mode} colorIndex={colorIndex} reduced={reduced} />
+            <div className="absolute inset-0" style={{ filter: hovering ? "blur(1.8px)" : "none", transition: "filter .45s ease" }}>
+              <Layers mode={mode} colorIndex={colorIndex} reduced={reduced} />
+            </div>
             {!reduced && (
               <motion.div
                 className="absolute inset-0"
-                style={{ transformOrigin: "90% 82%", WebkitMaskImage: breathMask, maskImage: breathMask }}
+                style={{ transformOrigin: "90% 82%", WebkitMaskImage: breathMask, maskImage: breathMask, filter: hovering ? "blur(1.8px)" : "none", transition: "filter .45s ease" }}
                 animate={{ scale: [1, 1.012, 1] }}
                 transition={{ duration: 4.2, repeat: Infinity, ease: "easeInOut" }}
               >
                 <Layers mode={mode} colorIndex={colorIndex} reduced={false} />
               </motion.div>
             )}
+
+            {/* foco nítido na luminária enquanto o resto desfoca */}
+            <div
+              className="pointer-events-none absolute inset-0"
+              style={{ opacity: hovering ? 1 : 0, transition: "opacity .45s ease", WebkitMaskImage: focusMask, maskImage: focusMask }}
+            >
+              <Layers mode={mode} colorIndex={colorIndex} reduced={reduced} />
+            </div>
 
             {/* brilho da luminária: tremor mínimo, na cor atual */}
             <motion.div
@@ -158,53 +181,53 @@ export default function Experience() {
               onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), setLampActive((a) => !a))}
             />
 
-            <AnimatePresence>
-              {lampActive && (
-                <motion.div
-                  key="card"
-                  className="absolute z-30 w-60 rounded-2xl p-4"
-                  style={{ left: "56%", top: "26%", background: c.card, color: c.text }}
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 6 }}
-                  transition={{ duration: 0.25 }}
-                  onPointerEnter={hoverIn}
-                  onPointerLeave={hoverOut}
-                >
-                  <p className="text-sm leading-snug">uma luz que acompanha o seu sono, do âmbar ao vermelho.</p>
-                  {night && (
-                    <div className="mt-3 flex gap-2" role="group" aria-label="cor da luz">
-                      {lampColors.map((col, i) => (
-                        <button
-                          key={col}
-                          type="button"
-                          aria-label={["âmbar", "laranja", "vermelho"][i]}
-                          aria-pressed={colorIndex === i}
-                          onClick={() => {
-                            setPicked(i);
-                            setAuto(false);
-                            setPaused(true);
-                          }}
-                          className="h-6 w-6 rounded-full"
-                          style={{ background: col, outline: colorIndex === i ? `2px solid ${c.text}` : "none", outlineOffset: 2 }}
-                        />
-                      ))}
-                    </div>
-                  )}
-                  <Link href="/produto" className="mt-4 inline-block rounded-full px-4 py-1.5 text-sm" style={{ background: night ? lampColor : "#DB8149", color: "#2A2A2A" }}>
-                    conheça a sovee
-                  </Link>
-                </motion.div>
-              )}
-            </AnimatePresence>
           </motion.div>
         </div>
       </motion.div>
 
+      <AnimatePresence>
+        {hovering && (
+          <motion.div
+            key="card"
+            className={`hover-card ${night ? "" : "is-day"}`}
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 6 }}
+            transition={{ duration: 0.25 }}
+            onPointerEnter={hoverIn}
+            onPointerLeave={hoverOut}
+          >
+          <p className="text-sm leading-snug">uma luz que acompanha o seu sono, do âmbar ao vermelho.</p>
+            {night && (
+              <div className="mt-3 flex gap-2" role="group" aria-label="cor da luz">
+                {lampColors.map((col, i) => (
+                  <button
+                    key={col}
+                    type="button"
+                    aria-label={["âmbar", "laranja", "vermelho"][i]}
+                    aria-pressed={colorIndex === i}
+                    onClick={() => {
+                      setPicked(i);
+                      setAuto(false);
+                      setPaused(true);
+                    }}
+                    className="h-6 w-6 rounded-full"
+                    style={{ background: col, outline: colorIndex === i ? `2px solid ${c.text}` : "none", outlineOffset: 2 }}
+                  />
+                ))}
+              </div>
+            )}
+            <Link href="/produto" className="mt-4 inline-block rounded-full px-4 py-1.5 text-sm" style={{ background: night ? lampColor : "#DB8149", color: "#2A2A2A" }}>
+              conheça a sovee
+            </Link>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {ready && (
         <>
           <div className={`brand-logo ${night ? "" : "is-day"}`} aria-label="sovee">
-            <Logo size={38} color="currentColor" />
+            <i className="brand-mark" aria-hidden="true" />
             <span>sovee</span>
           </div>
           <Menu
@@ -214,6 +237,7 @@ export default function Experience() {
             onPick={(i) => { setPicked(i); setAuto(false); setPaused(true); }}
             onAuto={() => { setAuto(true); setPaused(false); }}
             onMode={setMode}
+            onOpenChange={handleMenuOpen}
           />
           <button
             type="button"

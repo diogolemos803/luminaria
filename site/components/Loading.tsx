@@ -2,14 +2,20 @@
 
 import { motion } from "framer-motion";
 
-/** Logo SOVEE em line-art com o motivo zZ. */
+/** Logo SOVEE: a carinha dormindo, recolorida pela cor do texto. */
 export function Logo({ size = 120, color = "#FDF8C7" }: { size?: number; color?: string }) {
-  const stroke = { stroke: color, strokeWidth: 5, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, fill: "none" };
   return (
-    <svg width={size} height={size} viewBox="0 0 120 120" aria-hidden="true">
-      <path d="M22 62 H46 L22 94 H48" {...stroke} />
-      <path d="M62 24 H98 L62 80 H100" {...stroke} />
-    </svg>
+    <i
+      aria-hidden="true"
+      style={{
+        display: "block",
+        width: size * 0.9,
+        height: size,
+        background: color,
+        WebkitMask: "url(/logo.png) center/contain no-repeat",
+        mask: "url(/logo.png) center/contain no-repeat",
+      }}
+    />
   );
 }
 

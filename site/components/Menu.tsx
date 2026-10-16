@@ -19,6 +19,7 @@ type Props = {
   onPick: (i: number) => void;
   onAuto: () => void;
   onMode: (m: Mode) => void;
+  onOpenChange?: (open: boolean) => void;
 };
 
 const Check = () => (
@@ -27,7 +28,7 @@ const Check = () => (
   </svg>
 );
 
-export default function Menu({ mode, colorIndex, auto, onPick, onAuto, onMode }: Props) {
+export default function Menu({ mode, colorIndex, auto, onPick, onAuto, onMode, onOpenChange }: Props) {
   const [open, setOpen] = useState(false);
   const [hover, setHover] = useState("");
   const night = mode === "night";
@@ -37,7 +38,7 @@ export default function Menu({ mode, colorIndex, auto, onPick, onAuto, onMode }:
 
   return (
     <>
-      <button type="button" aria-label={open ? "fechar menu" : "abrir menu"} aria-expanded={open} onClick={() => setOpen((o) => !o)} className={`menu-fab ${day ? "is-day" : ""} ${open ? "is-open" : ""}`}>
+      <button type="button" aria-label={open ? "fechar menu" : "abrir menu"} aria-expanded={open} onClick={() => { const o = !open; setOpen(o); onOpenChange?.(o); }} className={`menu-fab ${day ? "is-day" : ""} ${open ? "is-open" : ""}`}>
         <i /><i /><i />
       </button>
       <nav aria-label="menu" className={`glass-menu ${day ? "is-day" : ""} ${open ? "is-open" : ""}`} aria-hidden={!open}>

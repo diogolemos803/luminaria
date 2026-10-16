@@ -26,19 +26,19 @@ body {
 .menu-fab.is-open i:nth-child(1){transform:translateY(7px) rotate(45deg)}
 .menu-fab.is-open i:nth-child(2){opacity:0}
 .menu-fab.is-open i:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
-.glass-menu{position:fixed;z-index:35;right:max(16px,4vw,env(safe-area-inset-right,0px));top:50%;width:min(400px,calc(100vw - 32px));max-height:calc(100% - 128px);overflow:auto;padding:22px 22px 18px;border-radius:36px;color:#FDF8C7;background:linear-gradient(160deg,rgba(120,98,76,.42),rgba(52,44,38,.5));-webkit-backdrop-filter:blur(30px) saturate(1.2);backdrop-filter:blur(30px) saturate(1.2);border:1px solid rgba(253,248,199,.16);box-shadow:0 24px 60px rgba(0,0,0,.35);opacity:0;transform:translateY(-46%) scale(.98);pointer-events:none;transition:opacity .35s,transform .35s,color .6s}
+.glass-menu{position:fixed;z-index:35;right:max(16px,4vw,env(safe-area-inset-right,0px));top:50%;width:min(318px,calc(100vw - 32px));max-height:calc(100% - 128px);overflow:auto;padding:16px 16px 12px;border-radius:28px;color:#FDF8C7;background:linear-gradient(160deg,rgba(120,98,76,.42),rgba(52,44,38,.5));-webkit-backdrop-filter:blur(30px) saturate(1.2);backdrop-filter:blur(30px) saturate(1.2);border:1px solid rgba(253,248,199,.16);box-shadow:0 24px 60px rgba(0,0,0,.35);opacity:0;transform:translateY(-46%) scale(.98);pointer-events:none;transition:opacity .35s,transform .35s,color .6s}
 .glass-menu.is-open{opacity:1;transform:translateY(-50%);pointer-events:auto}
-.glass-nav{display:flex;gap:12px;justify-content:space-between}
-.glass-nav a{width:60px;height:60px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:inherit;background:rgba(253,248,199,.16);transition:background .25s,color .25s,transform .25s}
+.glass-nav{display:flex;gap:8px;justify-content:space-between}
+.glass-nav a{width:50px;height:50px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:inherit;background:rgba(253,248,199,.16);transition:background .25s,color .25s,transform .25s}
 .glass-nav a:hover,.glass-nav a:focus-visible{background:#FDF8C7;color:#2A2A2A;transform:scale(1.06);outline:none}
-.glass-label{margin:22px 0 2px 4px;font-size:15px;opacity:.7;min-height:1.3em}
-.glass-title{margin:0 0 16px 4px;font-size:clamp(30px,4vw,40px);font-weight:500;letter-spacing:-.02em;line-height:1.1}
+.glass-label{margin:16px 0 2px 4px;font-size:13px;opacity:.7;min-height:1.3em}
+.glass-title{margin:0 0 12px 4px;font-size:clamp(24px,2.6vw,30px);font-weight:500;letter-spacing:-.02em;line-height:1.1}
 .glass-opts{border-top:1px solid rgba(253,248,199,.22);padding-top:10px;display:flex;flex-direction:column;gap:2px}
-.glass-opts button{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:0;background:transparent;color:inherit;font:inherit;font-size:19px;padding:13px 14px;border-radius:999px;cursor:pointer;transition:background .25s}
+.glass-opts button{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:0;background:transparent;color:inherit;font:inherit;font-size:16px;padding:10px 12px;border-radius:999px;cursor:pointer;transition:background .25s}
 .glass-opts button:hover{background:rgba(253,248,199,.1)}
 .glass-opts button[aria-checked=true]{background:rgba(253,248,199,.2)}
 .glass-opts button i{width:14px;height:14px;border-radius:50%;flex:none}
-.glass-opts button svg{width:18px;height:18px;margin-left:auto;opacity:0}
+.glass-opts button svg{width:16px;height:16px;margin-left:auto;opacity:0}
 .glass-opts button[aria-checked=true] svg{opacity:1}
 .glass-menu.is-day{color:#444;background:linear-gradient(160deg,rgba(253,248,199,.55),rgba(240,214,170,.45));border-color:rgba(68,68,68,.14);box-shadow:0 24px 60px rgba(80,50,20,.18)}
 .glass-menu.is-day .glass-nav a{background:rgba(68,68,68,.1)}
@@ -49,3 +49,9 @@ body {
 .brand-logo{position:fixed;z-index:40;left:max(20px,env(safe-area-inset-left,0px));top:max(16px,env(safe-area-inset-top,0px));display:flex;align-items:center;gap:12px;color:#FDF8C7;transition:color .6s;pointer-events:none}
 .brand-logo.is-day{color:#444}
 .brand-logo span{font-size:17px;letter-spacing:.4em;font-weight:500}
+
+/* card do hover da luminária: mesmo vidro do menu, à esquerda da luminária */
+.hover-card{--W:max(100vw,calc(100vh*16/9));position:fixed;z-index:30;width:236px;padding:16px 16px 14px;border-radius:24px;color:#FDF8C7;right:max(16px,calc(50vw + .08*var(--W)));top:calc(50vh - .2*var(--W));background:linear-gradient(160deg,rgba(120,98,76,.42),rgba(52,44,38,.5));-webkit-backdrop-filter:blur(30px) saturate(1.2);backdrop-filter:blur(30px) saturate(1.2);border:1px solid rgba(253,248,199,.16);box-shadow:0 24px 60px rgba(0,0,0,.35)}
+.hover-card.is-day{color:#444;background:linear-gradient(160deg,rgba(253,248,199,.6),rgba(240,214,170,.5));border-color:rgba(68,68,68,.14);box-shadow:0 24px 60px rgba(80,50,20,.18)}
+@media (max-width:700px){.hover-card{left:16px;right:16px;width:auto;top:auto;bottom:calc(88px + env(safe-area-inset-bottom,0px))}}
+.brand-mark{display:block;width:36px;height:40px;background:currentColor;-webkit-mask:url(/logo.png) center/contain no-repeat;mask:url(/logo.png) center/contain no-repeat}
