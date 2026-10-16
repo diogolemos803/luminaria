@@ -1,0 +1,20 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body {
+  height: 100%;
+  background: #444444;
+  color: #fdf8c7;
+  overflow: hidden;
+}
+
+body {
+  font-family: var(--font-dm-sans), system-ui, sans-serif;
+}
+
+:focus-visible {
+  outline: 2px solid #ff9f66;
+  outline-offset: 2px;
+}
