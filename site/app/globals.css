@@ -48,7 +48,9 @@ body {
 .glass-menu.is-day .glass-opts button[aria-checked=true]{background:rgba(68,68,68,.13)}
 .brand-logo{position:fixed;z-index:40;left:max(20px,env(safe-area-inset-left,0px));top:max(16px,env(safe-area-inset-top,0px));display:flex;align-items:center;gap:12px;color:#FDF8C7;transition:color .6s;pointer-events:none}
 .brand-logo.is-day{color:#444}
-.brand-logo span{font-size:17px;letter-spacing:.4em;font-weight:500}
+/* wordmark em Neue Machina (arquivo em public/fonts, fora do git: licença de uso pessoal) */
+@font-face{font-family:"Neue Machina";src:url(/fonts/NeueMachina-Regular.woff2) format("woff2");font-weight:400;font-display:swap}
+.brand-logo span{font-family:"Neue Machina",var(--font-dm-sans,"DM Sans"),system-ui,sans-serif;font-size:16px;letter-spacing:.22em;font-weight:400}
 
 /* card do hover da luminária: mesmo vidro do menu, à esquerda da luminária */
 .hover-card{--W:max(100vw,calc(100vh*16/9));position:fixed;z-index:30;width:236px;padding:16px 16px 14px;border-radius:24px;color:#FDF8C7;right:max(16px,calc(50vw + .08*var(--W)));top:calc(50vh - .2*var(--W));background:linear-gradient(160deg,rgba(120,98,76,.42),rgba(52,44,38,.5));-webkit-backdrop-filter:blur(30px) saturate(1.2);backdrop-filter:blur(30px) saturate(1.2);border:1px solid rgba(253,248,199,.16);box-shadow:0 24px 60px rgba(0,0,0,.35)}
