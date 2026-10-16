@@ -57,3 +57,56 @@ body {
 .hover-card.is-day{color:#444;background:linear-gradient(160deg,rgba(253,248,199,.6),rgba(240,214,170,.5));border-color:rgba(68,68,68,.14);box-shadow:0 24px 60px rgba(80,50,20,.18)}
 @media (max-width:700px){.hover-card{left:16px;right:16px;width:auto;top:auto;bottom:calc(88px + env(safe-area-inset-bottom,0px))}}
 .brand-mark{display:block;width:36px;height:40px;background:currentColor;-webkit-mask:url(/logo.png) center/contain no-repeat;mask:url(/logo.png) center/contain no-repeat}
+
+/* botão "adquira": centralizado, logo abaixo da luminária */
+.buy-cta{--W:max(100vw,calc(100vh*16/9));position:fixed;z-index:30;left:50%;top:calc(50vh + .0731*var(--W) + 26px);transform:translateX(-50%);padding:12px 34px;border-radius:999px;font-size:16px;font-weight:500;letter-spacing:.04em;text-decoration:none;color:#2A2A2A;background:var(--lc,#F2B05E);box-shadow:0 10px 30px rgba(0,0,0,.28);transition:background 1.1s,transform .25s,box-shadow .25s}
+.buy-cta:hover{transform:translateX(-50%) translateY(-2px);box-shadow:0 14px 36px rgba(0,0,0,.34)}
+.buy-cta.is-day{background:#DB8149}
+
+/* página de compra: rolagem própria (o body do site não rola) */
+.buy{--cr:#FDF8C7;position:fixed;inset:0;overflow-y:auto;background:#2A2A2A;color:var(--cr);padding:0 max(16px,env(safe-area-inset-right,0px)) 64px max(16px,env(safe-area-inset-left,0px))}
+.buy-top{max-width:1120px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;padding:max(16px,env(safe-area-inset-top,0px)) 0 16px}
+.buy-back{display:inline-flex;align-items:center;gap:6px;color:inherit;text-decoration:none;font-size:15px;opacity:.85}
+.buy-back:hover{opacity:1}
+.buy-brand{display:flex;align-items:center;gap:10px}
+.buy-brand .brand-mark{width:28px;height:31px}
+.buy-brand span{font-family:"Neue Machina",var(--font-dm-sans,"DM Sans"),system-ui,sans-serif;font-size:14px;letter-spacing:.22em}
+.buy-grid{max-width:1120px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:48px;align-items:start}
+.buy-photo{position:sticky;top:16px;aspect-ratio:4/5;border-radius:28px;background:url(/cena/noite.webp) 50% 50%/auto 150% no-repeat,#1c1c1c;box-shadow:0 30px 80px rgba(0,0,0,.4)}
+.buy-col{min-width:0;display:flex;flex-direction:column;gap:20px}
+.buy-eyebrow{margin:0;font-size:13px;letter-spacing:.18em;opacity:.65}
+.buy-title{margin:0;font-family:"Neue Machina",var(--font-dm-sans,"DM Sans"),system-ui,sans-serif;font-weight:400;font-size:clamp(44px,6vw,72px);letter-spacing:.08em;line-height:1}
+.buy-lead{margin:0;font-size:18px;line-height:1.45;max-width:46ch;opacity:.9}
+.buy-price{margin:0;font-size:30px;font-weight:500;font-variant-numeric:tabular-nums}
+.buy-price small{font-size:14px;font-weight:400;opacity:.65;margin-left:6px}
+.buy-block{border:0;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;min-width:0}
+.buy-block h2,.buy-block legend{margin:0 0 4px;padding:0;font-size:13px;letter-spacing:.18em;text-transform:lowercase;opacity:.65;font-weight:500}
+.buy-list{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px;font-size:16px}
+.buy-list li{padding-left:22px;position:relative}
+.buy-list li::before{content:"";position:absolute;left:2px;top:.6em;width:8px;height:8px;border-radius:50%;background:#F2B05E}
+.buy-form{display:flex;flex-direction:column;gap:22px}
+.buy-form label{font-size:14px;opacity:.8}
+.buy-form input:not([type=radio]){width:100%;font:inherit;font-size:16px;color:inherit;background:rgba(253,248,199,.08);border:1px solid rgba(253,248,199,.2);border-radius:14px;padding:12px 14px;margin-bottom:6px}
+.buy-form input:not([type=radio]):focus{outline:2px solid #F2B05E;outline-offset:1px;border-color:transparent}
+.buy-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.buy-row-uf{grid-template-columns:3fr 1fr}
+.buy-qty{display:inline-flex;align-items:center;gap:6px;align-self:flex-start;border:1px solid rgba(253,248,199,.2);border-radius:999px;padding:4px}
+.buy-qty button{width:40px;height:40px;border:0;border-radius:50%;background:rgba(253,248,199,.1);color:inherit;font-size:20px;cursor:pointer}
+.buy-qty button:hover{background:rgba(253,248,199,.2)}
+.buy-qty output{min-width:36px;text-align:center;font-size:18px;font-variant-numeric:tabular-nums}
+.buy-pay{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.buy-pay label{display:flex;align-items:center;justify-content:center;text-align:center;padding:14px 8px;border-radius:14px;border:1px solid rgba(253,248,199,.2);cursor:pointer;font-size:15px;opacity:1;transition:background .2s,border-color .2s}
+.buy-pay label.is-on{background:rgba(242,176,94,.18);border-color:#F2B05E}
+.buy-pay input{position:absolute;opacity:0;pointer-events:none}
+.buy-pay label:focus-within{outline:2px solid #F2B05E;outline-offset:2px}
+.buy-sum{display:flex;flex-direction:column;gap:8px;padding:16px;border-radius:18px;background:rgba(253,248,199,.07);font-size:15px}
+.buy-sum div{display:flex;justify-content:space-between;gap:12px}
+.buy-total{font-size:20px;font-weight:500;padding-top:10px;border-top:1px solid rgba(253,248,199,.18)}
+.buy-btn{display:inline-flex;align-items:center;justify-content:center;border:0;padding:16px 28px;border-radius:999px;font:inherit;font-size:17px;font-weight:500;color:#2A2A2A;background:#F2B05E;cursor:pointer;text-decoration:none;transition:filter .2s}
+.buy-btn:hover{filter:brightness(1.07)}
+.buy-note{margin:0;font-size:13px;opacity:.6}
+.buy-done{display:flex;flex-direction:column;gap:14px;align-items:flex-start;padding:24px;border-radius:22px;background:rgba(253,248,199,.08)}
+.buy-done h2{margin:0;font-size:26px;font-weight:500;letter-spacing:0;text-transform:none;opacity:1}
+.buy-done p{margin:0;font-size:16px;line-height:1.45}
+@media (max-width:860px){.buy-grid{grid-template-columns:minmax(0,1fr);gap:24px}.buy-photo{position:relative;top:0;aspect-ratio:1/1}.buy-pay{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:reduce){.buy-cta,.buy-btn{transition:none}}

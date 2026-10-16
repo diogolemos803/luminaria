@@ -230,6 +230,9 @@ export default function Experience() {
             <i className="brand-mark" aria-hidden="true" />
             <span>sovee</span>
           </div>
+          <Link href="/comprar" className={`buy-cta ${night ? "" : "is-day"}`} style={{ ["--lc" as string]: lampColor }}>
+            adquira
+          </Link>
           <Menu
             mode={mode}
             colorIndex={colorIndex}
