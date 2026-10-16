@@ -8,6 +8,7 @@ export class Cloth {
   readonly nx: number;
   readonly nz: number;
   readonly count: number;
+  floorY = 0.005;
   pos: Float32Array;
   prev: Float32Array;
   private link: Uint32Array;
@@ -101,8 +102,8 @@ export class Cloth {
         else p[k + 2] = box.maxZ + skin;
         hit = true;
       }
-      if (p[k + 1] < 0.005) {
-        p[k + 1] = 0.005;
+      if (p[k + 1] < this.floorY) {
+        p[k + 1] = this.floorY;
         hit = true;
       }
       if (field) {

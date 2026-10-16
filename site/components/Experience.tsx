@@ -129,7 +129,29 @@ export default function Experience() {
         </div>
       </motion.div>
 
-      {ready && <Menu mode={mode} />}
+      {ready && (
+        <>
+          <Menu mode={mode} />
+          <button
+            type="button"
+            onClick={toggleMode}
+            aria-label={night ? "ver o quarto de dia" : "ver o quarto à noite"}
+            className="fixed bottom-4 left-4 z-40 flex h-12 w-12 items-center justify-center rounded-full"
+            style={{ background: c.card, color: c.text }}
+          >
+            {night ? (
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+                <circle cx="12" cy="12" r="4" />
+                <path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+              </svg>
+            ) : (
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z" />
+              </svg>
+            )}
+          </button>
+        </>
+      )}
     </main>
   );
 }

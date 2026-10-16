@@ -4,7 +4,6 @@ import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
-import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
@@ -129,8 +128,8 @@ export default function Scene(props: SceneProps) {
     scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
 
     const camera = new THREE.PerspectiveCamera(48, 1, 0.05, 40);
-    const camBase = new THREE.Vector3(0.12, 1.02, 1.4);
-    const camTarget = new THREE.Vector3(0.62, 0.45, -2.4);
+    const camBase = new THREE.Vector3(2.95, 1.3, 1.45);
+    const camTarget = new THREE.Vector3(0.3, 0.5, 0.35);
     camera.position.copy(camBase);
 
     const composer = new EffectComposer(renderer, new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples: 4 }));
@@ -154,8 +153,8 @@ export default function Scene(props: SceneProps) {
       };
       return new THREE.MeshStandardMaterial({ map: load("diff", true), normalMap: load("nor", false), roughnessMap: load("rough", false), color, ...extra });
     };
-    const wallMat = pbr("wall", 3, 2, "#f2eee8");
-    const floorMat = pbr("floor", 3, 8, "#c9c2b8");
+    const wallMat = pbr("wall", 1, 1, "#f4efe6");
+    const floorMat = pbr("floor", 1, 1, "#d8d0c4");
     const pedestalMat = pbr("wall", 1.5, 1, "#f6f1e8");
     const frameFabric = pbr("linen", 2, 2, "#9b9288");
     const sheetMat = pbr("linen", 1.4, 2.2, "#ffffff");
@@ -164,7 +163,7 @@ export default function Scene(props: SceneProps) {
         const hairMat = new THREE.MeshStandardMaterial({ color: "#1d140f", roughness: 0.85 });
     const shirt = pbr("linen", 6, 6, "#55575d");
     const lampGlass = new THREE.MeshStandardMaterial({ color: "#3a2208", emissive: new THREE.Color("#F2B05E"), emissiveIntensity: 2.4, roughness: 0.3 });
-    const windowPane = new THREE.MeshBasicMaterial({ color: NIGHT.window, toneMapped: false });
+    const windowPane = new THREE.MeshBasicMaterial({ color: NIGHT.window, toneMapped: false, side: THREE.DoubleSide });
     const frameM = new THREE.MeshStandardMaterial({ color: "#e9e2d2", roughness: 0.6 });
 
     let parent: THREE.Object3D = scene;
@@ -177,57 +176,79 @@ export default function Scene(props: SceneProps) {
       return m;
     };
 
-    // ---------- quarto ----------
-    const floor = add(new THREE.PlaneGeometry(6, 16), floorMat, 1.2, 0, -4.5, false);
-    floor.rotation.x = -Math.PI / 2;
-    const ceil = add(new THREE.PlaneGeometry(6, 16), wallMat, 1.2, 2.7, -4.5, false);
+    // ---------- quarto: ArchiCAD (Hillside House, quarto do 1º andar), materiais trocados ----------
+    // origem: cabeceira (parede oeste), piso, eixo da cama · +x = leste · -z = norte
+    const rugMat = pbr("linen", 1, 1, "#c9c1b4");
+    const metalMat = new THREE.MeshStandardMaterial({ color: "#b9bbbd", metalness: 0.9, roughness: 0.35 });
+    const artMat = new THREE.MeshStandardMaterial({ color: "#c7bfae", roughness: 0.9 });
+    const armchairMat = pbr("linen", 2, 2, "#a79c8c");
+    const roomMats: Record<string, THREE.Material> = {
+      plaster: wallMat,
+      floor: floorMat,
+      darkfabric: frameFabric,
+      fabric: armchairMat,
+      sheet: sheetMat,
+      stone: pedestalMat,
+      rug: rugMat,
+      metal: metalMat,
+      glass: windowPane,
+      frame: frameM,
+      art: artMat,
+    };
+    const windowTargets: THREE.Object3D[] = [];
+    new OBJLoader().load("/models/room.obj", (obj) => {
+      obj.traverse((o) => {
+        const m = o as THREE.Mesh;
+        if (!m.isMesh) return;
+        const key = (m.material as THREE.Material)?.name ?? "plaster";
+        m.material = roomMats[key] ?? wallMat;
+        // UV por projeção planar no mundo (o mapeamento exportado do ArchiCAD estica as paredes)
+        if (["plaster", "floor", "stone", "darkfabric", "sheet", "fabric"].includes(key)) {
+          const pos = m.geometry.attributes.position, nor = m.geometry.attributes.normal;
+          const uv = new Float32Array(pos.count * 2);
+          const w = new THREE.Vector3();
+          m.updateWorldMatrix(true, false);
+          for (let i = 0; i < pos.count; i++) {
+            w.fromBufferAttribute(pos, i).applyMatrix4(m.matrixWorld);
+            const nx = nor ? Math.abs(nor.getX(i)) : 0, ny = nor ? Math.abs(nor.getY(i)) : 1, nz = nor ? Math.abs(nor.getZ(i)) : 0;
+            const k = key === "floor" ? 0.6 : key === "darkfabric" ? 1.6 : 0.7;
+            if (ny >= nx && ny >= nz) { uv[i * 2] = w.x * k; uv[i * 2 + 1] = w.z * k; }
+            else if (nx >= nz) { uv[i * 2] = w.z * k; uv[i * 2 + 1] = w.y * k; }
+            else { uv[i * 2] = w.x * k; uv[i * 2 + 1] = w.y * k; }
+          }
+          m.geometry.setAttribute("uv", new THREE.BufferAttribute(uv, 2));
+        }
+        const isGlass = key === "glass";
+        m.castShadow = !isGlass;
+        m.receiveShadow = true;
+        if (isGlass) m.visible = false; // o vidro do modelo é trocado pelos painéis de céu abaixo
+      });
+      scene.add(obj);
+    });
+    // painéis de céu nas janelas (leste, atrás da câmera, e norte): é o que muda entre dia e noite
+    const skyPane = (w: number, h: number, x: number, y: number, z: number, ry: number) => {
+      const p = new THREE.Mesh(new THREE.PlaneGeometry(w, h), windowPane);
+      p.position.set(x, y, z);
+      p.rotation.y = ry;
+      scene.add(p);
+      windowTargets.push(p);
+    };
+    skyPane(3.0, 1.4, 3.5, 1.3, 0.3, Math.PI / 2); // janela leste
+    skyPane(1.45, 1.4, 2.78, 1.3, -2.58, 0); // janela norte
+    // teto liso (o modelo tem telhado inclinado; aqui só importa o pé-direito de 2,7 m)
+    const ceil = add(new THREE.PlaneGeometry(4.4, 5.0), wallMat, 1.8, 2.71, -0.5, true);
     ceil.rotation.x = Math.PI / 2;
-    const leftWall = add(new THREE.PlaneGeometry(16, 2.7), wallMat, -1.0, 1.35, -4.5, false);
-    leftWall.rotation.y = Math.PI / 2;
-    const rightWall = add(new THREE.PlaneGeometry(16, 2.7), wallMat, 3.4, 1.35, -4.5, false);
-    rightWall.rotation.y = -Math.PI / 2;
-    const behind = add(new THREE.PlaneGeometry(6, 2.7), wallMat, 1.2, 1.35, 3.5, false);
-    behind.rotation.y = Math.PI;
 
-    // parede do fundo com janela (no ponto de fuga)
-    const WIN = { x: 1.5, y: 1.55, w: 1.5, h: 1.5, z: -7.2 };
-    const back = new THREE.Shape();
-    back.moveTo(-1.8, 0);
-    back.lineTo(4.2, 0);
-    back.lineTo(4.2, 2.7);
-    back.lineTo(-1.8, 2.7);
-    const hole = new THREE.Path();
-    hole.moveTo(WIN.x - WIN.w / 2, WIN.y - WIN.h / 2);
-    hole.lineTo(WIN.x + WIN.w / 2, WIN.y - WIN.h / 2);
-    hole.lineTo(WIN.x + WIN.w / 2, WIN.y + WIN.h / 2);
-    hole.lineTo(WIN.x - WIN.w / 2, WIN.y + WIN.h / 2);
-    back.holes.push(hole);
-    add(new THREE.ExtrudeGeometry(back, { depth: 0.2, bevelEnabled: false }), wallMat, 0, 0, WIN.z - 0.2, true);
-    const pane = new THREE.Mesh(new THREE.PlaneGeometry(WIN.w, WIN.h), windowPane);
-    pane.position.set(WIN.x, WIN.y, WIN.z - 0.4);
-    scene.add(pane);
-    const bar = (w: number, h: number, x: number, y: number) => add(new THREE.BoxGeometry(w, h, 0.07), frameM, x, y, WIN.z - 0.05, false);
-    bar(0.05, WIN.h, WIN.x, WIN.y);
-    bar(WIN.w, 0.05, WIN.x, WIN.y);
-    bar(0.06, WIN.h, WIN.x - WIN.w / 2, WIN.y);
-    bar(0.06, WIN.h, WIN.x + WIN.w / 2, WIN.y);
-    bar(WIN.w, 0.06, WIN.x, WIN.y + WIN.h / 2);
-    bar(WIN.w, 0.06, WIN.x, WIN.y - WIN.h / 2);
-    const windowHit = new THREE.Mesh(new THREE.PlaneGeometry(WIN.w + 0.3, WIN.h + 0.3), new THREE.MeshBasicMaterial({ visible: false }));
-    windowHit.position.set(WIN.x, WIN.y, WIN.z + 0.1);
-    scene.add(windowHit);
+    // ---------- criado-mudo do modelo (reboco, sem madeira) ----------
+    const TABLE = { x: 0.15, z: 1.15, h: 0.5 };
 
-    // ---------- pedestal de microcimento (sem móvel de madeira) ----------
-    const TABLE = { x: -0.32, z: -0.15, h: 0.5 };
-    add(new THREE.CylinderGeometry(0.27, 0.27, TABLE.h, 64), pedestalMat, TABLE.x, TABLE.h / 2, TABLE.z);
-
-    // ---------- cama de tecido ----------
+    // ---------- cama: o quarto traz a cama; aqui entram colchão, travesseiro, pessoa e edredom ----------
+    // as coordenadas locais abaixo foram criadas com a cama no eixo z; a matriz leva tudo pro eixo x do quarto
     const bedG = new THREE.Group();
-    bedG.position.z = 0.55;
+    bedG.matrixAutoUpdate = false;
+    bedG.matrix.set(0, 0, -1, -0.34, 0, 1, 0, -0.1, -1, 0, 0, 1.05, 0, 0, 0, 1);
     scene.add(bedG);
     parent = bedG;
-    add(new RoundedBoxGeometry(1.56, 0.34, 2.26, 6, 0.05), frameFabric, 1.05, 0.17, -1.4);
-    add(new RoundedBoxGeometry(1.5, 0.22, 2.2, 6, 0.07), sheetMat, 1.05, 0.43, -1.4);
     const MATTRESS_TOP = 0.54;
 
     // travesseiro, amassado pela cabeça
@@ -264,9 +285,10 @@ export default function Scene(props: SceneProps) {
 
     // edredom: tecido simulado (Verlet)
     const cloth = new Cloth(42, 46, 0.1, -0.6, 1.9, 2.1, 1.05);
+    cloth.floorY = 0.105;
     const bodyField: Field = { ...SLEEPER.hf, ox: 0, breath: 0 };
     const noCaps: Capsule[] = [];
-    const bedBox = { minX: 0.27, minY: 0, minZ: -2.53, maxX: 1.83, maxY: MATTRESS_TOP, maxZ: -0.27 };
+    const bedBox = { minX: 0.15, minY: 0, minZ: -2.32, maxX: 1.95, maxY: MATTRESS_TOP, maxZ: -0.37 };
     const cGeo = new THREE.BufferGeometry();
     cGeo.setAttribute("position", new THREE.BufferAttribute(cloth.pos, 3));
     const uv = new Float32Array(cloth.count * 2);
@@ -327,6 +349,7 @@ export default function Scene(props: SceneProps) {
     const lampGroup = new THREE.Group();
     const LAMP_POS = new THREE.Vector3(TABLE.x, TABLE.h, TABLE.z);
     lampGroup.position.copy(LAMP_POS);
+    lampGroup.rotation.y = -Math.PI / 2;
     scene.add(lampGroup);
     const lampLight = new THREE.PointLight("#F2B05E", 3, 0, 2);
     lampLight.castShadow = true;
@@ -385,11 +408,11 @@ export default function Scene(props: SceneProps) {
     const hemi = new THREE.HemisphereLight("#1b2536", "#0b0b0d", 0.3);
     scene.add(hemi);
     const sky = new THREE.DirectionalLight("#7f9bc4", 0.4);
-    sky.position.set(2.2, 2.4, -9.5);
-    sky.target.position.set(1.0, 0.2, 0);
+    sky.position.set(14, 3.2, -1.2);
+    sky.target.position.set(0.8, 0.4, 0.2);
     sky.castShadow = true;
     sky.shadow.mapSize.set(2048, 2048);
-    Object.assign(sky.shadow.camera, { left: -4, right: 4, top: 4, bottom: -4, near: 1, far: 16 });
+    Object.assign(sky.shadow.camera, { left: -5, right: 5, top: 5, bottom: -5, near: 1, far: 30 });
     sky.shadow.bias = -0.0004;
     sky.shadow.normalBias = 0.03;
     sky.shadow.radius = 4;
@@ -402,7 +425,7 @@ export default function Scene(props: SceneProps) {
       const r = renderer.domElement.getBoundingClientRect();
       ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
       ray.setFromCamera(ndc, camera);
-      const hits = ray.intersectObjects([lampHit, windowHit], false);
+      const hits = ray.intersectObjects([lampHit, ...windowTargets], false);
       if (!hits.length) return null;
       return hits[0].object === lampHit ? "lamp" : "window";
     };
