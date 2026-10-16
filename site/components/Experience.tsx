@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import Loading from "./Loading";
+import Loading, { Logo } from "./Loading";
 import Menu from "./Menu";
 import { lampColors, rooms, type Mode } from "./palette";
 
@@ -44,6 +44,7 @@ export default function Experience() {
   const [picked, setPicked] = useState(0); // cor fixa escolhida
   const [cycleIndex, setCycleIndex] = useState(0);
   const [paused, setPaused] = useState(false); // parou o ciclo ao escolher uma cor
+  const [auto, setAuto] = useState(false); // "alternar sozinha": cicla sem precisar do cartão aberto
   const leaveTimer = useRef<ReturnType<typeof setTimeout>>();
   const pointerType = useRef("mouse");
   const ready = minTime && loaded >= Object.keys(PHOTOS).length;
@@ -68,7 +69,7 @@ export default function Experience() {
 
   // Com a luminária ativa (à noite), cicla âmbar → laranja → vermelho em loop lento.
   useEffect(() => {
-    if (!lampActive || mode === "day") {
+    if ((!lampActive && !auto) || mode === "day") {
       setPaused(false);
       return;
     }
@@ -77,8 +78,8 @@ export default function Experience() {
     const id = setInterval(() => setCycleIndex((i) => (i + 1) % lampColors.length), 2400);
     return () => clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lampActive, paused, mode]);
-  const colorIndex = mode === "night" ? (lampActive && !paused ? cycleIndex : picked) : 0;
+  }, [lampActive, auto, paused, mode]);
+  const colorIndex = mode === "night" ? ((lampActive || auto) && !paused ? cycleIndex : picked) : 0;
 
   const hoverIn = useCallback(() => {
     clearTimeout(leaveTimer.current);
@@ -181,6 +182,7 @@ export default function Experience() {
                           aria-pressed={colorIndex === i}
                           onClick={() => {
                             setPicked(i);
+                            setAuto(false);
                             setPaused(true);
                           }}
                           className="h-6 w-6 rounded-full"
@@ -201,7 +203,18 @@ export default function Experience() {
 
       {ready && (
         <>
-          <Menu mode={mode} />
+          <div className={`brand-logo ${night ? "" : "is-day"}`} aria-label="sovee">
+            <Logo size={38} color="currentColor" />
+            <span>sovee</span>
+          </div>
+          <Menu
+            mode={mode}
+            colorIndex={colorIndex}
+            auto={auto}
+            onPick={(i) => { setPicked(i); setAuto(false); setPaused(true); }}
+            onAuto={() => { setAuto(true); setPaused(false); }}
+            onMode={setMode}
+          />
           <button
             type="button"
             onClick={toggleMode}
