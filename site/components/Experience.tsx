@@ -1,6 +1,5 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
@@ -8,56 +7,94 @@ import Loading from "./Loading";
 import Menu from "./Menu";
 import { lampColors, rooms, type Mode } from "./palette";
 
-const Scene = dynamic(() => import("./Scene"), { ssr: false });
 const MIN_LOADING_MS = 1200;
+const PHOTOS = {
+  dia: "/cena/dia.webp",
+  noite: "/cena/noite.webp",
+  laranja: "/cena/noite_laranja.webp",
+  vermelho: "/cena/noite_vermelho.webp",
+} as const;
+
+// zonas em % da foto (16:9): a luminária e a pessoa
+const LAMP = { left: "44%", top: "33%", width: "18%", height: "33%" };
+
+/** Pilha de fotos: a noite âmbar fica sempre por baixo, laranja e vermelho entram por cima. */
+function Layers({ mode, colorIndex, reduced }: { mode: Mode; colorIndex: number; reduced: boolean }) {
+  const night = mode === "night";
+  const fade = { duration: reduced ? 0 : 1.1, ease: "easeInOut" as const };
+  const img = "absolute inset-0 h-full w-full select-none object-cover";
+  return (
+    <>
+      {/* eslint-disable @next/next/no-img-element */}
+      <img src={PHOTOS.noite} alt="" className={img} draggable={false} />
+      <motion.img src={PHOTOS.laranja} alt="" className={img} draggable={false} initial={false} animate={{ opacity: night && colorIndex >= 1 ? 1 : 0 }} transition={fade} />
+      <motion.img src={PHOTOS.vermelho} alt="" className={img} draggable={false} initial={false} animate={{ opacity: night && colorIndex >= 2 ? 1 : 0 }} transition={fade} />
+      <motion.img src={PHOTOS.dia} alt="" className={img} draggable={false} initial={false} animate={{ opacity: night ? 0 : 1 }} transition={{ ...fade, duration: reduced ? 0 : 0.9 }} />
+      {/* eslint-enable @next/next/no-img-element */}
+    </>
+  );
+}
 
 export default function Experience() {
   const reduced = !!useReducedMotion();
   const [minTime, setMinTime] = useState(false);
-  const [sceneReady, setSceneReady] = useState(false);
+  const [loaded, setLoaded] = useState(0);
   const [mode, setMode] = useState<Mode>("night");
   const [lampActive, setLampActive] = useState(false);
   const [picked, setPicked] = useState(0); // cor fixa escolhida
   const [cycleIndex, setCycleIndex] = useState(0);
   const [paused, setPaused] = useState(false); // parou o ciclo ao escolher uma cor
   const leaveTimer = useRef<ReturnType<typeof setTimeout>>();
-  const cardRef = useRef<HTMLDivElement>(null);
-  const ready = minTime && sceneReady;
+  const pointerType = useRef("mouse");
+  const ready = minTime && loaded >= Object.keys(PHOTOS).length;
 
-  // Loading: no mínimo ~1,2s, mesmo com a cena já carregada.
+  // Loading: no mínimo ~1,2s, mesmo com as fotos já carregadas.
   useEffect(() => {
     const t = setTimeout(() => setMinTime(true), MIN_LOADING_MS);
     return () => clearTimeout(t);
   }, []);
 
-  // Com a luminária ativa, cicla âmbar → laranja → vermelho em loop lento.
+  // Pré-carrega as fotos antes de mostrar a cena.
   useEffect(() => {
-    if (!lampActive) {
+    let n = 0;
+    Object.values(PHOTOS).forEach((src) => {
+      const im = new window.Image();
+      const done = () => setLoaded(++n);
+      im.onload = done;
+      im.onerror = done;
+      im.src = src;
+    });
+  }, []);
+
+  // Com a luminária ativa (à noite), cicla âmbar → laranja → vermelho em loop lento.
+  useEffect(() => {
+    if (!lampActive || mode === "day") {
       setPaused(false);
       return;
     }
     if (paused) return;
     setCycleIndex(picked);
-    const id = setInterval(() => setCycleIndex((i) => (i + 1) % lampColors.length), 2200);
+    const id = setInterval(() => setCycleIndex((i) => (i + 1) % lampColors.length), 2400);
     return () => clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lampActive, paused]);
-  const colorIndex = lampActive && !paused ? cycleIndex : picked;
+  }, [lampActive, paused, mode]);
+  const colorIndex = mode === "night" ? (lampActive && !paused ? cycleIndex : picked) : 0;
 
-  const onLampHover = useCallback((hover: boolean) => {
+  const hoverIn = useCallback(() => {
     clearTimeout(leaveTimer.current);
-    if (hover) setLampActive(true);
-    else leaveTimer.current = setTimeout(() => setLampActive(false), 250);
+    setLampActive(true);
   }, []);
-  const onLampTap = useCallback(() => setLampActive((a) => !a), []);
+  const hoverOut = useCallback(() => {
+    leaveTimer.current = setTimeout(() => setLampActive(false), 250);
+  }, []);
   const toggleMode = useCallback(() => setMode((m) => (m === "night" ? "day" : "night")), []);
-  const onLampScreen = useCallback((x: number, y: number) => {
-    const c = cardRef.current;
-    if (c) c.style.transform = `translate(${x + 24}px, ${y}px) translateY(-50%)`;
-  }, []);
 
   const c = rooms[mode];
   const night = mode === "night";
+  const lampColor = lampColors[colorIndex];
+
+  // respiração: cópia da foto mascarada só na pessoa, que sobe e desce de leve
+  const breathMask = "radial-gradient(ellipse 30% 40% at 85% 68%, #000 35%, transparent 100%)";
 
   return (
     <main className="relative h-full w-full overflow-hidden bg-carvao">
@@ -69,63 +106,96 @@ export default function Experience() {
         animate={ready ? { opacity: 1, scale: 1 } : {}}
         transition={{ duration: reduced ? 0 : 0.8, ease: "easeInOut" }}
       >
-        <Scene
-          mode={mode}
-          lampColor={lampColors[colorIndex]}
-          reduced={reduced}
-          onReady={() => setSceneReady(true)}
-          onLampHover={onLampHover}
-          onLampTap={onLampTap}
-          onWindowTap={toggleMode}
-          onLampScreen={onLampScreen}
-        />
-
-        <AnimatePresence>
-          {lampActive && (
-            <div ref={cardRef} className="pointer-events-none absolute left-0 top-0 z-30" onPointerEnter={() => clearTimeout(leaveTimer.current)}>
+        {/* palco 16:9 que cobre a tela; zonas interativas usam % da foto */}
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2" style={{ width: "max(100vw, calc(100svh * 16 / 9))", aspectRatio: "16 / 9" }}>
+          <motion.div
+            className="absolute inset-0"
+            role="img"
+            aria-label="Quarto à noite: a luminária SOVEE acesa sobre o criado-mudo, com o celular guardado, e uma pessoa dormindo ao lado"
+            animate={reduced ? undefined : { scale: [1, 1.025, 1] }}
+            transition={reduced ? undefined : { duration: 36, repeat: Infinity, ease: "easeInOut" }}
+          >
+            <Layers mode={mode} colorIndex={colorIndex} reduced={reduced} />
+            {!reduced && (
               <motion.div
-                className="pointer-events-auto w-60 rounded-2xl p-4"
-                style={{ background: c.card, color: c.text }}
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 6 }}
-                transition={{ duration: 0.25 }}
-                onPointerEnter={() => clearTimeout(leaveTimer.current)}
-                onPointerLeave={() => onLampHover(false)}
+                className="absolute inset-0"
+                style={{ transformOrigin: "90% 82%", WebkitMaskImage: breathMask, maskImage: breathMask }}
+                animate={{ scale: [1, 1.012, 1] }}
+                transition={{ duration: 4.2, repeat: Infinity, ease: "easeInOut" }}
               >
-                <p className="text-sm leading-snug">uma luz que acompanha o seu sono, do âmbar ao vermelho.</p>
-                <div className="mt-3 flex gap-2" role="group" aria-label="cor da luz">
-                  {lampColors.map((col, i) => (
-                    <button
-                      key={col}
-                      type="button"
-                      aria-label={["âmbar", "laranja", "vermelho"][i]}
-                      aria-pressed={colorIndex === i}
-                      onClick={() => {
-                        setPicked(i);
-                        setPaused(true);
-                      }}
-                      className="h-6 w-6 rounded-full"
-                      style={{ background: col, outline: colorIndex === i ? `2px solid ${c.text}` : "none", outlineOffset: 2 }}
-                    />
-                  ))}
-                </div>
-                <Link href="/produto" className="mt-4 inline-block rounded-full px-4 py-1.5 text-sm" style={{ background: lampColors[colorIndex], color: "#2A2A2A" }}>
-                  conheça a sovee
-                </Link>
+                <Layers mode={mode} colorIndex={colorIndex} reduced={false} />
               </motion.div>
-            </div>
-          )}
-        </AnimatePresence>
+            )}
 
-        {/* acesso por teclado e leitores de tela */}
-        <div className="sr-only">
-          <button type="button" aria-expanded={lampActive} onClick={onLampTap}>
-            luminária sovee
-          </button>
-          <button type="button" onClick={toggleMode}>
-            {night ? "abrir a janela e ver o dia" : "fechar a janela e ver a noite"}
-          </button>
+            {/* brilho da luminária: tremor mínimo, na cor atual */}
+            <motion.div
+              className="pointer-events-none absolute"
+              style={{
+                left: "30%",
+                top: "12%",
+                width: "40%",
+                height: "70%",
+                background: `radial-gradient(ellipse at 50% 52%, ${lampColor}55 0%, ${lampColor}00 62%)`,
+                mixBlendMode: "screen",
+              }}
+              animate={{ opacity: night ? (reduced ? 0.5 : [0.35, 0.6, 0.4, 0.55, 0.35]) : 0 }}
+              transition={night && !reduced ? { duration: 5.5, repeat: Infinity, ease: "easeInOut" } : { duration: 0.8 }}
+            />
+
+            {/* zona da luminária */}
+            <div
+              role="button"
+              tabIndex={0}
+              aria-label="luminária sovee"
+              aria-expanded={lampActive}
+              className="absolute cursor-pointer"
+              style={LAMP}
+              onPointerDown={(e) => (pointerType.current = e.pointerType)}
+              onPointerEnter={(e) => e.pointerType === "mouse" && hoverIn()}
+              onPointerLeave={(e) => e.pointerType === "mouse" && hoverOut()}
+              onClick={() => pointerType.current !== "mouse" && setLampActive((a) => !a)}
+              onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), setLampActive((a) => !a))}
+            />
+
+            <AnimatePresence>
+              {lampActive && (
+                <motion.div
+                  key="card"
+                  className="absolute z-30 w-60 rounded-2xl p-4"
+                  style={{ left: "56%", top: "26%", background: c.card, color: c.text }}
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 6 }}
+                  transition={{ duration: 0.25 }}
+                  onPointerEnter={hoverIn}
+                  onPointerLeave={hoverOut}
+                >
+                  <p className="text-sm leading-snug">uma luz que acompanha o seu sono, do âmbar ao vermelho.</p>
+                  {night && (
+                    <div className="mt-3 flex gap-2" role="group" aria-label="cor da luz">
+                      {lampColors.map((col, i) => (
+                        <button
+                          key={col}
+                          type="button"
+                          aria-label={["âmbar", "laranja", "vermelho"][i]}
+                          aria-pressed={colorIndex === i}
+                          onClick={() => {
+                            setPicked(i);
+                            setPaused(true);
+                          }}
+                          className="h-6 w-6 rounded-full"
+                          style={{ background: col, outline: colorIndex === i ? `2px solid ${c.text}` : "none", outlineOffset: 2 }}
+                        />
+                      ))}
+                    </div>
+                  )}
+                  <Link href="/produto" className="mt-4 inline-block rounded-full px-4 py-1.5 text-sm" style={{ background: night ? lampColor : "#DB8149", color: "#2A2A2A" }}>
+                    conheça a sovee
+                  </Link>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
         </div>
       </motion.div>
 
