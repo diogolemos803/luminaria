@@ -6,8 +6,8 @@ import { lampColors } from "./palette";
 
 const links = [
   { label: "produto", href: "/produto", icon: <><rect x="7" y="3" width="10" height="12" rx="3" /><path d="M5 20h14M8 15v5M16 15v5" /></> },
-  { label: "sobre", href: "#sobre", icon: <><circle cx="12" cy="12" r="9" /><path d="M12 11v5M12 8h.01" /></> },
-  { label: "a ciência do sono", href: "#ciencia", icon: <path d="M4 5.5C4 4.7 4.7 4 5.5 4H11v16H5.5C4.7 20 4 19.3 4 18.5zM20 5.5c0-.8-.7-1.5-1.5-1.5H13v16h5.5c.8 0 1.5-.7 1.5-1.5z" /> },
+  { label: "sobre", href: "/sobre", icon: <><circle cx="12" cy="12" r="9" /><path d="M12 11v5M12 8h.01" /></> },
+  { label: "a ciência do sono", href: "/ciencia-do-sono", icon: <path d="M4 5.5C4 4.7 4.7 4 5.5 4H11v16H5.5C4.7 20 4 19.3 4 18.5zM20 5.5c0-.8-.7-1.5-1.5-1.5H13v16h5.5c.8 0 1.5-.7 1.5-1.5z" /> },
   { label: "instagram", href: "https://instagram.com", icon: <><rect x="4" y="4" width="16" height="16" rx="5" /><circle cx="12" cy="12" r="3.6" /><path d="M16.8 7.2h.01" /></> },
 ];
 const names = ["Âmbar", "Laranja", "Vermelho"];

@@ -1,0 +1,68 @@
+{
+  "produto": {
+    "eyebrow": "luminária circadiana",
+    "title": "sovee",
+    "lead": "hora de desligar. Uma luz que acompanha o seu sono, do âmbar ao vermelho, e um ritual simples para guardar o celular e dormir.",
+    "stepsTitle": "como funciona",
+    "steps": [
+      { "t": "arme o modo noite", "d": "No app SOVEE, toque no botão redondo. Ele fica pronto para reconhecer a luminária." },
+      { "t": "encoste o celular", "d": "A etiqueta NFC da luminária avisa o app que a noite começou. O foguete decola, o despertador é armado e os apps escolhidos são bloqueados." },
+      { "t": "deixe no nicho e durma", "d": "O celular descansa no nicho de madeira da base, à vista e longe da cama, enquanto a luz quente acompanha o fim do seu dia." },
+      { "t": "acorde com calma", "d": "No horário da rotina, o despertador toca com um som suave e os apps voltam." }
+    ],
+    "featuresTitle": "o que ela faz",
+    "features": [
+      { "t": "do âmbar ao vermelho", "d": "A luz muda de cor ao longo da noite, sempre em tons quentes, sem o azul que mantém o cérebro em alerta." },
+      { "t": "base com nicho", "d": "Um lugar fixo e bonito para o celular dormir, fora do alcance da mão." },
+      { "t": "bloqueio de apps", "d": "Os apps que você escolher ficam bloqueados até a hora do despertador. O app nunca sabe quais são: só o seu iPhone guarda essa escolha." },
+      { "t": "rotinas de sono", "d": "Crie rotinas com horário, som e apps bloqueados próprios, e deixe a SOVEE escolher a de dias de semana ou de fins de semana." },
+      { "t": "despertador calmo", "d": "Sons de pássaros, água e sinos, no horário da sua rotina, mesmo com o celular no silencioso." },
+      { "t": "uma noite de cada vez", "d": "Cada noite sem pegar no celular leva o seu foguete mais longe: Lua, Marte, Saturno e Netuno." }
+    ],
+    "note": "O app SOVEE é para iPhone.",
+    "cta": "adquira"
+  },
+  "sobre": {
+    "eyebrow": "sobre a sovee",
+    "title": "a hora de dormir merece um ritual.",
+    "lead": "A SOVEE é uma luminária circadiana que transforma a hora de dormir em ritual.",
+    "paragraphs": [
+      "O último gesto do dia costuma ser olhar uma tela. A SOVEE troca esse gesto por outro: encostar o celular na luminária, deixá-lo no nicho da base e deixar a luz quente fazer o resto.",
+      "Ela não promete dormir por você. Promete tirar do caminho o que atrapalha: a tela, as notificações, o impulso de pegar o celular mais uma vez."
+    ],
+    "valuesTitle": "no que acreditamos",
+    "values": [
+      { "t": "calma", "d": "Luz quente, sons suaves e nada que peça a sua atenção depois da hora de desligar." },
+      { "t": "simplicidade", "d": "Um botão, um gesto e uma luminária. O resto acontece sozinho." },
+      { "t": "privacidade", "d": "O app não sabe quais apps você bloqueia, e as suas rotinas ficam com você." }
+    ],
+    "closing": "hora de desligar."
+  },
+  "ciencia": {
+    "eyebrow": "a ciência do sono",
+    "title": "por que a luz importa tanto na hora de dormir.",
+    "lead": "Um resumo do que a pesquisa sobre luz, sono e ritmo circadiano mostra, e do que isso muda na sua noite.",
+    "sections": [
+      { "t": "a luz e o relógio do corpo", "p": [
+        "O corpo segue um ciclo de cerca de 24 horas, o ritmo circadiano, que regula sono, temperatura e hormônios. A luz é o principal sinal que ajusta esse relógio.",
+        "À noite, a luz, principalmente a rica em azul, pode reduzir a melatonina, o hormônio que sinaliza ao corpo que é hora de dormir."
+      ] },
+      { "t": "por que âmbar e vermelho", "p": [
+        "As células da retina que informam o relógio do corpo são mais sensíveis à luz azul. Luz âmbar e vermelha, mais quente, tem menos efeito sobre a melatonina do que luz branca ou azulada.",
+        "A intensidade também conta: quanto mais fraca a luz à noite, menor o efeito. Por isso a SOVEE usa tons quentes e suaves."
+      ] },
+      { "t": "telas antes de dormir", "p": [
+        "Um estudo publicado em 2015 comparou ler em um e-reader luminoso com ler um livro impresso antes de dormir. Quem leu na tela demorou mais para pegar no sono, teve menos melatonina e ficou menos alerta na manhã seguinte."
+      ] },
+      { "t": "a força do ritual", "p": [
+        "Horários regulares de dormir e acordar reforçam o ritmo circadiano. Repetir um gesto antes da cama, como guardar o celular sempre no mesmo lugar, ajuda o cérebro a reconhecer a hora de desacelerar."
+      ] }
+    ],
+    "disclaimer": "A SOVEE não é um dispositivo médico e não trata distúrbios do sono. Se você tem insônia persistente, converse com um profissional de saúde.",
+    "refsTitle": "para ler mais",
+    "refs": [
+      "Chang, A.-M. et al. (2015). Evening use of light-emitting eReaders negatively affects sleep, circadian timing, and next-morning alertness. PNAS, 112(4), 1232–1237.",
+      "Brainard, G. C. et al. (2001). Action spectrum for melatonin regulation in humans: evidence for a novel circadian photoreceptor. Journal of Neuroscience, 21(16), 6405–6412."
+    ]
+  }
+}

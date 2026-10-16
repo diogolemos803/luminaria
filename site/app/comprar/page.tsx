@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { FormEvent, useState } from "react";
+import LampDrawing from "@/components/LampDrawing";
 
 // Valor provisório: troque aqui quando o preço for definido.
 const PRICE = 890;
@@ -23,7 +24,6 @@ export default function Comprar() {
   const [qty, setQty] = useState(1);
   const [pay, setPay] = useState("pix");
   const [sent, setSent] = useState(false);
-  const [lit, setLit] = useState(false);
 
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -46,22 +46,7 @@ export default function Comprar() {
       </header>
 
       <div className="buy-grid">
-        <div
-          className={`buy-photo ${lit ? "is-lit" : ""}`}
-          role="img"
-          tabIndex={0}
-          aria-label={lit ? "Desenho da luminária SOVEE acesa, com a base e o nicho do celular" : "Desenho da luminária SOVEE apagada, com a base e o nicho do celular"}
-          onPointerEnter={(e) => e.pointerType === "mouse" && setLit(true)}
-          onPointerLeave={(e) => e.pointerType === "mouse" && setLit(false)}
-          onPointerDown={(e) => e.pointerType !== "mouse" && setLit((v) => !v)}
-          onFocus={() => setLit(true)}
-          onBlur={() => setLit(false)}
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/produto/lampada_apagada.webp" alt="" draggable={false} />
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img className="buy-photo-on" src="/produto/lampada_acesa.webp" alt="" draggable={false} />
-        </div>
+        <LampDrawing />
 
         <div className="buy-col">
           <p className="buy-eyebrow">luminária circadiana</p>
