@@ -106,9 +106,7 @@ export default function Experience() {
   const night = mode === "night";
   const lampColor = lampColors[colorIndex];
 
-  // respiração: cópia da foto mascarada só na pessoa, que sobe e desce de leve
   const focusMask = "radial-gradient(ellipse 15% 21% at 52% 50%, #000 58%, transparent 100%)";
-  const breathMask = "radial-gradient(ellipse 30% 40% at 85% 68%, #000 35%, transparent 100%)";
 
   return (
     <main className="relative h-full w-full overflow-hidden bg-carvao">
@@ -126,22 +124,10 @@ export default function Experience() {
             className="absolute inset-0"
             role="img"
             aria-label="Quarto à noite: a luminária SOVEE acesa sobre o criado-mudo, com o celular guardado, e uma pessoa dormindo ao lado"
-            animate={reduced ? undefined : { scale: [1, 1.025, 1] }}
-            transition={reduced ? undefined : { duration: 36, repeat: Infinity, ease: "easeInOut" }}
           >
             <div className="absolute inset-0" style={{ filter: hovering ? "blur(1.8px)" : "none", transition: "filter .45s ease" }}>
               <Layers mode={mode} colorIndex={colorIndex} reduced={reduced} />
             </div>
-            {!reduced && (
-              <motion.div
-                className="absolute inset-0"
-                style={{ transformOrigin: "90% 82%", WebkitMaskImage: breathMask, maskImage: breathMask, filter: hovering ? "blur(1.8px)" : "none", transition: "filter .45s ease" }}
-                animate={{ scale: [1, 1.012, 1] }}
-                transition={{ duration: 4.2, repeat: Infinity, ease: "easeInOut" }}
-              >
-                <Layers mode={mode} colorIndex={colorIndex} reduced={false} />
-              </motion.div>
-            )}
 
             {/* foco nítido na luminária enquanto o resto desfoca */}
             <div
@@ -162,8 +148,8 @@ export default function Experience() {
                 background: `radial-gradient(ellipse at 50% 52%, ${lampColor}55 0%, ${lampColor}00 62%)`,
                 mixBlendMode: "screen",
               }}
-              animate={{ opacity: night ? (reduced ? 0.5 : [0.35, 0.6, 0.4, 0.55, 0.35]) : 0 }}
-              transition={night && !reduced ? { duration: 5.5, repeat: Infinity, ease: "easeInOut" } : { duration: 0.8 }}
+              animate={{ opacity: night ? 0.45 : 0 }}
+              transition={{ duration: 0.8 }}
             />
 
             {/* zona da luminária */}
