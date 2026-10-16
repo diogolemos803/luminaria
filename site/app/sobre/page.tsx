@@ -5,7 +5,7 @@ import content from "@/lib/content.json";
 
 export const metadata: Metadata = {
   title: "Sobre a SOVEE",
-  description: "A luminária circadiana que transforma a hora de dormir em ritual.",
+  description: "O Day Finisher que transforma a hora de dormir em ritual.",
 };
 
 export default function Sobre() {
@@ -29,7 +29,7 @@ export default function Sobre() {
           ))}
         </ul>
         <p className="pg-closing">{c.closing}</p>
-        <Link href="/produto" className="buy-btn pg-cta">conheça a luminária</Link>
+        <Link href="/produto" className="buy-btn pg-cta">conheça o Day Finisher</Link>
       </article>
     </PageShell>
   );

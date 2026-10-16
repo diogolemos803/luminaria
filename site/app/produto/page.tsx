@@ -5,7 +5,7 @@ import PageShell from "@/components/PageShell";
 import content from "@/lib/content.json";
 
 export const metadata: Metadata = {
-  title: "A luminária SOVEE",
+  title: "O Day Finisher SOVEE",
   description: "Uma luz que acompanha o seu sono, do âmbar ao vermelho.",
 };
 

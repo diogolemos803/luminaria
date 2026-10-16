@@ -1,6 +1,6 @@
 # SOVEE: site
 
-Site da luminária SOVEE (Next.js 14, App Router, Tailwind, Framer Motion).
+Site do Day Finisher SOVEE (Next.js 14, App Router, Tailwind, Framer Motion).
 
 ## Rodar
 

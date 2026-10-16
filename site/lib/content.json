@@ -1,12 +1,12 @@
 {
   "produto": {
-    "eyebrow": "luminária circadiana",
+    "eyebrow": "Day Finisher",
     "title": "sovee",
     "lead": "hora de desligar. Uma luz que acompanha o seu sono, do âmbar ao vermelho, e um ritual simples para guardar o celular e dormir.",
     "stepsTitle": "como funciona",
     "steps": [
-      { "t": "arme o modo noite", "d": "No app SOVEE, toque no botão redondo. Ele fica pronto para reconhecer a luminária." },
-      { "t": "encoste o celular", "d": "A etiqueta NFC da luminária avisa o app que a noite começou. O foguete decola, o despertador é armado e os apps escolhidos são bloqueados." },
+      { "t": "arme o modo noite", "d": "No app SOVEE, toque no botão redondo. Ele fica pronto para reconhecer o Day Finisher." },
+      { "t": "encoste o celular", "d": "A etiqueta NFC do Day Finisher avisa o app que a noite começou. O foguete decola, o despertador é armado e os apps escolhidos são bloqueados." },
       { "t": "deixe no nicho e durma", "d": "O celular descansa no nicho de madeira da base, à vista e longe da cama, enquanto a luz quente acompanha o fim do seu dia." },
       { "t": "acorde com calma", "d": "No horário da rotina, o despertador toca com um som suave e os apps voltam." }
     ],
@@ -25,15 +25,15 @@
   "sobre": {
     "eyebrow": "sobre a sovee",
     "title": "a hora de dormir merece um ritual.",
-    "lead": "A SOVEE é uma luminária circadiana que transforma a hora de dormir em ritual.",
+    "lead": "A SOVEE é o Day Finisher, que transforma a hora de dormir em ritual.",
     "paragraphs": [
-      "O último gesto do dia costuma ser olhar uma tela. A SOVEE troca esse gesto por outro: encostar o celular na luminária, deixá-lo no nicho da base e deixar a luz quente fazer o resto.",
+      "O último gesto do dia costuma ser olhar uma tela. A SOVEE troca esse gesto por outro: encostar o celular no Day Finisher, deixá-lo no nicho da base e deixar a luz quente fazer o resto.",
       "Ela não promete dormir por você. Promete tirar do caminho o que atrapalha: a tela, as notificações, o impulso de pegar o celular mais uma vez."
     ],
     "valuesTitle": "no que acreditamos",
     "values": [
       { "t": "calma", "d": "Luz quente, sons suaves e nada que peça a sua atenção depois da hora de desligar." },
-      { "t": "simplicidade", "d": "Um botão, um gesto e uma luminária. O resto acontece sozinho." },
+      { "t": "simplicidade", "d": "Um botão, um gesto e um Day Finisher. O resto acontece sozinho." },
       { "t": "privacidade", "d": "O app não sabe quais apps você bloqueia, e as suas rotinas ficam com você." }
     ],
     "closing": "hora de desligar."

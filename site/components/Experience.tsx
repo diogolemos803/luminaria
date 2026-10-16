@@ -15,7 +15,7 @@ const PHOTOS = {
   vermelho: "/cena/noite_vermelho.webp",
 } as const;
 
-// zonas em % da foto (16:9): a luminária e a pessoa
+// zonas em % da foto (16:9): o Day Finisher e a pessoa
 const LAMP = { left: "44%", top: "33%", width: "18%", height: "33%" };
 
 /** Pilha de fotos: a noite âmbar fica sempre por baixo, laranja e vermelho entram por cima. */
@@ -69,7 +69,7 @@ export default function Experience() {
     });
   }, []);
 
-  // Com a luminária ativa (à noite), cicla âmbar → laranja → vermelho em loop lento.
+  // Com o Day Finisher ativo (à noite), cicla âmbar → laranja → vermelho em loop lento.
   useEffect(() => {
     if ((!lampActive && !auto) || mode === "day") {
       setPaused(false);
@@ -123,13 +123,13 @@ export default function Experience() {
           <motion.div
             className="absolute inset-0"
             role="img"
-            aria-label="Quarto à noite: a luminária SOVEE acesa sobre o criado-mudo, com o celular guardado, e uma pessoa dormindo ao lado"
+            aria-label="Quarto à noite: o Day Finisher SOVEE aceso sobre o criado-mudo, com o celular guardado, e uma pessoa dormindo ao lado"
           >
             <div className="absolute inset-0" style={{ filter: hovering ? "blur(1.8px)" : "none", transition: "filter .45s ease" }}>
               <Layers mode={mode} colorIndex={colorIndex} reduced={reduced} />
             </div>
 
-            {/* foco nítido na luminária enquanto o resto desfoca */}
+            {/* foco nítido no Day Finisher enquanto o resto desfoca */}
             <div
               className="pointer-events-none absolute inset-0"
               style={{ opacity: hovering ? 1 : 0, transition: "opacity .45s ease", WebkitMaskImage: focusMask, maskImage: focusMask }}
@@ -137,7 +137,7 @@ export default function Experience() {
               <Layers mode={mode} colorIndex={colorIndex} reduced={reduced} />
             </div>
 
-            {/* brilho da luminária: tremor mínimo, na cor atual */}
+            {/* brilho do Day Finisher: tremor mínimo, na cor atual */}
             <motion.div
               className="pointer-events-none absolute"
               style={{
@@ -152,11 +152,11 @@ export default function Experience() {
               transition={{ duration: 0.8 }}
             />
 
-            {/* zona da luminária */}
+            {/* zona do Day Finisher */}
             <div
               role="button"
               tabIndex={0}
-              aria-label="luminária sovee"
+              aria-label="day finisher sovee"
               aria-expanded={lampActive}
               className="absolute cursor-pointer"
               style={LAMP}

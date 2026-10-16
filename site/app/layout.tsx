@@ -7,7 +7,7 @@ const dmSans = DM_Sans({ subsets: ["latin"], variable: "--font-dm-sans", display
 
 export const metadata: Metadata = {
   title: "SOVEE — durma sem pegar no celular.",
-  description: "A luminária circadiana que transforma a hora de dormir em ritual.",
+  description: "O Day Finisher que transforma a hora de dormir em ritual.",
 };
 
 export const viewport: Viewport = { themeColor: "#444444" };

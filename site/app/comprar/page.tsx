@@ -4,14 +4,14 @@ import Link from "next/link";
 import { FormEvent, useState } from "react";
 import LampDrawing from "@/components/LampDrawing";
 
-// Preço da luminária (R$).
+// Preço do Day Finisher (R$).
 const PRICE = 649;
 const brl = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 const inbox = [
-  "Luminária SOVEE",
+  "Day Finisher SOVEE",
   "Base de madeira com nicho para o celular",
-  "Etiqueta NFC que vincula a luminária ao app",
+  "Etiqueta NFC que vincula o Day Finisher ao app",
 ];
 
 const payments = [
@@ -49,7 +49,7 @@ export default function Comprar() {
         <LampDrawing />
 
         <div className="buy-col">
-          <p className="buy-eyebrow">luminária circadiana</p>
+          <p className="buy-eyebrow">Day Finisher</p>
           <h1 className="buy-title">sovee</h1>
           <p className="buy-lead">hora de desligar. Uma luz que acompanha o seu sono, do âmbar ao vermelho.</p>
           <p className="buy-price">
@@ -69,7 +69,7 @@ export default function Comprar() {
             <section className="buy-done" role="status">
               <h2>pedido recebido</h2>
               <p>
-                {qty} {qty === 1 ? "luminária" : "luminárias"} por {brl(PRICE * qty)}. Enviaremos a confirmação para o e-mail informado.
+                {qty} {qty === 1 ? "Day Finisher" : "Day Finishers"} por {brl(PRICE * qty)}. Enviaremos a confirmação para o e-mail informado.
               </p>
               <p className="buy-note">Esta é uma página de demonstração: nenhuma cobrança foi feita.</p>
               <Link href="/" className="buy-btn">

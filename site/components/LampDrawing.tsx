@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-/** Desenho da luminária: apagado em repouso, aceso no hover (ou toque / foco). */
+/** Desenho do Day Finisher: apagado em repouso, aceso no hover (ou toque / foco). */
 export default function LampDrawing({ className = "" }: { className?: string }) {
   const [lit, setLit] = useState(false);
   return (
@@ -10,7 +10,7 @@ export default function LampDrawing({ className = "" }: { className?: string }) 
       className={`buy-photo ${lit ? "is-lit" : ""} ${className}`}
       role="img"
       tabIndex={0}
-      aria-label={lit ? "Desenho da luminária SOVEE acesa, com a base e o nicho do celular" : "Desenho da luminária SOVEE apagada, com a base e o nicho do celular"}
+      aria-label={lit ? "Desenho do Day Finisher SOVEE aceso, com a base e o nicho do celular" : "Desenho do Day Finisher SOVEE apagado, com a base e o nicho do celular"}
       onPointerEnter={(e) => e.pointerType === "mouse" && setLit(true)}
       onPointerLeave={(e) => e.pointerType === "mouse" && setLit(false)}
       onPointerDown={(e) => e.pointerType !== "mouse" && setLit((v) => !v)}
