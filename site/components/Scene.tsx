@@ -9,7 +9,8 @@ import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
 import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
-import { Cloth, type Capsule } from "./cloth";
+import { Cloth, type Capsule, type Field } from "./cloth";
+import { SLEEPER } from "./sleeper";
 import type { Mode } from "./palette";
 
 export type SceneProps = {
@@ -140,23 +141,28 @@ export default function Scene(props: SceneProps) {
 
     // ---------- materiais ----------
     const lampWoodTex = woodTexture("#9a6a43", "#4a2c16");
-    const concreteTex = speckTexture("#5b5750", 5000, 40);
-    concreteTex.repeat.set(4, 10);
-    const plasterTex = speckTexture("#c9c1b3", 4000, 18);
-    plasterTex.repeat.set(3, 2);
-    const wallMat = new THREE.MeshStandardMaterial({ map: plasterTex, roughness: 0.95 });
-    const floorMat = new THREE.MeshStandardMaterial({ map: concreteTex, roughness: 0.55, metalness: 0.02 });
-    const pedestalTex = speckTexture("#d6cfc2", 3500, 22);
-    const pedestalMat = new THREE.MeshStandardMaterial({ map: pedestalTex, roughness: 0.88 });
-    const weave = weaveBump(256);
-    weave.repeat.set(8, 8);
-    const frameFabric = new THREE.MeshStandardMaterial({ color: "#8a867f", roughness: 0.97, bumpMap: weave, bumpScale: 1.2 });
-    const sheetMat = new THREE.MeshStandardMaterial({ color: "#e4dfd3", roughness: 0.95, bumpMap: weave, bumpScale: 0.8 });
-    const duvetMat = new THREE.MeshStandardMaterial({ color: "#d9d3c7", roughness: 0.96, bumpMap: weave, bumpScale: 1.6, side: THREE.DoubleSide });
-    const pillowMat = new THREE.MeshStandardMaterial({ color: "#e2ddd1", roughness: 0.96, bumpMap: weave, bumpScale: 1.2 });
-    const skin = new THREE.MeshStandardMaterial({ color: "#a8765a", roughness: 0.7 });
-    const hairMat = new THREE.MeshStandardMaterial({ color: "#1d140f", roughness: 0.85 });
-    const shirt = new THREE.MeshStandardMaterial({ color: "#2b2c30", roughness: 0.93, bumpMap: weave, bumpScale: 0.8 });
+    // texturas PBR CC0 (Poly Haven): linho, algodão, reboco e concreto liso
+    const texLoader = new THREE.TextureLoader();
+    const pbr = (name: string, rx: number, ry: number, color = "#ffffff", extra: THREE.MeshStandardMaterialParameters = {}) => {
+      const load = (suffix: string, srgb: boolean) => {
+        const t = texLoader.load(`/tex/${name}_${suffix}.jpg`);
+        t.wrapS = t.wrapT = THREE.RepeatWrapping;
+        t.repeat.set(rx, ry);
+        t.anisotropy = 8;
+        if (srgb) t.colorSpace = THREE.SRGBColorSpace;
+        return t;
+      };
+      return new THREE.MeshStandardMaterial({ map: load("diff", true), normalMap: load("nor", false), roughnessMap: load("rough", false), color, ...extra });
+    };
+    const wallMat = pbr("wall", 3, 2, "#f2eee8");
+    const floorMat = pbr("floor", 3, 8, "#c9c2b8");
+    const pedestalMat = pbr("wall", 1.5, 1, "#f6f1e8");
+    const frameFabric = pbr("linen", 2, 2, "#9b9288");
+    const sheetMat = pbr("linen", 1.4, 2.2, "#ffffff");
+    const duvetMat = pbr("linen", 1.6, 1.6, "#ffffff", { side: THREE.DoubleSide });
+    const pillowMat = pbr("linen", 1.2, 1.2, "#ffffff");
+        const hairMat = new THREE.MeshStandardMaterial({ color: "#1d140f", roughness: 0.85 });
+    const shirt = pbr("linen", 6, 6, "#55575d");
     const lampGlass = new THREE.MeshStandardMaterial({ color: "#3a2208", emissive: new THREE.Color("#F2B05E"), emissiveIntensity: 2.4, roughness: 0.3 });
     const windowPane = new THREE.MeshBasicMaterial({ color: NIGHT.window, toneMapped: false });
     const frameM = new THREE.MeshStandardMaterial({ color: "#e9e2d2", roughness: 0.6 });
@@ -227,39 +233,39 @@ export default function Scene(props: SceneProps) {
     // travesseiro, amassado pela cabeça
     const pillowGeo = new THREE.SphereGeometry(1, 56, 36);
     const pillow = new THREE.Mesh(pillowGeo, pillowMat);
-    pillow.position.set(1.05, 0.6, -0.55);
-    pillow.scale.set(0.34, 0.09, 0.21);
+    pillow.position.set(1.2, 0.595, -0.63);
+    pillow.scale.set(0.36, 0.088, 0.22);
     pillow.castShadow = true;
     pillow.receiveShadow = true;
     bedG.add(pillow);
     const pBase = Float32Array.from(pillowGeo.attributes.position.array as ArrayLike<number>);
     const pPos = pillowGeo.attributes.position as THREE.BufferAttribute;
 
-    // pessoa dormindo de lado, de costas pra câmera (rosto virado pra +x)
-    const HEAD = new THREE.Vector3(1.04, 0.755, -0.56);
-    const head = new THREE.Mesh(new THREE.SphereGeometry(0.095, 40, 28), hairMat);
-    head.scale.set(0.92, 1.0, 1.08);
-    head.castShadow = true;
-    bedG.add(head);
-    const ear = new THREE.Mesh(new THREE.SphereGeometry(0.03, 16, 12), skin);
-    ear.scale.set(0.35, 1, 0.8);
-    bedG.add(ear);
-    const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.042, 0.052, 0.12, 20), skin);
-    neck.castShadow = true;
-    bedG.add(neck);
-
-    const torso: Capsule = { ax: 1.06, ay: 0.75, az: -0.95, bx: 1.07, by: 0.73, bz: -1.5, r: 0.2 };
-    const hips: Capsule = { ax: 1.07, ay: 0.7, az: -1.5, bx: 1.09, by: 0.66, bz: -2.05, r: 0.15 };
-    const shins: Capsule = { ax: 1.09, ay: 0.63, az: -2.05, bx: 1.12, by: 0.61, bz: -2.4, r: 0.09 };
-    const shoulder: Capsule = { ax: 1.06, ay: 0.77, az: -0.9, bx: 1.06, by: 0.77, bz: -0.93, r: 0.185 };
-    const torsoMesh = capsuleMesh({ ...torso, r: 0.165 }, shirt);
-    bedG.add(torsoMesh);
-    const shoulderMesh = capsuleMesh({ ...shoulder, r: 0.16 }, shirt);
-    bedG.add(shoulderMesh);
+    // pessoa dormindo de lado, de costas pra câmera (MakeHuman base mesh, CC0, posada por esqueleto)
+    const HEAD = new THREE.Vector3(...SLEEPER.headCenter);
+    const sleeper = new THREE.Group();
+    bedG.add(sleeper);
+    const skinMat = new THREE.MeshStandardMaterial({ color: "#b4826a", roughness: 0.62 });
+    const loader = new OBJLoader();
+    const loadPart = (file: string, mat: THREE.Material) =>
+      loader.load(`/models/${file}`, (o) => {
+        o.traverse((c) => {
+          const m = c as THREE.Mesh;
+          if (!m.isMesh) return;
+          m.material = mat;
+          m.castShadow = true;
+          m.receiveShadow = true;
+        });
+        sleeper.add(o);
+      });
+    loadPart("sleeper_skin.obj", skinMat);
+    loadPart("sleeper_hair.obj", hairMat);
+    loadPart("sleeper_shirt.obj", shirt);
 
     // edredom: tecido simulado (Verlet)
-    const cloth = new Cloth(40, 44, 0.1, -0.72, 1.9, 2.0, 1.0);
-    const bodyCaps: Capsule[] = [torso, hips, shins, shoulder];
+    const cloth = new Cloth(42, 46, 0.1, -0.6, 1.9, 2.1, 1.05);
+    const bodyField: Field = { ...SLEEPER.hf, ox: 0, breath: 0 };
+    const noCaps: Capsule[] = [];
     const bedBox = { minX: 0.27, minY: 0, minZ: -2.53, maxX: 1.83, maxY: MATTRESS_TOP, maxZ: -0.27 };
     const cGeo = new THREE.BufferGeometry();
     cGeo.setAttribute("position", new THREE.BufferAttribute(cloth.pos, 3));
@@ -289,32 +295,18 @@ export default function Scene(props: SceneProps) {
     const updateBody = (t: number, dt: number) => {
       shift += (shiftTarget - shift) * (1 - Math.exp(-dt * 0.7));
       const br = Math.sin((t / 4) * Math.PI * 2);
-      torso.r = 0.2 + 0.011 * br;
-      shoulder.r = 0.185 + 0.008 * br;
-      hips.r = 0.15 + 0.004 * br;
-      const roll = shift * 0.035;
-      torso.ay = 0.75 + 0.006 * br + roll * 0.4;
-      torso.ax = 1.06 + roll;
-      torso.bx = 1.07 + roll * 0.4;
-      shoulder.ax = shoulder.bx = 1.06 + roll;
-      shoulder.ay = shoulder.by = 0.77 + 0.005 * br + roll * 0.4;
-      hips.ax = 1.07 + roll * 0.3;
-      hips.bx = 1.09 + shift * 0.02;
-      placeCapsule(torsoMesh, { ...torso, r: torso.r - 0.01 });
-      placeCapsule(shoulderMesh, { ...shoulder, r: shoulder.r - 0.005 });
-      head.position.set(HEAD.x + roll * 0.6, HEAD.y + 0.002 * br, HEAD.z);
-      head.rotation.set(0, shift * 0.2, 0);
-      ear.position.set(head.position.x - 0.088, head.position.y - 0.006, head.position.z + 0.005);
-      neck.position.set(head.position.x + 0.01, head.position.y - 0.085, head.position.z - 0.1);
-      neck.rotation.set(-1.15, 0, 0);
+      const roll = shift * 0.03;
+      bodyField.ox = roll;
+      bodyField.breath = 0.01 * br;
+      sleeper.position.set(roll, roll * 0.3, 0);
     };
     updateBody(0, 0);
     // o travesseiro afunda onde a cabeça apoia; molinha suave
     let dent = 0;
     const updatePillow = () => {
-      const target = 0.045;
+      const target = 0.05;
       dent += (target - dent) * 0.08;
-      const cx = (head.position.x - 1.05) / 0.34, cz = (head.position.z + 0.55) / 0.21;
+      const cx = (HEAD.x - 1.2) / 0.36, cz = (HEAD.z + 0.63) / 0.22;
       for (let i = 0; i < pPos.count; i++) {
         const x = pBase[i * 3], y = pBase[i * 3 + 1], z = pBase[i * 3 + 2];
         const d2 = (x - cx) * (x - cx) + (z - cz) * (z - cz);
@@ -326,7 +318,7 @@ export default function Scene(props: SceneProps) {
     };
     for (let i = 0; i < 80; i++) updatePillow();
     // deixa o edredom assentar antes da primeira imagem
-    for (let i = 0; i < 260; i++) cloth.step(1 / 60, bodyCaps, bedBox, 8);
+    for (let i = 0; i < 260; i++) cloth.step(1 / 60, noCaps, bedBox, 8, bodyField);
     const cPos = cGeo.attributes.position as THREE.BufferAttribute;
     cPos.needsUpdate = true;
     cGeo.computeVertexNormals();
@@ -504,7 +496,7 @@ export default function Scene(props: SceneProps) {
         acc += dt;
         let steps = 0;
         while (acc >= 1 / 60 && steps < 2) {
-          cloth.step(1 / 60, bodyCaps, bedBox, 6);
+          cloth.step(1 / 60, noCaps, bedBox, 6, bodyField);
           acc -= 1 / 60;
           steps++;
         }

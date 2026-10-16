@@ -1,6 +1,7 @@
 // Tecido simulado por Verlet (massa-mola) para o edredom: gravidade, atrito,
 // colisão com colchão e com o corpo de quem dorme (cápsulas em movimento).
 export type Capsule = { ax: number; ay: number; az: number; bx: number; by: number; bz: number; r: number };
+export type Field = { x0: number; z0: number; cell: number; nx: number; nz: number; data: readonly number[]; ox: number; breath: number };
 export type Box = { minX: number; minY: number; minZ: number; maxX: number; maxY: number; maxZ: number };
 
 export class Cloth {
@@ -53,7 +54,7 @@ export class Cloth {
     this.stiff = new Float32Array(stiff);
   }
 
-  step(dt: number, caps: Capsule[], box: Box, iterations = 7) {
+  step(dt: number, caps: Capsule[], box: Box, iterations = 7, field?: Field) {
     const p = this.pos, q = this.prev;
     const g = -9.8 * dt * dt;
     for (let k = 0; k < p.length; k += 3) {
@@ -79,11 +80,11 @@ export class Cloth {
         p[b + 1] -= dy * f;
         p[b + 2] -= dz * f;
       }
-      this.collide(caps, box);
+      this.collide(caps, box, field);
     }
   }
 
-  private collide(caps: Capsule[], box: Box) {
+  private collide(caps: Capsule[], box: Box, field?: Field) {
     const p = this.pos, q = this.prev;
     const skin = 0.018;
     for (let k = 0; k < p.length; k += 3) {
@@ -103,6 +104,22 @@ export class Cloth {
       if (p[k + 1] < 0.005) {
         p[k + 1] = 0.005;
         hit = true;
+      }
+      if (field) {
+        const fx = (p[k] - field.ox - field.x0) / field.cell, fz = (p[k + 2] - field.z0) / field.cell;
+        if (fx >= 0 && fz >= 0 && fx < field.nx - 1 && fz < field.nz - 1) {
+          const ix = fx | 0, iz = fz | 0, tx = fx - ix, tz = fz - iz;
+          const d = field.data, n = field.nx;
+          const h00 = d[iz * n + ix], h10 = d[iz * n + ix + 1], h01 = d[(iz + 1) * n + ix], h11 = d[(iz + 1) * n + ix + 1];
+          if (h00 > 0.3 && h10 > 0.3 && h01 > 0.3 && h11 > 0.3) {
+            const h = (h00 * (1 - tx) + h10 * tx) * (1 - tz) + (h01 * (1 - tx) + h11 * tx) * tz;
+            const top = h + skin + field.breath * (p[k + 2] > -1.2 ? 1 : 0.4);
+            if (p[k + 1] < top) {
+              p[k + 1] = top;
+              hit = true;
+            }
+          }
+        }
       }
       for (const c of caps) {
         const abx = c.bx - c.ax, aby = c.by - c.ay, abz = c.bz - c.az;
