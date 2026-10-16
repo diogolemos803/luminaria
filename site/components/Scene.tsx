@@ -4,12 +4,17 @@ import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
+import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
+import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
+import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
+import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
+import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
+import { Cloth, type Capsule } from "./cloth";
 import type { Mode } from "./palette";
 
 export type SceneProps = {
   mode: Mode;
   lampColor: string;
-  lampActive: boolean;
   reduced: boolean;
   onReady: () => void;
   onLampHover: (hover: boolean) => void;
@@ -49,54 +54,58 @@ function woodTexture(base: string, dark: string) {
     c.globalAlpha = 1;
   });
 }
-function noiseTexture(size: number, fine: boolean) {
+function speckTexture(base: string, count: number, spread: number) {
+  return canvasTexture(512, (c, s) => {
+    c.fillStyle = base;
+    c.fillRect(0, 0, s, s);
+    for (let i = 0; i < count; i++) {
+      const v = Math.floor(rnd(-spread, spread));
+      c.fillStyle = v > 0 ? `rgba(255,255,255,${v / 255})` : `rgba(0,0,0,${-v / 255})`;
+      const w = rnd(1, 6);
+      c.fillRect(rnd(0, s), rnd(0, s), w, w);
+    }
+  });
+}
+function weaveBump(size: number) {
   return canvasTexture(
     size,
     (c, s) => {
       c.fillStyle = "#808080";
       c.fillRect(0, 0, s, s);
-      const n = fine ? 9000 : 1800;
-      for (let i = 0; i < n; i++) {
-        const v = Math.floor(rnd(90, 170));
+      for (let i = 0; i < 9000; i++) {
+        const v = Math.floor(rnd(100, 160));
         c.fillStyle = `rgb(${v},${v},${v})`;
-        const w = fine ? rnd(1, 3) : rnd(4, 14);
-        c.fillRect(rnd(0, s), rnd(0, s), w, w);
+        c.fillRect(rnd(0, s), rnd(0, s), rnd(1, 3), rnd(1, 3));
       }
-      if (fine) {
-        c.globalAlpha = 0.16;
-        for (let i = 0; i < s; i += 3) {
-          c.fillStyle = i % 6 === 0 ? "#fff" : "#000";
-          c.fillRect(i, 0, 1, s);
-          c.fillRect(0, i, s, 1);
-        }
-        c.globalAlpha = 1;
+      c.globalAlpha = 0.18;
+      for (let i = 0; i < s; i += 3) {
+        c.fillStyle = i % 6 === 0 ? "#fff" : "#000";
+        c.fillRect(i, 0, 1, s);
+        c.fillRect(0, i, s, 1);
       }
     },
     false,
   );
 }
 
-// ---------- colchas: campo de alturas com o corpo embaixo ----------
-const BODY_X = 1.05;
-const bodyProfile: [number, number, number][] = [
-  // z, altura, meia-largura
-  [-0.9, 0.24, 0.22], [-1.05, 0.26, 0.24], [-1.45, 0.2, 0.25], [-1.8, 0.15, 0.2], [-2.1, 0.1, 0.14], [-2.5, 0.07, 0.11],
-];
-function profileAt(z: number): [number, number] {
-  if (z >= bodyProfile[0][0]) return [0, 1];
-  for (let i = 0; i < bodyProfile.length - 1; i++) {
-    const a = bodyProfile[i], b = bodyProfile[i + 1];
-    if (z <= a[0] && z >= b[0]) {
-      const t = (a[0] - z) / (a[0] - b[0]);
-      const s = t * t * (3 - 2 * t);
-      return [a[1] + (b[1] - a[1]) * s, a[2] + (b[2] - a[2]) * s];
-    }
-  }
-  return [0, 1];
-}
-
 const NIGHT = { bg: new THREE.Color("#06070a"), sky: new THREE.Color("#7f9bc4"), hemiSky: new THREE.Color("#1b2536"), hemiGround: new THREE.Color("#0b0b0d"), window: new THREE.Color("#8fa9cc") };
 const DAY = { bg: new THREE.Color("#cdbfa8"), sky: new THREE.Color("#ffd9a3"), hemiSky: new THREE.Color("#ffeacb"), hemiGround: new THREE.Color("#6f5d4a"), window: new THREE.Color("#fff3d6") };
+
+// cápsula entre dois pontos (eixo Y do CapsuleGeometry alinhado a A→B)
+function capsuleMesh(c: Capsule, mat: THREE.Material) {
+  const a = new THREE.Vector3(c.ax, c.ay, c.az), b = new THREE.Vector3(c.bx, c.by, c.bz);
+  const len = Math.max(a.distanceTo(b), 0.001);
+  const m = new THREE.Mesh(new THREE.CapsuleGeometry(c.r, len, 12, 32), mat);
+  m.castShadow = true;
+  m.receiveShadow = true;
+  return m;
+}
+function placeCapsule(m: THREE.Mesh, c: Capsule) {
+  const a = new THREE.Vector3(c.ax, c.ay, c.az), b = new THREE.Vector3(c.bx, c.by, c.bz);
+  m.position.copy(a).add(b).multiplyScalar(0.5);
+  const dir = b.sub(a).normalize();
+  m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+}
 
 export default function Scene(props: SceneProps) {
   const host = useRef<HTMLDivElement>(null);
@@ -105,7 +114,7 @@ export default function Scene(props: SceneProps) {
 
   useEffect(() => {
     const el = host.current!;
-    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+    const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -123,26 +132,34 @@ export default function Scene(props: SceneProps) {
     const camTarget = new THREE.Vector3(0.62, 0.45, -2.4);
     camera.position.copy(camBase);
 
+    const composer = new EffectComposer(renderer, new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples: 4 }));
+    composer.addPass(new RenderPass(scene, camera));
+    const bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), 0.42, 0.7, 0.88);
+    composer.addPass(bloom);
+    composer.addPass(new OutputPass());
+
     // ---------- materiais ----------
-    const woodTex = woodTexture("#7a5233", "#3a2412");
-    const woodMat = new THREE.MeshStandardMaterial({ map: woodTex, roughness: 0.6, color: "#ffffff" });
-    const darkWoodTex = woodTexture("#4a2f1c", "#1e1109");
-    const darkWood = new THREE.MeshStandardMaterial({ map: darkWoodTex, roughness: 0.65 });
-    const floorTex = woodTexture("#6b5036", "#2c1d10");
-    floorTex.repeat.set(3, 10);
-    const floorMat = new THREE.MeshStandardMaterial({ map: floorTex, roughness: 0.75 });
-    const wallBump = noiseTexture(256, false);
-    wallBump.repeat.set(6, 3);
-    const wallMat = new THREE.MeshStandardMaterial({ color: "#cfc6b8", roughness: 0.95, bumpMap: wallBump, bumpScale: 0.6 });
-    const linenBump = noiseTexture(256, true);
-    linenBump.repeat.set(10, 10);
-    const linen = new THREE.MeshStandardMaterial({ color: "#cdbfa9", roughness: 0.96, bumpMap: linenBump, bumpScale: 1.4 });
-    const sheetMat = new THREE.MeshStandardMaterial({ color: "#d8cdb9", roughness: 0.95, bumpMap: linenBump, bumpScale: 1 });
+    const lampWoodTex = woodTexture("#9a6a43", "#4a2c16");
+    const concreteTex = speckTexture("#5b5750", 5000, 40);
+    concreteTex.repeat.set(4, 10);
+    const plasterTex = speckTexture("#c9c1b3", 4000, 18);
+    plasterTex.repeat.set(3, 2);
+    const wallMat = new THREE.MeshStandardMaterial({ map: plasterTex, roughness: 0.95 });
+    const floorMat = new THREE.MeshStandardMaterial({ map: concreteTex, roughness: 0.55, metalness: 0.02 });
+    const pedestalTex = speckTexture("#d6cfc2", 3500, 22);
+    const pedestalMat = new THREE.MeshStandardMaterial({ map: pedestalTex, roughness: 0.88 });
+    const weave = weaveBump(256);
+    weave.repeat.set(8, 8);
+    const frameFabric = new THREE.MeshStandardMaterial({ color: "#8a867f", roughness: 0.97, bumpMap: weave, bumpScale: 1.2 });
+    const sheetMat = new THREE.MeshStandardMaterial({ color: "#e4dfd3", roughness: 0.95, bumpMap: weave, bumpScale: 0.8 });
+    const duvetMat = new THREE.MeshStandardMaterial({ color: "#d9d3c7", roughness: 0.96, bumpMap: weave, bumpScale: 1.6, side: THREE.DoubleSide });
+    const pillowMat = new THREE.MeshStandardMaterial({ color: "#e2ddd1", roughness: 0.96, bumpMap: weave, bumpScale: 1.2 });
     const skin = new THREE.MeshStandardMaterial({ color: "#a8765a", roughness: 0.7 });
-    const hairMat = new THREE.MeshStandardMaterial({ color: "#1d140f", roughness: 0.9 });
-    const shirt = new THREE.MeshStandardMaterial({ color: "#2a2b2e", roughness: 0.92, bumpMap: linenBump, bumpScale: 0.8 });
-    const lampGlass = new THREE.MeshStandardMaterial({ color: "#3a2208", emissive: new THREE.Color("#F2B05E"), emissiveIntensity: 1.6, roughness: 0.25, });
+    const hairMat = new THREE.MeshStandardMaterial({ color: "#1d140f", roughness: 0.85 });
+    const shirt = new THREE.MeshStandardMaterial({ color: "#2b2c30", roughness: 0.93, bumpMap: weave, bumpScale: 0.8 });
+    const lampGlass = new THREE.MeshStandardMaterial({ color: "#3a2208", emissive: new THREE.Color("#F2B05E"), emissiveIntensity: 2.4, roughness: 0.3 });
     const windowPane = new THREE.MeshBasicMaterial({ color: NIGHT.window, toneMapped: false });
+    const frameM = new THREE.MeshStandardMaterial({ color: "#e9e2d2", roughness: 0.6 });
 
     let parent: THREE.Object3D = scene;
     const add = (geo: THREE.BufferGeometry, mat: THREE.Material, x: number, y: number, z: number, shadow = true) => {
@@ -166,7 +183,7 @@ export default function Scene(props: SceneProps) {
     const behind = add(new THREE.PlaneGeometry(6, 2.7), wallMat, 1.2, 1.35, 3.5, false);
     behind.rotation.y = Math.PI;
 
-    // parede do fundo com janela (ponto de fuga)
+    // parede do fundo com janela (no ponto de fuga)
     const WIN = { x: 1.5, y: 1.55, w: 1.5, h: 1.5, z: -7.2 };
     const back = new THREE.Shape();
     back.moveTo(-1.8, 0);
@@ -179,12 +196,10 @@ export default function Scene(props: SceneProps) {
     hole.lineTo(WIN.x + WIN.w / 2, WIN.y + WIN.h / 2);
     hole.lineTo(WIN.x - WIN.w / 2, WIN.y + WIN.h / 2);
     back.holes.push(hole);
-    const backGeo = new THREE.ExtrudeGeometry(back, { depth: 0.2, bevelEnabled: false });
-    add(backGeo, wallMat, 0, 0, WIN.z - 0.2, true);
+    add(new THREE.ExtrudeGeometry(back, { depth: 0.2, bevelEnabled: false }), wallMat, 0, 0, WIN.z - 0.2, true);
     const pane = new THREE.Mesh(new THREE.PlaneGeometry(WIN.w, WIN.h), windowPane);
     pane.position.set(WIN.x, WIN.y, WIN.z - 0.4);
     scene.add(pane);
-    const frameM = new THREE.MeshStandardMaterial({ color: "#e9e2d2", roughness: 0.6 });
     const bar = (w: number, h: number, x: number, y: number) => add(new THREE.BoxGeometry(w, h, 0.07), frameM, x, y, WIN.z - 0.05, false);
     bar(0.05, WIN.h, WIN.x, WIN.y);
     bar(WIN.w, 0.05, WIN.x, WIN.y);
@@ -192,96 +207,142 @@ export default function Scene(props: SceneProps) {
     bar(0.06, WIN.h, WIN.x + WIN.w / 2, WIN.y);
     bar(WIN.w, 0.06, WIN.x, WIN.y + WIN.h / 2);
     bar(WIN.w, 0.06, WIN.x, WIN.y - WIN.h / 2);
-    // área clicável da janela, um pouco maior
     const windowHit = new THREE.Mesh(new THREE.PlaneGeometry(WIN.w + 0.3, WIN.h + 0.3), new THREE.MeshBasicMaterial({ visible: false }));
     windowHit.position.set(WIN.x, WIN.y, WIN.z + 0.1);
     scene.add(windowHit);
 
-    // ---------- criado-mudo ----------
-    const TABLE = { x: -0.32, z: -0.15, w: 0.52, d: 0.44, h: 0.5 };
-    add(new THREE.BoxGeometry(TABLE.w, 0.04, TABLE.d), darkWood, TABLE.x, TABLE.h - 0.02, TABLE.z);
-    add(new THREE.BoxGeometry(TABLE.w - 0.04, TABLE.h - 0.04, TABLE.d - 0.04), darkWood, TABLE.x, (TABLE.h - 0.04) / 2, TABLE.z);
-    add(new THREE.BoxGeometry(TABLE.w - 0.12, 0.17, 0.02), woodMat, TABLE.x, 0.33, TABLE.z + TABLE.d / 2 - 0.005);
-    add(new THREE.BoxGeometry(0.1, 0.014, 0.02), new THREE.MeshStandardMaterial({ color: "#2a2623", metalness: 0.7, roughness: 0.4 }), TABLE.x, 0.33, TABLE.z + TABLE.d / 2 + 0.015, false);
+    // ---------- pedestal de microcimento (sem móvel de madeira) ----------
+    const TABLE = { x: -0.32, z: -0.15, h: 0.5 };
+    add(new THREE.CylinderGeometry(0.27, 0.27, TABLE.h, 64), pedestalMat, TABLE.x, TABLE.h / 2, TABLE.z);
 
-    // ---------- cama ----------
+    // ---------- cama de tecido ----------
     const bedG = new THREE.Group();
     bedG.position.z = 0.55;
     scene.add(bedG);
     parent = bedG;
-    add(new THREE.BoxGeometry(1.55, 0.26, 2.25), darkWood, 1.05, 0.2, -1.4);
-    add(new THREE.BoxGeometry(1.5, 0.2, 2.2), sheetMat, 1.05, 0.43, -1.4);
-    // travesseiro
-    const pillow = add(new THREE.SphereGeometry(0.5, 40, 24), linen, 1.05, 0.58, -0.58);
-    pillow.scale.set(0.56, 0.1, 0.38);
-    // pessoa dormindo de lado, de costas pra câmera, rosto virado pra luminária
-    const head = add(new THREE.SphereGeometry(0.1, 32, 24), skin, 0.98, 0.7, -0.6);
-    head.scale.set(0.95, 1.05, 1.1);
-    const hair = add(new THREE.SphereGeometry(0.103, 32, 24, 0, Math.PI * 2, 0, Math.PI * 0.62), hairMat, 1.0, 0.715, -0.585);
-    hair.scale.set(0.98, 1.06, 1.12);
-    hair.rotation.x = -0.35;
-    const nose = add(new THREE.SphereGeometry(0.014, 12, 10), skin, 0.885, 0.69, -0.585, false);
-    nose.scale.set(1.2, 1, 1);
-    const shoulder = add(new THREE.SphereGeometry(0.19, 32, 24), shirt, 1.08, 0.64, -0.86);
-    shoulder.scale.set(1.0, 0.62, 0.8);
-    const neck = add(new THREE.CylinderGeometry(0.045, 0.055, 0.12, 16), skin, 1.02, 0.68, -0.72, false);
-    neck.rotation.z = Math.PI / 2 - 0.2;
-    neck.rotation.x = 0.2;
+    add(new RoundedBoxGeometry(1.56, 0.34, 2.26, 6, 0.05), frameFabric, 1.05, 0.17, -1.4);
+    add(new RoundedBoxGeometry(1.5, 0.22, 2.2, 6, 0.07), sheetMat, 1.05, 0.43, -1.4);
+    const MATTRESS_TOP = 0.54;
 
-    // edredom, com respiração
-    const DW = 1.65, DL = 2.0, SX = 90, SZ = 110;
-    const duvetGeo = new THREE.PlaneGeometry(DW, DL, SX, SZ);
-    duvetGeo.rotateX(-Math.PI / 2);
-    const duvet = new THREE.Mesh(duvetGeo, linen);
+    // travesseiro, amassado pela cabeça
+    const pillowGeo = new THREE.SphereGeometry(1, 56, 36);
+    const pillow = new THREE.Mesh(pillowGeo, pillowMat);
+    pillow.position.set(1.05, 0.6, -0.55);
+    pillow.scale.set(0.34, 0.09, 0.21);
+    pillow.castShadow = true;
+    pillow.receiveShadow = true;
+    bedG.add(pillow);
+    const pBase = Float32Array.from(pillowGeo.attributes.position.array as ArrayLike<number>);
+    const pPos = pillowGeo.attributes.position as THREE.BufferAttribute;
+
+    // pessoa dormindo de lado, de costas pra câmera (rosto virado pra +x)
+    const HEAD = new THREE.Vector3(1.04, 0.755, -0.56);
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.095, 40, 28), hairMat);
+    head.scale.set(0.92, 1.0, 1.08);
+    head.castShadow = true;
+    bedG.add(head);
+    const ear = new THREE.Mesh(new THREE.SphereGeometry(0.03, 16, 12), skin);
+    ear.scale.set(0.35, 1, 0.8);
+    bedG.add(ear);
+    const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.042, 0.052, 0.12, 20), skin);
+    neck.castShadow = true;
+    bedG.add(neck);
+
+    const torso: Capsule = { ax: 1.06, ay: 0.75, az: -0.95, bx: 1.07, by: 0.73, bz: -1.5, r: 0.2 };
+    const hips: Capsule = { ax: 1.07, ay: 0.7, az: -1.5, bx: 1.09, by: 0.66, bz: -2.05, r: 0.15 };
+    const shins: Capsule = { ax: 1.09, ay: 0.63, az: -2.05, bx: 1.12, by: 0.61, bz: -2.4, r: 0.09 };
+    const shoulder: Capsule = { ax: 1.06, ay: 0.77, az: -0.9, bx: 1.06, by: 0.77, bz: -0.93, r: 0.185 };
+    const torsoMesh = capsuleMesh({ ...torso, r: 0.165 }, shirt);
+    bedG.add(torsoMesh);
+    const shoulderMesh = capsuleMesh({ ...shoulder, r: 0.16 }, shirt);
+    bedG.add(shoulderMesh);
+
+    // edredom: tecido simulado (Verlet)
+    const cloth = new Cloth(40, 44, 0.1, -0.72, 1.9, 2.0, 1.0);
+    const bodyCaps: Capsule[] = [torso, hips, shins, shoulder];
+    const bedBox = { minX: 0.27, minY: 0, minZ: -2.53, maxX: 1.83, maxY: MATTRESS_TOP, maxZ: -0.27 };
+    const cGeo = new THREE.BufferGeometry();
+    cGeo.setAttribute("position", new THREE.BufferAttribute(cloth.pos, 3));
+    const uv = new Float32Array(cloth.count * 2);
+    for (let j = 0; j < cloth.nz; j++)
+      for (let i = 0; i < cloth.nx; i++) {
+        uv[(j * cloth.nx + i) * 2] = (i / (cloth.nx - 1)) * 1.9;
+        uv[(j * cloth.nx + i) * 2 + 1] = (j / (cloth.nz - 1)) * 2;
+      }
+    cGeo.setAttribute("uv", new THREE.BufferAttribute(uv, 2));
+    const idx: number[] = [];
+    for (let j = 0; j < cloth.nz - 1; j++)
+      for (let i = 0; i < cloth.nx - 1; i++) {
+        const a = j * cloth.nx + i, b = a + 1, c = a + cloth.nx, d = c + 1;
+        idx.push(a, c, b, b, c, d);
+      }
+    cGeo.setIndex(idx);
+    const duvet = new THREE.Mesh(cGeo, duvetMat);
     duvet.castShadow = true;
     duvet.receiveShadow = true;
-    duvet.position.set(1.05, 0.54, -1.9);
+    duvet.frustumCulled = false;
     bedG.add(duvet);
     parent = scene;
-    const dpos = duvetGeo.attributes.position as THREE.BufferAttribute;
-    const base = new Float32Array(dpos.count * 3);
-    for (let i = 0; i < dpos.count; i++) {
-      base[i * 3] = dpos.getX(i);
-      base[i * 3 + 1] = dpos.getY(i);
-      base[i * 3 + 2] = dpos.getZ(i);
-    }
-    const ph = Array.from({ length: 6 }, () => rnd(0, 6.28));
-    const updateDuvet = (breath: number) => {
-      for (let i = 0; i < dpos.count; i++) {
-        const lx = base[i * 3], lz = base[i * 3 + 2];
-        const wx = lx + 1.05, wz = lz - 1.9;
-        const [a, w] = profileAt(wz);
-        const dx = (wx - BODY_X) / w;
-        let y = a * breath * Math.exp(-dx * dx * 1.6);
-        // dobras do linho
-        y += 0.009 * Math.sin(lx * 9 + ph[0] + lz * 3) * Math.cos(lz * 7 + ph[1]);
-        y += 0.005 * Math.sin(lx * 17 + lz * 11 + ph[2]);
-        y += 0.02 * Math.sin(lz * 5 + ph[3]) * Math.exp(-dx * dx * 0.5);
-        // cai pelas laterais da cama
-        const edge = Math.abs(lx) - 0.66;
-        if (edge > 0) y -= Math.pow(edge, 1.4) * 3.4;
-        // sobra no pé e junto ao travesseiro
-        const tz = (DL / 2 + lz) / DL;
-        if (tz < 0.04) y -= (0.04 - tz) * 2;
-        if (lz > DL / 2 - 0.2) y -= (lz - (DL / 2 - 0.2)) * 1.4;
-        dpos.setY(i, base[i * 3 + 1] + y);
-      }
-      dpos.needsUpdate = true;
-      duvetGeo.computeVertexNormals();
+
+    // movimento de quem dorme: respiração + virar de vez em quando
+    let shift = 0, shiftTarget = 0, nextShift = 12 + Math.random() * 10;
+    const updateBody = (t: number, dt: number) => {
+      shift += (shiftTarget - shift) * (1 - Math.exp(-dt * 0.7));
+      const br = Math.sin((t / 4) * Math.PI * 2);
+      torso.r = 0.2 + 0.011 * br;
+      shoulder.r = 0.185 + 0.008 * br;
+      hips.r = 0.15 + 0.004 * br;
+      const roll = shift * 0.035;
+      torso.ay = 0.75 + 0.006 * br + roll * 0.4;
+      torso.ax = 1.06 + roll;
+      torso.bx = 1.07 + roll * 0.4;
+      shoulder.ax = shoulder.bx = 1.06 + roll;
+      shoulder.ay = shoulder.by = 0.77 + 0.005 * br + roll * 0.4;
+      hips.ax = 1.07 + roll * 0.3;
+      hips.bx = 1.09 + shift * 0.02;
+      placeCapsule(torsoMesh, { ...torso, r: torso.r - 0.01 });
+      placeCapsule(shoulderMesh, { ...shoulder, r: shoulder.r - 0.005 });
+      head.position.set(HEAD.x + roll * 0.6, HEAD.y + 0.002 * br, HEAD.z);
+      head.rotation.set(0, shift * 0.2, 0);
+      ear.position.set(head.position.x - 0.088, head.position.y - 0.006, head.position.z + 0.005);
+      neck.position.set(head.position.x + 0.01, head.position.y - 0.085, head.position.z - 0.1);
+      neck.rotation.set(-1.15, 0, 0);
     };
-    updateDuvet(1);
+    updateBody(0, 0);
+    // o travesseiro afunda onde a cabeça apoia; molinha suave
+    let dent = 0;
+    const updatePillow = () => {
+      const target = 0.045;
+      dent += (target - dent) * 0.08;
+      const cx = (head.position.x - 1.05) / 0.34, cz = (head.position.z + 0.55) / 0.21;
+      for (let i = 0; i < pPos.count; i++) {
+        const x = pBase[i * 3], y = pBase[i * 3 + 1], z = pBase[i * 3 + 2];
+        const d2 = (x - cx) * (x - cx) + (z - cz) * (z - cz);
+        const k = y > 0 ? Math.exp(-d2 * 3.2) * (dent / 0.09) * 2.2 : 0;
+        pPos.setY(i, y - Math.min(k, 1.15) * y * 0.85);
+      }
+      pPos.needsUpdate = true;
+      pillowGeo.computeVertexNormals();
+    };
+    for (let i = 0; i < 80; i++) updatePillow();
+    // deixa o edredom assentar antes da primeira imagem
+    for (let i = 0; i < 260; i++) cloth.step(1 / 60, bodyCaps, bedBox, 8);
+    const cPos = cGeo.attributes.position as THREE.BufferAttribute;
+    cPos.needsUpdate = true;
+    cGeo.computeVertexNormals();
 
     // ---------- luminária (modelo real, em mm) ----------
     const lampGroup = new THREE.Group();
     const LAMP_POS = new THREE.Vector3(TABLE.x, TABLE.h, TABLE.z);
     lampGroup.position.copy(LAMP_POS);
     scene.add(lampGroup);
-    const lampLight = new THREE.PointLight("#F2B05E", 4, 0, 2);
+    const lampLight = new THREE.PointLight("#F2B05E", 3, 0, 2);
     lampLight.castShadow = true;
     lampLight.shadow.mapSize.set(1024, 1024);
-    lampLight.shadow.bias = -0.0008;
+    lampLight.shadow.bias = -0.0005;
+    lampLight.shadow.normalBias = 0.03;
     lampLight.shadow.radius = 5;
-    lampLight.position.set(-0.1, 0.09, 0); // dentro do vidro, em coordenadas locais da luminária
+    lampLight.position.set(-0.1, 0.09, 0); // dentro do vidro
     lampGroup.add(lampLight);
     const lampHit = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.2, 0.2), new THREE.MeshBasicMaterial({ visible: false }));
     lampHit.position.set(0, 0.07, 0);
@@ -290,8 +351,8 @@ export default function Scene(props: SceneProps) {
       new THREE.SpriteMaterial({
         map: canvasTexture(256, (c, n) => {
           const g = c.createRadialGradient(n / 2, n / 2, 0, n / 2, n / 2, n / 2);
-          g.addColorStop(0, "rgba(255,255,255,0.9)");
-          g.addColorStop(0.25, "rgba(255,255,255,0.28)");
+          g.addColorStop(0, "rgba(255,255,255,0.8)");
+          g.addColorStop(0.3, "rgba(255,255,255,0.2)");
           g.addColorStop(1, "rgba(255,255,255,0)");
           c.fillStyle = g;
           c.fillRect(0, 0, n, n);
@@ -303,14 +364,14 @@ export default function Scene(props: SceneProps) {
         toneMapped: false,
       }),
     );
-    halo.position.set(-0.1, 0.09, 0.05);
-    halo.scale.setScalar(0.5);
+    halo.position.set(-0.1, 0.09, 0.08);
+    halo.scale.setScalar(0.55);
     lampGroup.add(halo);
 
     new OBJLoader().load("/models/luminaria-madeira.obj", (obj) => {
       obj.scale.setScalar(0.001);
       obj.position.set(-722.6 * 0.001, 0, 191.7 * 0.001);
-      const lampWood = new THREE.MeshStandardMaterial({ map: woodTex, roughness: 0.5 });
+      const lampWood = new THREE.MeshStandardMaterial({ map: lampWoodTex, roughness: 0.5 });
       obj.traverse((o) => {
         const m = o as THREE.Mesh;
         if (!m.isMesh) return;
@@ -336,13 +397,9 @@ export default function Scene(props: SceneProps) {
     sky.target.position.set(1.0, 0.2, 0);
     sky.castShadow = true;
     sky.shadow.mapSize.set(2048, 2048);
-    sky.shadow.camera.left = -4;
-    sky.shadow.camera.right = 4;
-    sky.shadow.camera.top = 4;
-    sky.shadow.camera.bottom = -4;
-    sky.shadow.camera.near = 1;
-    sky.shadow.camera.far = 16;
+    Object.assign(sky.shadow.camera, { left: -4, right: 4, top: 4, bottom: -4, near: 1, far: 16 });
     sky.shadow.bias = -0.0004;
+    sky.shadow.normalBias = 0.03;
     sky.shadow.radius = 4;
     scene.add(sky, sky.target);
 
@@ -387,12 +444,15 @@ export default function Scene(props: SceneProps) {
     let raf = 0;
     let last = performance.now();
     const t0 = last;
+    let acc = 0;
     const v = new THREE.Vector3();
     const tmp = new THREE.Color();
 
     const resize = () => {
       const w = el.clientWidth, h = el.clientHeight;
       renderer.setSize(w, h);
+      composer.setSize(w, h);
+      bloom.resolution.set(w, h);
       camera.aspect = w / h;
       camera.fov = camera.aspect < 1 ? 70 : 48;
       camera.updateProjectionMatrix();
@@ -409,19 +469,18 @@ export default function Scene(props: SceneProps) {
       const p = live.current;
 
       day += ((p.mode === "day" ? 1 : 0) - day) * (1 - Math.exp(-dt * 3.2));
-      const targetOn = p.mode === "night" ? 1 : 0.0;
-      lampOn += (targetOn - lampOn) * (1 - Math.exp(-dt * 4));
+      lampOn += ((p.mode === "night" ? 1 : 0) - lampOn) * (1 - Math.exp(-dt * 4));
       lampTarget.set(p.lampColor);
       lampNow.lerp(lampTarget, 1 - Math.exp(-dt * 2.2));
 
-      // luz da luminária, com um tremor mínimo de chama/LED
-      const flicker = p.reduced ? 1 : 1 + 0.015 * Math.sin(t * 2.1) + 0.01 * Math.sin(t * 5.3);
+      // a luminária acende o quarto na cor escolhida
+      const flicker = p.reduced ? 1 : 1 + 0.012 * Math.sin(t * 2.1) + 0.008 * Math.sin(t * 5.3);
       lampLight.color.copy(lampNow);
+      lampLight.intensity = 3.2 * lampOn * flicker;
       halo.material.color.copy(lampNow);
-      halo.material.opacity = 0.45 * lampOn * flicker;
-      lampLight.intensity = 2.4 * lampOn * flicker;
-      lampGlass.emissive.copy(lampNow).multiplyScalar(0.75).lerp(tmp.set("#e8dcc2"), day);
-      lampGlass.emissiveIntensity = 0.12 + 1.1 * lampOn * flicker;
+      halo.material.opacity = 0.4 * lampOn * flicker;
+      lampGlass.emissive.copy(lampNow).multiplyScalar(0.8).lerp(tmp.set("#e8dcc2"), day);
+      lampGlass.emissiveIntensity = 0.12 + 2.3 * lampOn * flicker;
 
       // luz do céu / janela
       sky.color.copy(NIGHT.sky).lerp(DAY.sky, day);
@@ -431,21 +490,36 @@ export default function Scene(props: SceneProps) {
       hemi.intensity = 0.8 + 0.5 * day;
       scene.environmentIntensity = 0.14 + 0.35 * day;
       renderer.toneMappingExposure = 0.95 + 0.1 * day;
-      windowPane.color.copy(NIGHT.window).lerp(DAY.window, day).multiplyScalar(0.5 + 1.7 * day);
+      bloom.strength = 0.42 - 0.3 * day;
+      windowPane.color.copy(NIGHT.window).lerp(DAY.window, day).multiplyScalar(0.5 + 1.1 * day);
       scene.background = tmp.copy(NIGHT.bg).lerp(DAY.bg, day).clone();
 
-      // respiração (~4s por ciclo) e deslocamento leve da câmera
+      // física: quem dorme respira e se vira; o edredom acompanha
       if (!p.reduced) {
-        updateDuvet(1 + 0.045 * Math.sin((t / 4) * Math.PI * 2));
+        if (t > nextShift) {
+          shiftTarget = shiftTarget === 0 ? 1 : 0;
+          nextShift = t + 14 + Math.random() * 14;
+        }
+        updateBody(t, dt);
+        acc += dt;
+        let steps = 0;
+        while (acc >= 1 / 60 && steps < 2) {
+          cloth.step(1 / 60, bodyCaps, bedBox, 6);
+          acc -= 1 / 60;
+          steps++;
+        }
+        if (acc > 0.1) acc = 0;
+        cPos.needsUpdate = true;
+        cGeo.computeVertexNormals();
+        updatePillow();
         camera.position.set(camBase.x + pointer.x * 0.05 + Math.sin(t * 0.15) * 0.02, camBase.y - pointer.y * 0.02, camBase.z);
       }
       camera.lookAt(camTarget);
 
-      // âncora do card
       v.set(LAMP_POS.x - 0.03, LAMP_POS.y + 0.16, LAMP_POS.z).project(camera);
       p.onLampScreen((v.x * 0.5 + 0.5) * el.clientWidth, (-v.y * 0.5 + 0.5) * el.clientHeight);
 
-      renderer.render(scene, camera);
+      composer.render();
     };
     raf = requestAnimationFrame(frame);
 
@@ -454,6 +528,7 @@ export default function Scene(props: SceneProps) {
       ro.disconnect();
       renderer.domElement.removeEventListener("pointermove", onMove);
       renderer.domElement.removeEventListener("pointerdown", onDown);
+      composer.dispose();
       renderer.dispose();
       pmrem.dispose();
       el.removeChild(renderer.domElement);

@@ -17,7 +17,9 @@ export default function Experience() {
   const [sceneReady, setSceneReady] = useState(false);
   const [mode, setMode] = useState<Mode>("night");
   const [lampActive, setLampActive] = useState(false);
-  const [colorIndex, setColorIndex] = useState(0);
+  const [picked, setPicked] = useState(0); // cor fixa escolhida
+  const [cycleIndex, setCycleIndex] = useState(0);
+  const [paused, setPaused] = useState(false); // parou o ciclo ao escolher uma cor
   const leaveTimer = useRef<ReturnType<typeof setTimeout>>();
   const cardRef = useRef<HTMLDivElement>(null);
   const ready = minTime && sceneReady;
@@ -31,12 +33,16 @@ export default function Experience() {
   // Com a luminária ativa, cicla âmbar → laranja → vermelho em loop lento.
   useEffect(() => {
     if (!lampActive) {
-      setColorIndex(0);
+      setPaused(false);
       return;
     }
-    const id = setInterval(() => setColorIndex((i) => (i + 1) % lampColors.length), 2200);
+    if (paused) return;
+    setCycleIndex(picked);
+    const id = setInterval(() => setCycleIndex((i) => (i + 1) % lampColors.length), 2200);
     return () => clearInterval(id);
-  }, [lampActive]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lampActive, paused]);
+  const colorIndex = lampActive && !paused ? cycleIndex : picked;
 
   const onLampHover = useCallback((hover: boolean) => {
     clearTimeout(leaveTimer.current);
@@ -66,7 +72,6 @@ export default function Experience() {
         <Scene
           mode={mode}
           lampColor={lampColors[colorIndex]}
-          lampActive={lampActive}
           reduced={reduced}
           onReady={() => setSceneReady(true)}
           onLampHover={onLampHover}
@@ -89,7 +94,23 @@ export default function Experience() {
                 onPointerLeave={() => onLampHover(false)}
               >
                 <p className="text-sm leading-snug">uma luz que acompanha o seu sono, do âmbar ao vermelho.</p>
-                <Link href="/produto" className="mt-3 inline-block rounded-full px-4 py-1.5 text-sm" style={{ background: lampColors[colorIndex], color: "#2A2A2A" }}>
+                <div className="mt-3 flex gap-2" role="group" aria-label="cor da luz">
+                  {lampColors.map((col, i) => (
+                    <button
+                      key={col}
+                      type="button"
+                      aria-label={["âmbar", "laranja", "vermelho"][i]}
+                      aria-pressed={colorIndex === i}
+                      onClick={() => {
+                        setPicked(i);
+                        setPaused(true);
+                      }}
+                      className="h-6 w-6 rounded-full"
+                      style={{ background: col, outline: colorIndex === i ? `2px solid ${c.text}` : "none", outlineOffset: 2 }}
+                    />
+                  ))}
+                </div>
+                <Link href="/produto" className="mt-4 inline-block rounded-full px-4 py-1.5 text-sm" style={{ background: lampColors[colorIndex], color: "#2A2A2A" }}>
                   conheça a sovee
                 </Link>
               </motion.div>
