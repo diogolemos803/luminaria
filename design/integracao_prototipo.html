@@ -1,0 +1,382 @@
+<title>Botão e Lâmpada</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap">
+<style>
+  /* Layout: três iPhones lado a lado, um por proposta de integração; controles globais
+     em cima mudam o estado da lâmpada e o modo do app nos três ao mesmo tempo. */
+  :root {
+    --page: #EFEEEA; --page-ink: #34332F; --page-muted: #6E6B62;
+    --chip: rgba(0,0,0,0.06); --chip-on: #FFFFFF;
+    --accent: #DB8149;
+    --display: "DM Sans", ui-rounded, -apple-system, "Segoe UI", sans-serif;
+    /* paleta do app (fixa, não depende do tema de quem vê) */
+    --creme: #FDF8C7; --carvao: #444444; --card-d: #F3F3F4; --card-n: #525252;
+    --noite: #84A1C8; --terracota: #DB8149;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --page: #1A1A19; --page-ink: #E9E7E1; --page-muted: #A9A69C; --chip: rgba(255,255,255,0.08); --chip-on: #3A3936; color-scheme: dark; }
+  }
+  :root[data-theme="dark"] { --page: #1A1A19; --page-ink: #E9E7E1; --page-muted: #A9A69C; --chip: rgba(255,255,255,0.08); --chip-on: #3A3936; color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--page-ink); font-family: var(--display);
+    padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  .lab { max-width: 1080px; margin: 0 auto; padding-block: 36px 72px; display: flex; flex-direction: column; gap: 26px; }
+  .eyebrow { font-size: 12px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); }
+  h1 { margin: 6px 0 8px; font-size: 28px; letter-spacing: -0.015em; text-wrap: balance; }
+  .lead { margin: 0; max-width: 68ch; font-size: 15px; line-height: 1.55; color: var(--page-muted); }
+  .controls { display: flex; flex-wrap: wrap; gap: 14px 22px; }
+  .ctl { display: flex; flex-direction: column; gap: 6px; }
+  .ctl-label { font-size: 11.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--page-muted); }
+  .seg { display: inline-flex; flex-wrap: wrap; background: var(--chip); padding: 4px; border-radius: 999px; gap: 2px; }
+  .seg button { appearance: none; border: 0; background: transparent; font: inherit; font-size: 13px; font-weight: 500; padding: 7px 13px; border-radius: 999px; cursor: pointer; color: inherit; opacity: 0.6; }
+  .seg button.on { opacity: 1; background: var(--chip-on); box-shadow: 0 1px 3px rgba(0,0,0,0.15); font-weight: 700; }
+  button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .options { display: flex; flex-wrap: wrap; gap: 30px; align-items: flex-start; }
+  .opt { display: flex; flex-direction: column; gap: 12px; width: 300px; max-width: 100%; }
+  .opt-head { display: flex; flex-direction: column; gap: 4px; }
+  .opt-tag { font-size: 12px; font-weight: 700; color: var(--accent); letter-spacing: 0.06em; text-transform: uppercase; }
+  .opt-title { font-size: 17px; font-weight: 700; }
+  .opt-desc { font-size: 13px; line-height: 1.5; color: var(--page-muted); }
+  .opt ul { margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.5; color: var(--page-muted); display: flex; flex-direction: column; gap: 4px; }
+  .opt ul b { color: var(--page-ink); }
+
+  /* ---------- iPhone ---------- */
+  .phone { width: 300px; max-width: 100%; height: 649px; background: #0B0B0C; border-radius: 46px; padding: 10px; box-shadow: 0 24px 50px rgba(0,0,0,0.28); }
+  .scr { width: 100%; height: 100%; border-radius: 36px; overflow: hidden; position: relative; background: #fff; transition: background-color .6s; }
+  .night .scr { background: var(--carvao); }
+  .notch { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); width: 90px; height: 22px; background: #0B0B0C; border-radius: 14px; z-index: 20; }
+  .day-glow { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse 100% 60% at 50% 100%, rgba(253,248,199,.85), rgba(253,248,199,0) 70%); transition: opacity .6s; }
+  .night .day-glow { opacity: 0; }
+  .lamp-glow-bg { position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity .6s, background .4s; }
+  .round-btn { position: absolute; left: 50%; top: 50%; width: 158px; height: 158px; margin: -79px 0 0 -79px; border-radius: 50%; border: 0; padding: 0; cursor: pointer; z-index: 3; background: #fff; box-shadow: 0 6px 13px rgba(68,68,68,.12); display: grid; place-items: center; transition: background-color .6s, box-shadow .6s; }
+  .night .round-btn { background: var(--card-n); box-shadow: 0 6px 13px rgba(253,248,199,.12); }
+  .round-btn .icon { width: 145px; height: 145px; background-color: var(--carvao); -webkit-mask: url(logo_acordado.png) center / contain no-repeat; mask: url(logo_acordado.png) center / contain no-repeat; }
+  .night .round-btn .icon { background-color: var(--noite); -webkit-mask-image: url(logo_sono.png); mask-image: url(logo_sono.png); }
+  .tagline { position: absolute; left: 0; right: 0; bottom: 30px; z-index: 3; text-align: center; opacity: 0; color: rgba(253,248,199,.7); font: 600 11px/1 "Iowan Old Style", "Palatino Linotype", serif; letter-spacing: .4px; transition: opacity .6s; }
+  .night .tagline { opacity: 1; }
+  .menu-icon { position: absolute; top: 24px; right: 22px; width: 18px; height: 13px; z-index: 7; display: flex; flex-direction: column; justify-content: space-between; }
+  .menu-icon span { display: block; height: 2px; border-radius: 1px; background: var(--carvao); }
+  .night .menu-icon span { background: var(--creme); }
+  .night .round-btn, .night .tagline { } /* sem alterações extras */
+
+  /* Opção A: luminária pequena embaixo do botão */
+  .mini { position: absolute; left: 50%; bottom: 58px; transform: translateX(-50%); width: 132px; border: 0; background: transparent; padding: 0; cursor: pointer; z-index: 3; display: flex; flex-direction: column; align-items: center; gap: 2px; color: var(--carvao); }
+  .night .mini { color: var(--creme); }
+  .mini svg { width: 132px; height: auto; overflow: visible; display: block; }
+  .mini-cap { font-size: 10.5px; font-weight: 500; opacity: 0.75; white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+  /* Opção C: bolinha no canto, ao lado do menu */
+  .corner { position: absolute; top: 15px; left: 18px; width: 34px; height: 34px; border-radius: 50%; border: 0; cursor: pointer; z-index: 7; display: grid; place-items: center; background: var(--card-d); color: var(--carvao); padding: 0; }
+  .night .corner { background: var(--card-n); color: var(--creme); }
+  .corner svg { width: 20px; height: 20px; overflow: visible; }
+
+  /* Opção B: duas páginas */
+  .pager { position: absolute; inset: 0; display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; z-index: 2; }
+  .pager::-webkit-scrollbar { display: none; }
+  .page { flex: none; width: 100%; height: 100%; scroll-snap-align: start; position: relative; }
+  .dots { position: absolute; left: 0; right: 0; bottom: 54px; display: flex; justify-content: center; gap: 7px; z-index: 6; }
+  .dots button { width: 7px; height: 7px; border-radius: 50%; border: 0; padding: 0; background: var(--carvao); opacity: .25; cursor: pointer; }
+  .night .dots button { background: var(--creme); }
+  .dots button.on { opacity: .8; }
+
+  /* Tela da lâmpada (versão reduzida da tela aprovada) */
+  .lampscreen { overflow: hidden; position: absolute; inset: 0; z-index: 10; background: #fff; display: flex; flex-direction: column; padding: 46px 14px 18px; gap: 10px; color: var(--carvao); transition: transform .35s cubic-bezier(.3,0,.2,1); }
+  .night .lampscreen { background: var(--carvao); color: var(--creme); }
+  .lampscreen.push { transform: translateX(100%); }
+  .page .lampscreen { position: absolute; transform: none; }
+  .ls-nav { display: flex; align-items: center; justify-content: space-between; }
+  .ls-back { width: 30px; height: 30px; border-radius: 50%; border: 0; cursor: pointer; background: var(--card-d); color: inherit; font: inherit; font-size: 15px; }
+  .night .ls-back { background: var(--card-n); }
+  .ls-title { font-size: 11.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; opacity: .6; }
+  .ls-head { display: flex; align-items: center; justify-content: space-between; }
+  .ls-name { font-size: 14px; font-weight: 700; }
+  .ls-sub { font-size: 11px; opacity: .6; }
+  .switch { appearance: none; border: 0; width: 44px; height: 26px; border-radius: 999px; background: #DADADC; position: relative; cursor: pointer; flex: none; }
+  .night .switch { background: rgba(255,255,255,.12); }
+  .switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.25); transition: transform .2s; }
+  .switch.on { background: var(--terracota); }
+  .night .switch.on { background: var(--noite); }
+  .switch.on::after { transform: translateX(18px); }
+  .ls-tools { display: flex; justify-content: space-between; }
+  .ls-tools i { width: 40px; height: 40px; border-radius: 50%; background: var(--card-d); display: block; }
+  .night .ls-tools i { background: var(--card-n); }
+  .ls-tools i:first-child { background: var(--terracota); }
+  .night .ls-tools i:first-child { background: var(--noite); }
+  .ls-lamp { flex: 1; min-height: 0; display: flex; align-items: center; }
+  .ls-lamp svg { width: 100%; height: 100%; overflow: visible; }
+  .ls-panel { background: var(--card-d); border-radius: 18px; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+  .night .ls-panel { background: var(--card-n); }
+  .ls-panel-t { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; opacity: .6; }
+  .sw { display: flex; justify-content: space-between; }
+  .sw button { width: 34px; height: 34px; border-radius: 50%; border: 0; cursor: pointer; padding: 0; box-shadow: 0 0 0 2px transparent; }
+  .sw button.on { box-shadow: 0 0 0 2px var(--card-d), 0 0 0 4px var(--terracota); }
+  .night .sw button.on { box-shadow: 0 0 0 2px var(--card-n), 0 0 0 4px var(--noite); }
+
+  /* desenho da luminária */
+  svg .ln { fill: none; stroke: currentColor; stroke-width: 1.4; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
+  svg .solid { fill: var(--stage-fill); stroke: currentColor; stroke-width: 1.4; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
+  svg .floor { fill: none; stroke: currentColor; stroke-width: 1.1; vector-effect: non-scaling-stroke; opacity: .45; }
+  svg .shade { stroke: var(--stage-fill); stroke-width: 1.4; vector-effect: non-scaling-stroke; transition: fill .3s; }
+  svg .shade.off { stroke: currentColor; }
+  .phone { --stage-fill: #fff; }
+  .phone.night { --stage-fill: #444444; }
+
+  .extras { max-width: 72ch; display: flex; flex-direction: column; gap: 10px; font-size: 14px; line-height: 1.55; color: var(--page-muted); }
+  .extras h2 { margin: 0; font-size: 16px; color: var(--page-ink); }
+  .extras ol { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; }
+  .extras b { color: var(--page-ink); }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="lab">
+  <header>
+    <div class="eyebrow">Protótipo · tela inicial + lâmpada</div>
+    <h1>Como o botão encontra a lâmpada</h1>
+    <p class="lead">Três jeitos de levar da tela do botão redondo pra tela da lâmpada. O botão, o fundo e o “hora de desligar.” continuam iguais nos três. Toque na luminária pequena, na bolinha do canto ou deslize a segunda opção pro lado.</p>
+  </header>
+
+  <div class="controls">
+    <div class="ctl"><div class="ctl-label">Modo do app</div>
+      <div class="seg" id="c-mode"><button class="on" data-v="day">Dia</button><button data-v="night">Noite</button></div></div>
+    <div class="ctl"><div class="ctl-label">Lâmpada agora</div>
+      <div class="seg" id="c-lamp"><button class="on" data-v="on">Acesa</button><button data-v="fade">Apagando devagar</button><button data-v="off">Apagada</button><button data-v="away">Fora de alcance</button></div></div>
+    <div class="ctl"><div class="ctl-label">Fundo acompanha a cor</div>
+      <div class="seg" id="c-bg"><button data-v="yes">Sim</button><button class="on" data-v="no">Não</button></div></div>
+  </div>
+
+  <div class="options">
+    <!-- A -->
+    <section class="opt">
+      <div class="opt-head">
+        <div class="opt-tag">Opção A · recomendada</div>
+        <div class="opt-title">A luminária mora embaixo do botão</div>
+        <div class="opt-desc">Uma miniatura do desenho, sempre na cor real da lâmpada. Mostra o estado sem abrir nada; tocar abre a tela da lâmpada.</div>
+      </div>
+      <div class="phone" data-opt="A"><div class="scr">
+        <div class="notch"></div><div class="day-glow"></div><div class="lamp-glow-bg"></div>
+        <div class="menu-icon"><span></span><span></span><span></span></div>
+        <button class="round-btn" aria-label="Botão do modo noite"><div class="icon"></div></button>
+        <button class="mini" aria-label="Abrir a lâmpada"><svg viewBox="262 430 756 580"></svg><span class="mini-cap"></span></button>
+        <div class="tagline">hora de desligar.</div>
+        <div class="lampscreen push"></div>
+      </div></div>
+      <ul>
+        <li><b>Prós:</b> o produto físico aparece na tela principal; dá pra ver de longe se a luz ficou acesa.</li>
+        <li><b>Contras:</b> divide o palco com o botão. A miniatura fica pequena e de traço fino pra não competir.</li>
+      </ul>
+    </section>
+
+    <!-- B -->
+    <section class="opt">
+      <div class="opt-head">
+        <div class="opt-tag">Opção B</div>
+        <div class="opt-title">Duas páginas lado a lado</div>
+        <div class="opt-desc">A tela inicial vira duas: botão à esquerda, lâmpada à direita. Deslize, ou toque nos pontinhos.</div>
+      </div>
+      <div class="phone" data-opt="B"><div class="scr">
+        <div class="notch"></div><div class="day-glow"></div><div class="lamp-glow-bg"></div>
+        <div class="menu-icon"><span></span><span></span><span></span></div>
+        <div class="pager">
+          <div class="page">
+            <button class="round-btn" aria-label="Botão do modo noite"><div class="icon"></div></button>
+          </div>
+          <div class="page"><div class="lampscreen"></div></div>
+        </div>
+        <div class="dots"><button class="on" aria-label="Página do botão"></button><button aria-label="Página da lâmpada"></button></div>
+        <div class="tagline">hora de desligar.</div>
+      </div></div>
+      <ul>
+        <li><b>Prós:</b> o botão fica sozinho, como hoje; a lâmpada está a um gesto.</li>
+        <li><b>Contras:</b> quem não deslizar não descobre a lâmpada; e na tela principal não dá pra ver se ela está acesa.</li>
+      </ul>
+    </section>
+
+    <!-- C -->
+    <section class="opt">
+      <div class="opt-head">
+        <div class="opt-tag">Opção C</div>
+        <div class="opt-title">Bolinha no canto, ao lado do menu</div>
+        <div class="opt-desc">Um ícone de luminária no canto de cima, preenchido com a cor atual. Mínimo: a tela principal fica quase igual a hoje.</div>
+      </div>
+      <div class="phone" data-opt="C"><div class="scr">
+        <div class="notch"></div><div class="day-glow"></div><div class="lamp-glow-bg"></div>
+        <button class="corner" aria-label="Abrir a lâmpada"><svg viewBox="0 0 24 24"></svg></button>
+        <div class="menu-icon"><span></span><span></span><span></span></div>
+        <button class="round-btn" aria-label="Botão do modo noite"><div class="icon"></div></button>
+        <div class="tagline">hora de desligar.</div>
+        <div class="lampscreen push"></div>
+      </div></div>
+      <ul>
+        <li><b>Prós:</b> não mexe no que já foi aprovado na tela principal.</li>
+        <li><b>Contras:</b> pequeno demais pra contar alguma coisa; vira só mais um atalho.</li>
+      </ul>
+    </section>
+  </div>
+
+  <section class="extras">
+    <h2>Valem pra qualquer opção</h2>
+    <ol>
+      <li><b>Encostar na luminária liga a noite inteira.</b> Quando o NFC reconhece, o app também manda a lâmpada “apagar devagar” e grava a luz da manhã. Na opção A, a miniatura sai junto com o botão quando a cena do foguete entra.</li>
+      <li><b>Desarmar pelo botão cancela tudo na lâmpada:</b> o apagar devagar e a luz da manhã daquela noite.</li>
+      <li><b>No pouso de manhã</b> (a tela do despertador), um botão “Apagar a luz” quando a lâmpada ainda estiver acesa no amanhecer.</li>
+      <li><b>Sem lâmpada pareada,</b> a miniatura (ou a bolinha) não aparece. A lâmpada é opcional; o app continua igual pra quem não tem.</li>
+      <li><b>Fundo acompanha a cor</b> (chave lá em cima): o brilho de “nascer do sol” no pé da tela usa a cor real da lâmpada quando ela está acesa. Dá pra combinar com qualquer opção.</li>
+    </ol>
+  </section>
+</div>
+
+<script>
+(() => {
+  // ---------- cor (mesma conta do protótipo da lâmpada) ----------
+  const LIMIT = 408;
+  function full(m) { const k = 255 / Math.max(1 - m, m); let a = k * (1 - m), r = k * m; const s = a + r; if (s > LIMIT) { a *= LIMIT / s; r *= LIMIT / s; } return [a, r]; }
+  const AMB = [255, 176, 28], RED = [255, 36, 8];
+  function rgbOf(m) { const [a, r] = full(m); let c = [0, 1, 2].map(i => AMB[i] * a / 255 + RED[i] * r / 255); const mx = Math.max(...c); return c.map(v => Math.round(v * 255 / mx)); }
+  const css = (c, al = 1) => `rgba(${c[0]},${c[1]},${c[2]},${al})`;
+  const mix = (x, y, t) => x.map((v, i) => Math.round(v + (y[i] - v) * t));
+  const PRESETS = [[255, 0, "Amarelo"], [255, 50, "Âmbar"], [204, 102, "Laranja"], [100, 180, "Laranja-avermelhado"], [0, 255, "Vermelho"]].map(([a, r, n]) => {
+    const m = r / (a + r); const [fa, fr] = full(m); return { m, b: Math.max(fa ? a / fa : 0, fr ? r / fr : 0), n };
+  });
+
+  const S = { night: false, lamp: "on", m: PRESETS[2].m, b: 0.8, name: "Laranja", bg: false };
+
+  // ---------- desenho da luminária (design/referencia_luminaria.png) ----------
+  const NS = "http://www.w3.org/2000/svg";
+  const YAW = 29.2 * Math.PI / 180, K = 0.49, OX = 436, OY = 765, BL = 468, BR = 150, BT = 40;
+  const proj = (u, v, h = 0) => [OX + u * Math.cos(YAW) - v * Math.sin(YAW), OY + (u * Math.sin(YAW) + v * Math.cos(YAW)) * K + h];
+  function pill(r, h = 0, cut = null) {
+    const p = [];
+    for (let i = 0; i <= 32; i++) { const t = -Math.PI / 2 + Math.PI * i / 32; p.push(proj(BL + r * Math.cos(t), r * Math.sin(t), h)); }
+    if (cut === null) for (let i = 0; i <= 32; i++) { const t = Math.PI / 2 + Math.PI * i / 32; p.push(proj(r * Math.cos(t), r * Math.sin(t), h)); }
+    else p.push(proj(cut, r, h), proj(cut, -r, h));
+    return "M" + p.map(q => q.map(n => n.toFixed(1)).join(",")).join("L") + "Z";
+  }
+  const el = (tag, at, parent) => { const e = document.createElementNS(NS, tag); for (const k in at) e.setAttribute(k, at[k]); parent.appendChild(e); return e; };
+  let uid = 0;
+  function makeLamp(svg) {
+    const id = "l" + (uid++);
+    const defs = el("defs", {}, svg);
+    const gg = el("radialGradient", { id: id + "g" }, defs), g0 = el("stop", { offset: 0 }, gg), g1 = el("stop", { offset: 1, "stop-opacity": 0 }, gg);
+    const pg = el("radialGradient", { id: id + "p" }, defs), p0 = el("stop", { offset: 0 }, pg), p1 = el("stop", { offset: 1, "stop-opacity": 0 }, pg);
+    el("path", { d: pill(BR - 24, 0, 150) }, el("clipPath", { id: id + "t" }, defs));
+    el("path", { d: pill(BR) }, el("clipPath", { id: id + "b" }, defs));
+    const glow = el("ellipse", { cx: 436, cy: 610, rx: 300, ry: 260, fill: `url(#${id}g)` }, svg);
+    el("path", { d: pill(BR, BT), class: "solid" }, svg);
+    const pts = []; for (let i = 0; i <= 64; i++) { const t = Math.PI * 2 * i / 64; pts.push(proj((Math.cos(t) > 0 ? BL : 0) + BR * Math.cos(t), BR * Math.sin(t))); }
+    const xs = pts.map(p => p[0]); for (const p of [pts[xs.indexOf(Math.min(...xs))], pts[xs.indexOf(Math.max(...xs))]]) el("line", { x1: p[0], y1: p[1], x2: p[0], y2: p[1] + BT, class: "ln" }, svg);
+    el("path", { d: pill(BR), class: "solid" }, svg);
+    const pool = el("ellipse", { cx: 470, cy: 790, rx: 260, ry: 110, fill: `url(#${id}p)`, "clip-path": `url(#${id}b)` }, svg);
+    el("path", { d: pill(BR - 24, 0, 150), class: "ln" }, svg);
+    el("path", { d: pill(BR - 24, 13, 150), class: "floor", "clip-path": `url(#${id}t)` }, svg);
+    const CX = 436, RX = 117, RY = RX * K, CT = 722, ST = 517;
+    el("path", { d: `M${CX - RX},${CT} V${OY} A${RX},${RY} 0 0 0 ${CX + RX},${OY} V${CT} Z`, class: "solid" }, svg);
+    const shade = el("path", { d: `M${CX - RX},${ST} V${CT} A${RX},${RY} 0 0 0 ${CX + RX},${CT} V${ST} A${RX},${RY} 0 0 0 ${CX - RX},${ST} Z`, class: "shade" }, svg);
+    const top = el("ellipse", { cx: CX, cy: ST, rx: RX, ry: RY, class: "shade", fill: "none" }, svg);
+    return function paint(on, m, b) {
+      const stage = S.night ? [68, 68, 68] : [255, 255, 255];
+      if (!on) { shade.setAttribute("fill", css(stage)); shade.classList.add("off"); top.classList.add("off"); glow.setAttribute("opacity", 0); pool.setAttribute("opacity", 0); return; }
+      const led = rgbOf(m), lit = mix([255, 247, 214], led, 0.25 + 0.45 * m), dim = mix(stage, led, 0.35);
+      shade.setAttribute("fill", css(mix(dim, lit, Math.pow(b, 0.6)))); shade.classList.remove("off"); top.classList.remove("off");
+      for (const [s, a] of [[g0, S.night ? .55 : .35], [p0, S.night ? .35 : .2]]) { s.setAttribute("stop-color", css(led)); s.setAttribute("stop-opacity", a * b); }
+      g1.setAttribute("stop-color", css(led)); p1.setAttribute("stop-color", css(led));
+      glow.setAttribute("opacity", 1); pool.setAttribute("opacity", 1);
+    };
+  }
+
+  // Ícone da bolinha do canto: cúpula em miniatura
+  function makeCornerIcon(svg) {
+    const shade = el("path", { d: "M6.5 5.5 V15 A5.5 2.4 0 0 0 17.5 15 V5.5 A5.5 2.4 0 0 0 6.5 5.5 Z", "stroke-width": 1.4, stroke: "currentColor" }, svg);
+    el("ellipse", { cx: 12, cy: 5.5, rx: 5.5, ry: 2.4, fill: "none", stroke: "currentColor", "stroke-width": 1.2, opacity: .6 }, svg);
+    el("path", { d: "M3 19.5 h18", stroke: "currentColor", "stroke-width": 1.6, "stroke-linecap": "round" }, svg);
+    return (on, m, b) => shade.setAttribute("fill", on ? css(rgbOf(m), 0.35 + 0.65 * b) : "none");
+  }
+
+  // ---------- tela da lâmpada (reduzida) ----------
+  const paints = [];
+  function buildLampScreen(box, withBack) {
+    box.innerHTML = `
+      <div class="ls-nav">${withBack ? '<button class="ls-back" aria-label="Voltar">‹</button>' : '<span style="width:30px"></span>'}<div class="ls-title">Lâmpada</div><span style="width:30px"></span></div>
+      <div class="ls-head"><div><div class="ls-name">Zleepy Lamp</div><div class="ls-sub"></div></div><button class="switch" aria-label="Ligar ou desligar"></button></div>
+      <div class="ls-tools"><i></i><i></i><i></i><i></i><i></i></div>
+      <div class="ls-lamp"><svg viewBox="262 430 756 580"></svg></div>
+      <div class="ls-panel"><div class="ls-panel-t">Cores prontas</div><div class="sw"></div></div>`;
+    paints.push(makeLamp(box.querySelector(".ls-lamp svg")));
+    const sw = box.querySelector(".sw");
+    PRESETS.forEach(p => {
+      const b = document.createElement("button"); b.style.background = css(rgbOf(p.m)); b.setAttribute("aria-label", p.n);
+      b.addEventListener("click", () => { S.m = p.m; S.b = p.b; S.name = p.n; if (S.lamp !== "away") S.lamp = "on"; syncSeg(); render(); });
+      sw.appendChild(b);
+    });
+    box.querySelector(".switch").addEventListener("click", () => { if (S.lamp === "away") return; S.lamp = S.lamp === "off" ? "on" : "off"; syncSeg(); render(); });
+    if (withBack) box.querySelector(".ls-back").addEventListener("click", () => box.classList.add("push"));
+  }
+
+  // ---------- montagem ----------
+  document.querySelectorAll(".phone").forEach(ph => {
+    const opt = ph.dataset.opt;
+    if (opt === "A") {
+      paints.push(makeLamp(ph.querySelector(".mini svg")));
+      const ls = ph.querySelector(".lampscreen"); buildLampScreen(ls, true);
+      ph.querySelector(".mini").addEventListener("click", () => ls.classList.remove("push"));
+    }
+    if (opt === "B") {
+      buildLampScreen(ph.querySelector(".page .lampscreen"), false);
+      const pager = ph.querySelector(".pager"), dots = ph.querySelectorAll(".dots button");
+      dots.forEach((d, i) => d.addEventListener("click", () => pager.scrollTo({ left: i * pager.clientWidth, behavior: "smooth" })));
+      pager.addEventListener("scroll", () => { const i = Math.round(pager.scrollLeft / pager.clientWidth); dots.forEach((d, j) => d.classList.toggle("on", i === j)); });
+    }
+    if (opt === "C") {
+      paints.push(makeCornerIcon(ph.querySelector(".corner svg")));
+      const ls = ph.querySelector(".lampscreen"); buildLampScreen(ls, true);
+      ph.querySelector(".corner").addEventListener("click", () => ls.classList.remove("push"));
+    }
+    ph.querySelectorAll(".round-btn").forEach(b => b.addEventListener("click", () => { S.night = !S.night; syncSeg(); render(); }));
+  });
+
+  function seg(id, fn) {
+    const box = document.getElementById(id);
+    box.addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; fn(b.dataset.v); syncSeg(); render(); });
+  }
+  seg("c-mode", v => S.night = v === "night");
+  seg("c-lamp", v => S.lamp = v);
+  seg("c-bg", v => S.bg = v === "yes");
+  function syncSeg() {
+    const set = (id, v) => document.querySelectorAll(`#${id} button`).forEach(b => b.classList.toggle("on", b.dataset.v === v));
+    set("c-mode", S.night ? "night" : "day"); set("c-lamp", S.lamp); set("c-bg", S.bg ? "yes" : "no");
+  }
+
+  // ---------- desenhar estado ----------
+  let fadeT = 0;
+  function current() {
+    if (S.lamp === "on") return [true, S.b];
+    if (S.lamp === "fade") return [true, S.b * (1 - fadeT)];
+    return [false, 0];
+  }
+  function render() {
+    document.querySelectorAll(".phone").forEach(ph => ph.classList.toggle("night", S.night));
+    const [on, b] = current();
+    paints.forEach(p => p(on, S.m, Math.max(b, 0.04)));
+    const minsLeft = Math.max(1, Math.round(15 * (1 - fadeT)));
+    const cap = S.lamp === "away" ? "lâmpada fora de alcance"
+      : S.lamp === "off" ? "lâmpada apagada"
+      : S.lamp === "fade" ? `apagando · ${minsLeft} min`
+      : `${S.name.toLowerCase()} · ${Math.round(S.b * 100)}%`;
+    document.querySelectorAll(".mini-cap").forEach(c => c.textContent = cap);
+    document.querySelectorAll(".ls-sub").forEach(c => c.textContent = S.lamp === "away" ? "Fora de alcance" : S.lamp === "fade" ? `Apagando devagar · ${minsLeft} min` : "Conectada");
+    document.querySelectorAll(".lampscreen .switch").forEach(s => s.classList.toggle("on", on));
+    document.querySelectorAll(".sw button").forEach((bt, i) => bt.classList.toggle("on", on && Math.abs(PRESETS[i % PRESETS.length].m - S.m) < 0.01));
+    document.querySelectorAll(".lamp-glow-bg").forEach(g => {
+      g.style.background = `radial-gradient(ellipse 100% 60% at 50% 100%, ${css(rgbOf(S.m), S.night ? 0.35 : 0.45)}, transparent 70%)`;
+      g.style.opacity = S.bg && on ? b : 0;
+    });
+    document.querySelectorAll(".day-glow").forEach(g => g.style.opacity = S.night ? 0 : (S.bg && on ? 1 - b : 1));
+    document.querySelectorAll(".mini").forEach(m => m.style.opacity = S.lamp === "away" ? 0.45 : 1);
+  }
+
+  // "Apagando devagar": no protótipo, 15 minutos passam em 15 segundos e recomeçam
+  setInterval(() => { if (S.lamp === "fade") { fadeT = (fadeT + 1 / 75) % 1; render(); } else fadeT = 0; }, 200);
+
+  render();
+})();
+</script>
