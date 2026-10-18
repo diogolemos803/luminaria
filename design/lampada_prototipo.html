@@ -124,10 +124,15 @@
   .switch.on::after { transform: translateX(20px); }
 
   /* Lâmpada (desenho) */
-  .lamp-hero { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 18px 0 6px; }
-  .lamp-glow { width: 150px; height: 150px; border-radius: 50%; display: grid; place-items: center; position: relative; }
-  .lamp-glow::before { content: ""; position: absolute; inset: -18px; border-radius: 50%; background: radial-gradient(circle, var(--glow) 0%, transparent 68%); opacity: var(--glow-a); transition: opacity 250ms; }
-  .lamp-bulb { width: 92px; height: 92px; border-radius: 50%; background: var(--bulb); box-shadow: inset 0 -6px 14px rgba(0,0,0,0.12); position: relative; transition: background 250ms; }
+  .lamp-stage { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 0 0 8px; }
+  #lamp-svg { width: 100%; max-width: 100%; height: auto; display: block; overflow: visible; }
+  #lamp-svg .ln { fill: none; stroke: var(--line); stroke-width: 1.5; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
+  #lamp-svg .solid { fill: var(--stage); stroke: var(--line); stroke-width: 1.5; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
+  #lamp-svg .floor { fill: none; stroke: var(--line); stroke-width: 1.2; vector-effect: non-scaling-stroke; opacity: 0.45; }
+  #lamp-svg .shade { stroke: var(--stage); stroke-width: 1.5; vector-effect: non-scaling-stroke; transition: fill 250ms; }
+  #lamp-svg .shade.off { stroke: var(--line); }
+  .app { --line: #444444; }
+  .app.night { --line: #FDF8C7; }
   .lamp-readout { font-family: var(--mono); font-size: 11.5px; color: var(--muted); text-align: center; line-height: 1.5; }
   .lamp-readout b { color: var(--ink); font-weight: 500; }
 
@@ -231,28 +236,23 @@
   <div class="phones">
     <!-- ============ 1. LÂMPADA ============ -->
     <div class="phone-wrap">
-      <div class="phone-cap">1 · Lâmpada<span>Controle manual. Funciona a qualquer hora, sem rotina nenhuma.</span></div>
+      <div class="phone-cap">1 · Lâmpada<span>Controle manual, a qualquer hora. A luminária fica parada; a cúpula acende na cor e no brilho escolhidos embaixo.</span></div>
       <div class="phone"><div class="app" id="app1">
         <div class="notch"></div>
         <div class="nav"><div class="nav-btn">‹</div><div class="nav-title">Lâmpada</div><div style="width:34px"></div></div>
         <div class="scroll">
-          <div class="page-title">Lâmpada</div>
-
-          <div class="card">
-            <div class="row">
-              <div class="badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7l10 10-5 5V2l5 5L7 17"/></svg></div>
-              <div class="row-text">
-                <div class="row-title">Zleepy Lamp</div>
-                <div class="row-sub" id="conn-sub"><span class="dot"></span>Conectada · simulada</div>
-              </div>
-              <button class="switch on" id="power" aria-label="Ligar ou desligar a lâmpada"></button>
+          <div class="row" style="padding:0 4px">
+            <div class="row-text">
+              <div class="row-title">Zleepy Lamp</div>
+              <div class="row-sub" id="conn-sub"><span class="dot"></span>Conectada · simulada</div>
             </div>
-            <div id="state-notice"></div>
+            <button class="switch on" id="power" aria-label="Ligar ou desligar a lâmpada"></button>
           </div>
+          <div id="state-notice"></div>
 
           <div id="lamp-body">
-            <div class="lamp-hero">
-              <div class="lamp-glow" id="glow"><div class="lamp-bulb" id="bulb"></div></div>
+            <div class="lamp-stage">
+              <svg id="lamp-svg" viewBox="240 400 800 620" role="img" aria-label="Luminária"></svg>
               <div class="lamp-readout" id="readout"></div>
             </div>
 
@@ -530,10 +530,88 @@
   $("bri").addEventListener("input", e => { S.b = e.target.value / 100; S.power = true; renderLamp(); });
   $("power").addEventListener("click", () => { S.power = !S.power; renderLamp(); });
   $("cancel-today").addEventListener("click", () => { S.cancelled = !S.cancelled; renderLamp(); });
+  // Identificar: a lâmpada pisca 3 vezes (âmbar), depois volta ao que estava
+  let blinking = false;
   $("identify").addEventListener("click", () => {
-    const g = $("glow"); let n = 0;
-    const t = setInterval(() => { g.style.opacity = n % 2 ? 1 : 0.15; if (++n > 5) { clearInterval(t); g.style.opacity = 1; } }, 220);
+    if (blinking) return; blinking = true; let n = 0;
+    const t = setInterval(() => {
+      if (n % 2 === 0) paintLamp(true, 0, 1); else paintLamp(false, 0, 0);
+      if (++n >= 6) { clearInterval(t); blinking = false; renderLamp(); }
+    }, 260);
   });
+
+  // ---------- Desenho da luminária (design/referencia_luminaria.png) ----------
+  // Mesma geometria da referência (1080×1350): câmera só inclinada, então círculos
+  // horizontais viram elipses deitadas (altura = 0,49 × largura). Base em formato de
+  // pílula girada ~29° no chão, com uma bandeja rebaixada no lado direito.
+  const SVGNS = "http://www.w3.org/2000/svg";
+  const YAW = 29.2 * Math.PI / 180, K = 0.49, OX = 436, OY = 765;
+  const BASE_L = 468, BASE_R = 150, BASE_T = 40;
+  const proj = (u, v, h = 0) => [OX + u * Math.cos(YAW) - v * Math.sin(YAW), OY + (u * Math.sin(YAW) + v * Math.cos(YAW)) * K + h];
+  function pill(r, h = 0, cutAt = null) {
+    const pts = [];
+    for (let i = 0; i <= 32; i++) { const t = -Math.PI / 2 + Math.PI * i / 32; pts.push(proj(BASE_L + r * Math.cos(t), r * Math.sin(t), h)); }
+    if (cutAt === null) {
+      for (let i = 0; i <= 32; i++) { const t = Math.PI / 2 + Math.PI * i / 32; pts.push(proj(r * Math.cos(t), r * Math.sin(t), h)); }
+    } else { pts.push(proj(cutAt, r, h), proj(cutAt, -r, h)); }
+    return "M" + pts.map(p => p.map(n => n.toFixed(1)).join(",")).join("L") + "Z";
+  }
+  function el(tag, attrs, parent) {
+    const e = document.createElementNS(SVGNS, tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    parent.appendChild(e); return e;
+  }
+  const lampSvg = $("lamp-svg");
+  const defs = el("defs", {}, lampSvg);
+  const glowGrad = el("radialGradient", { id: "glow-grad" }, defs);
+  const g0 = el("stop", { offset: "0" }, glowGrad), g1 = el("stop", { offset: "1", "stop-opacity": "0" }, glowGrad);
+  const poolGrad = el("radialGradient", { id: "pool-grad" }, defs);
+  const p0 = el("stop", { offset: "0" }, poolGrad), p1 = el("stop", { offset: "1", "stop-opacity": "0" }, poolGrad);
+  const clip = el("clipPath", { id: "tray-clip" }, defs);
+  el("path", { d: pill(BASE_R - 24, 0, 150) }, clip);
+  const baseClip = el("clipPath", { id: "base-clip" }, defs);
+  el("path", { d: pill(BASE_R) }, baseClip);
+
+  const glowEl = el("ellipse", { cx: 436, cy: 610, rx: 300, ry: 260, fill: "url(#glow-grad)" }, lampSvg);
+  // Base: fundo deslocado pra baixo (só a borda da frente aparece), laterais, topo por cima
+  el("path", { d: pill(BASE_R, BASE_T), class: "solid" }, lampSvg);
+  { // laterais verticais nos extremos da pílula
+    const pts = [];
+    for (let i = 0; i <= 64; i++) { const t = Math.PI * 2 * i / 64; const u = Math.cos(t) > 0 ? BASE_L : 0; pts.push(proj(u + BASE_R * Math.cos(t), BASE_R * Math.sin(t))); }
+    const xs = pts.map(p => p[0]); const lo = pts[xs.indexOf(Math.min(...xs))], hi = pts[xs.indexOf(Math.max(...xs))];
+    for (const p of [lo, hi]) el("line", { x1: p[0], y1: p[1], x2: p[0], y2: p[1] + BASE_T, class: "ln" }, lampSvg);
+  }
+  el("path", { d: pill(BASE_R), class: "solid" }, lampSvg);
+  const poolEl = el("ellipse", { cx: 470, cy: 790, rx: 260, ry: 110, fill: "url(#pool-grad)", "clip-path": "url(#base-clip)" }, lampSvg);
+  el("path", { d: pill(BASE_R - 24, 0, 150), class: "ln" }, lampSvg);
+  el("path", { d: pill(BASE_R - 24, 13, 150), class: "floor", "clip-path": "url(#tray-clip)" }, lampSvg);
+
+  // Cúpula: colar escuro embaixo, cilindro aceso em cima
+  const CX = 436, RX = 117, RY = RX * K, COLLAR_TOP = 722, SHADE_TOP = 517;
+  el("path", { d: `M${CX - RX},${COLLAR_TOP} V${OY} A${RX},${RY} 0 0 0 ${CX + RX},${OY} V${COLLAR_TOP} Z`, class: "solid" }, lampSvg);
+  const shadeEl = el("path", { d: `M${CX - RX},${SHADE_TOP} V${COLLAR_TOP} A${RX},${RY} 0 0 0 ${CX + RX},${COLLAR_TOP} V${SHADE_TOP} A${RX},${RY} 0 0 0 ${CX - RX},${SHADE_TOP} Z`, class: "shade" }, lampSvg);
+  const topEl = el("ellipse", { cx: CX, cy: SHADE_TOP, rx: RX, ry: RY, class: "shade", fill: "none" }, lampSvg);
+  shadeEl.after(topEl);
+
+  // Cor da cúpula: o tecido acende na cor do LED; brilho baixo fica mais escuro.
+  function mixRGB(x, y, t) { return x.map((v, i) => Math.round(v + (y[i] - v) * t)); }
+  function paintLamp(on, m, b) {
+    const stage = S.night ? [68, 68, 68] : [255, 255, 255];
+    if (!on) {
+      shadeEl.setAttribute("fill", css(stage)); shadeEl.classList.add("off"); topEl.classList.add("off");
+      glowEl.setAttribute("opacity", 0); poolEl.setAttribute("opacity", 0); return;
+    }
+    const led = rgbOf(m);
+    const lit = mixRGB([255, 247, 214], led, 0.25 + 0.45 * m);   // tecido claro tingido pela luz
+    const dim = mixRGB(stage, led, 0.35);
+    const fill = mixRGB(dim, lit, Math.pow(b, 0.6));
+    shadeEl.setAttribute("fill", css(fill)); shadeEl.classList.remove("off"); topEl.classList.remove("off");
+    g0.setAttribute("stop-color", css(led)); g0.setAttribute("stop-opacity", (S.night ? 0.55 : 0.35) * b);
+    g1.setAttribute("stop-color", css(led));
+    p0.setAttribute("stop-color", css(led)); p0.setAttribute("stop-opacity", (S.night ? 0.35 : 0.2) * b);
+    p1.setAttribute("stop-color", css(led));
+    glowEl.setAttribute("opacity", 1); poolEl.setAttribute("opacity", 1);
+  }
 
   const ICON_INFO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></svg>';
   const ICON_WARN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18h.01"/></svg>';
@@ -559,10 +637,7 @@
     const on = S.power && !unusable;
     const [a, r] = on ? channels(S.m, S.b) : [0, 0];
     const c = rgbOf(S.m);
-    const glow = $("glow");
-    glow.style.setProperty("--glow", css(c));
-    glow.style.setProperty("--glow-a", on ? (0.25 + 0.75 * S.b).toFixed(2) : 0);
-    $("bulb").style.setProperty("--bulb", on ? `radial-gradient(circle at 40% 35%, #fff 0%, ${css(c, 0.55 + 0.45 * S.b)} 55%)` : (S.night ? "#5E5E5E" : "#E4E4E6"));
+    paintLamp(on, S.m, S.b);
     $("readout").innerHTML = on
       ? `<b>${nameFor(S.m)}</b><br>âmbar ${a} · vermelho ${r}`
       : `<b>Desligada</b><br>âmbar 0 · vermelho 0`;
