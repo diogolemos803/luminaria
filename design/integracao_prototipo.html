@@ -70,6 +70,13 @@
   .corner { position: absolute; top: 15px; left: 18px; width: 34px; height: 34px; border-radius: 50%; border: 0; cursor: pointer; z-index: 7; display: grid; place-items: center; background: var(--card-d); color: var(--carvao); padding: 0; }
   .night .corner { background: var(--card-n); color: var(--creme); }
   .corner svg { width: 20px; height: 20px; overflow: visible; }
+  /* Na tela da lâmpada, a mesma bolinha mostra o rostinho do botão e leva de volta */
+  .corner .bicon { width: 26px; height: 26px; background-color: var(--carvao); -webkit-mask: url(logo_acordado.png) center / contain no-repeat; mask: url(logo_acordado.png) center / contain no-repeat; }
+  .night .corner .bicon { background-color: var(--noite); -webkit-mask-image: url(logo_sono.png); mask-image: url(logo_sono.png); }
+  .lampscreen.fade { transition: opacity .3s ease; }
+  .lampscreen.fade.hidden { opacity: 0; pointer-events: none; }
+  .opt.chosen { order: -1; }
+  .opt.chosen .opt-tag { color: #6FA57F; }
 
   /* Opção B: duas páginas */
   .pager { position: absolute; inset: 0; display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; z-index: 2; }
@@ -133,7 +140,7 @@
   <header>
     <div class="eyebrow">Protótipo · tela inicial + lâmpada</div>
     <h1>Como o botão encontra a lâmpada</h1>
-    <p class="lead">Três jeitos de levar da tela do botão redondo pra tela da lâmpada. O botão, o fundo e o “hora de desligar.” continuam iguais nos três. Toque na luminária pequena, na bolinha do canto ou deslize a segunda opção pro lado.</p>
+    <p class="lead"><b>Escolhida: opção C.</b> Três jeitos de levar da tela do botão redondo pra tela da lâmpada. O botão, o fundo e o “hora de desligar.” continuam iguais nos três. Toque na luminária pequena, na bolinha do canto ou deslize a segunda opção pro lado.</p>
   </header>
 
   <div class="controls">
@@ -149,7 +156,7 @@
     <!-- A -->
     <section class="opt">
       <div class="opt-head">
-        <div class="opt-tag">Opção A · recomendada</div>
+        <div class="opt-tag">Opção A</div>
         <div class="opt-title">A luminária mora embaixo do botão</div>
         <div class="opt-desc">Uma miniatura do desenho, sempre na cor real da lâmpada. Mostra o estado sem abrir nada; tocar abre a tela da lâmpada.</div>
       </div>
@@ -193,11 +200,11 @@
     </section>
 
     <!-- C -->
-    <section class="opt">
+    <section class="opt chosen">
       <div class="opt-head">
-        <div class="opt-tag">Opção C</div>
+        <div class="opt-tag">Opção C · escolhida</div>
         <div class="opt-title">Bolinha no canto, ao lado do menu</div>
-        <div class="opt-desc">Um ícone de luminária no canto de cima, preenchido com a cor atual. Mínimo: a tela principal fica quase igual a hoje.</div>
+        <div class="opt-desc">Um ícone de luminária no canto de cima, preenchido com a cor atual. Na tela da lâmpada, a mesma bolinha mostra o rostinho do botão e leva de volta. As duas telas trocam no lugar, sem empurrar pro lado.</div>
       </div>
       <div class="phone" data-opt="C"><div class="scr">
         <div class="notch"></div><div class="day-glow"></div><div class="lamp-glow-bg"></div>
@@ -205,7 +212,7 @@
         <div class="menu-icon"><span></span><span></span><span></span></div>
         <button class="round-btn" aria-label="Botão do modo noite"><div class="icon"></div></button>
         <div class="tagline">hora de desligar.</div>
-        <div class="lampscreen push"></div>
+        <div class="lampscreen fade hidden"></div>
       </div></div>
       <ul>
         <li><b>Prós:</b> não mexe no que já foi aprovado na tela principal.</li>
@@ -294,9 +301,11 @@
 
   // ---------- tela da lâmpada (reduzida) ----------
   const paints = [];
-  function buildLampScreen(box, withBack) {
-    box.innerHTML = `
-      <div class="ls-nav">${withBack ? '<button class="ls-back" aria-label="Voltar">‹</button>' : '<span style="width:30px"></span>'}<div class="ls-title">Lâmpada</div><span style="width:30px"></span></div>
+  function buildLampScreen(box, mode) {
+    const left = mode === "back" ? '<button class="ls-back" aria-label="Voltar">‹</button>' : '<span style="width:30px"></span>';
+    const chrome = mode === "corner" ? '<button class="corner corner-home" aria-label="Voltar pro botão"><span class="bicon"></span></button><div class="menu-icon"><span></span><span></span><span></span></div>' : "";
+    box.innerHTML = chrome + `
+      <div class="ls-nav">${left}<div class="ls-title">Lâmpada</div><span style="width:30px"></span></div>
       <div class="ls-head"><div><div class="ls-name">Zleepy Lamp</div><div class="ls-sub"></div></div><button class="switch" aria-label="Ligar ou desligar"></button></div>
       <div class="ls-tools"><i></i><i></i><i></i><i></i><i></i></div>
       <div class="ls-lamp"><svg viewBox="262 430 756 580"></svg></div>
@@ -309,7 +318,8 @@
       sw.appendChild(b);
     });
     box.querySelector(".switch").addEventListener("click", () => { if (S.lamp === "away") return; S.lamp = S.lamp === "off" ? "on" : "off"; syncSeg(); render(); });
-    if (withBack) box.querySelector(".ls-back").addEventListener("click", () => box.classList.add("push"));
+    if (mode === "back") box.querySelector(".ls-back").addEventListener("click", () => box.classList.add("push"));
+    if (mode === "corner") box.querySelector(".corner-home").addEventListener("click", () => box.classList.add("hidden"));
   }
 
   // ---------- montagem ----------
@@ -317,19 +327,19 @@
     const opt = ph.dataset.opt;
     if (opt === "A") {
       paints.push(makeLamp(ph.querySelector(".mini svg")));
-      const ls = ph.querySelector(".lampscreen"); buildLampScreen(ls, true);
+      const ls = ph.querySelector(".lampscreen"); buildLampScreen(ls, "back");
       ph.querySelector(".mini").addEventListener("click", () => ls.classList.remove("push"));
     }
     if (opt === "B") {
-      buildLampScreen(ph.querySelector(".page .lampscreen"), false);
+      buildLampScreen(ph.querySelector(".page .lampscreen"), "none");
       const pager = ph.querySelector(".pager"), dots = ph.querySelectorAll(".dots button");
       dots.forEach((d, i) => d.addEventListener("click", () => pager.scrollTo({ left: i * pager.clientWidth, behavior: "smooth" })));
       pager.addEventListener("scroll", () => { const i = Math.round(pager.scrollLeft / pager.clientWidth); dots.forEach((d, j) => d.classList.toggle("on", i === j)); });
     }
     if (opt === "C") {
       paints.push(makeCornerIcon(ph.querySelector(".corner svg")));
-      const ls = ph.querySelector(".lampscreen"); buildLampScreen(ls, true);
-      ph.querySelector(".corner").addEventListener("click", () => ls.classList.remove("push"));
+      const ls = ph.querySelector(".lampscreen"); buildLampScreen(ls, "corner");
+      ph.querySelector(".corner").addEventListener("click", () => ls.classList.remove("hidden"));
     }
     ph.querySelectorAll(".round-btn").forEach(b => b.addEventListener("click", () => { S.night = !S.night; syncSeg(); render(); }));
   });
