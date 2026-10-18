@@ -1,0 +1,691 @@
+<title>Lâmpada Zleepy</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=DM+Mono:wght@400;500&display=swap">
+<style>
+  /* Layout: bancada de protótipos — três iPhones lado a lado (quebram em coluna no
+     celular), controles de demonstração em cima. As telas usam a paleta real do app
+     (ModeTheme.living / .zleepy), que não depende do tema de quem está vendo. */
+  :root {
+    --page: #EFEEEA;
+    --page-ink: #34332F;
+    --page-muted: #6E6B62;
+    --chip: rgba(0,0,0,0.06);
+    --chip-on: #FFFFFF;
+    --display: "DM Sans", ui-rounded, -apple-system, "Segoe UI", sans-serif;
+    --mono: "DM Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+    /* App — modo dia (ModeTheme.living) */
+    --d-stage: #FFFFFF; --d-card: #F3F3F4; --d-ink: #444444; --d-muted: #8C8A80;
+    --d-hair: rgba(0,0,0,0.07); --d-accent: #DB8149; --d-wash: rgba(219,129,73,0.14);
+    --d-accent-fg: #FFFFFF; --d-danger: #B8573D; --d-danger-wash: rgba(184,87,61,0.10);
+    /* App — modo noite (ModeTheme.zleepy) */
+    --n-stage: #444444; --n-card: #525252; --n-ink: #FDF8C7; --n-muted: #A6A399;
+    --n-hair: rgba(255,255,255,0.08); --n-accent: #84A1C8; --n-wash: rgba(132,161,200,0.16);
+    --n-accent-fg: #444444; --n-danger: #D1806B; --n-danger-wash: rgba(209,128,107,0.12);
+    --warn: #C99A2E;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --page: #1A1A19; --page-ink: #E9E7E1; --page-muted: #A9A69C;
+      --chip: rgba(255,255,255,0.08); --chip-on: #3A3936; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --page: #1A1A19; --page-ink: #E9E7E1; --page-muted: #A9A69C;
+    --chip: rgba(255,255,255,0.08); --chip-on: #3A3936; color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--page); color: var(--page-ink);
+    font-family: var(--display);
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  .lab { max-width: 1120px; margin: 0 auto; padding-block: 36px 72px; display: flex; flex-direction: column; gap: 26px; }
+  .lab-head { display: flex; flex-direction: column; gap: 8px; }
+  .eyebrow { font-size: 12px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--d-accent); }
+  h1 { margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.015em; text-wrap: balance; }
+  .lab-head p { margin: 0; max-width: 66ch; font-size: 15px; line-height: 1.55; color: var(--page-muted); }
+
+  .controls { display: flex; flex-wrap: wrap; gap: 14px 22px; align-items: center; }
+  .ctl { display: flex; flex-direction: column; gap: 6px; }
+  .ctl-label { font-size: 11.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--page-muted); }
+  .seg { display: inline-flex; flex-wrap: wrap; background: var(--chip); padding: 4px; border-radius: 999px; gap: 2px; }
+  .seg button {
+    appearance: none; border: 0; background: transparent; font: inherit; font-size: 13px; font-weight: 500;
+    padding: 7px 13px; border-radius: 999px; cursor: pointer; color: inherit; opacity: 0.6;
+  }
+  .seg button.on { opacity: 1; background: var(--chip-on); box-shadow: 0 1px 3px rgba(0,0,0,0.15); font-weight: 700; }
+  .seg button:focus-visible, .app button:focus-visible, .app input:focus-visible { outline: 2px solid var(--d-accent); outline-offset: 2px; }
+
+  .phones { display: flex; flex-wrap: wrap; gap: 28px; align-items: flex-start; }
+  .phone-wrap { display: flex; flex-direction: column; gap: 10px; flex: none; max-width: 100%; }
+  .phone-cap { font-size: 13px; font-weight: 700; }
+  .phone-cap span { display: block; font-weight: 400; color: var(--page-muted); font-size: 12.5px; margin-top: 2px; max-width: 32ch; line-height: 1.4; }
+  .phone {
+    width: 330px; max-width: 100%; height: 700px; border-radius: 48px; padding: 10px; background: #0B0B0C;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.26), 0 2px 8px rgba(0,0,0,0.12);
+  }
+
+  /* ---------- App ---------- */
+  .app {
+    --stage: var(--d-stage); --card: var(--d-card); --ink: var(--d-ink); --muted: var(--d-muted);
+    --hair: var(--d-hair); --accent: var(--d-accent); --wash: var(--d-wash); --accent-fg: var(--d-accent-fg);
+    --danger: var(--d-danger); --danger-wash: var(--d-danger-wash);
+    width: 100%; height: 100%; border-radius: 39px; overflow: hidden; position: relative;
+    background: var(--stage); color: var(--ink); display: flex; flex-direction: column;
+    transition: background-color 300ms ease;
+  }
+  .app.night {
+    --stage: var(--n-stage); --card: var(--n-card); --ink: var(--n-ink); --muted: var(--n-muted);
+    --hair: var(--n-hair); --accent: var(--n-accent); --wash: var(--n-wash); --accent-fg: var(--n-accent-fg);
+    --danger: var(--n-danger); --danger-wash: var(--n-danger-wash);
+  }
+  .notch { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); width: 92px; height: 24px; border-radius: 13px; background: #0B0B0C; z-index: 5; }
+  .nav { padding: 48px 20px 6px; display: flex; align-items: center; justify-content: space-between; flex: none; }
+  .nav-btn { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; background: var(--card); color: var(--ink); font-size: 16px; }
+  .nav-title { font-size: 12.5px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); }
+  .scroll { flex: 1; overflow-y: auto; padding: 4px 16px 26px; display: flex; flex-direction: column; gap: 16px; scrollbar-width: none; }
+  .scroll::-webkit-scrollbar { display: none; }
+  .page-title { font-size: 26px; font-weight: 700; letter-spacing: -0.015em; padding: 0 4px; }
+
+  .group-label { font-size: 11.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); padding: 0 8px 6px; }
+  .card { background: var(--card); border-radius: 22px; padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+  .row { display: flex; align-items: center; gap: 12px; }
+  .row-text { flex: 1; min-width: 0; }
+  .row-title { font-size: 15px; font-weight: 700; }
+  .row-sub { font-size: 12.5px; color: var(--muted); margin-top: 2px; line-height: 1.35; }
+  .badge { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; flex: none; background: var(--wash); color: var(--accent); }
+  .badge svg { width: 18px; height: 18px; }
+  .hair { height: 1px; background: var(--hair); margin: 0 -2px; }
+
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: #6FA57F; display: inline-block; margin-right: 6px; vertical-align: 1px; }
+  .dot.off { background: var(--muted); }
+  .dot.bad { background: var(--danger); }
+
+  .pill-btn {
+    appearance: none; border: 0; font: inherit; font-size: 15px; font-weight: 700; cursor: pointer;
+    padding: 13px 16px; border-radius: 999px; background: var(--accent); color: var(--accent-fg); width: 100%;
+  }
+  .ghost-btn {
+    appearance: none; border: 0; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer;
+    padding: 11px 14px; border-radius: 999px; background: var(--wash); color: var(--accent);
+  }
+  .ghost-btn.danger { background: var(--danger-wash); color: var(--danger); }
+  .btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .btn-row > * { flex: 1; }
+
+  /* Interruptor estilo iOS */
+  .switch { appearance: none; width: 50px; height: 30px; border-radius: 999px; background: var(--hair); position: relative; cursor: pointer; flex: none; border: 0; transition: background 200ms; }
+  .app:not(.night) .switch { background: #DADADC; }
+  .switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.25); transition: transform 200ms; }
+  .switch.on { background: var(--accent) !important; }
+  .switch.on::after { transform: translateX(20px); }
+
+  /* Lâmpada (desenho) */
+  .lamp-hero { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 18px 0 6px; }
+  .lamp-glow { width: 150px; height: 150px; border-radius: 50%; display: grid; place-items: center; position: relative; }
+  .lamp-glow::before { content: ""; position: absolute; inset: -18px; border-radius: 50%; background: radial-gradient(circle, var(--glow) 0%, transparent 68%); opacity: var(--glow-a); transition: opacity 250ms; }
+  .lamp-bulb { width: 92px; height: 92px; border-radius: 50%; background: var(--bulb); box-shadow: inset 0 -6px 14px rgba(0,0,0,0.12); position: relative; transition: background 250ms; }
+  .lamp-readout { font-family: var(--mono); font-size: 11.5px; color: var(--muted); text-align: center; line-height: 1.5; }
+  .lamp-readout b { color: var(--ink); font-weight: 500; }
+
+  .presets { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+  .preset { appearance: none; border: 0; background: transparent; font: inherit; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 4px 0; color: var(--ink); }
+  .preset i { width: 38px; height: 38px; border-radius: 50%; display: block; box-shadow: 0 0 0 2px transparent; }
+  .preset.on i { box-shadow: 0 0 0 2px var(--stage), 0 0 0 4px var(--accent); }
+  .preset span { font-size: 10.5px; line-height: 1.15; text-align: center; color: var(--muted); }
+  .preset.on span { color: var(--ink); font-weight: 700; }
+
+  .slider { display: flex; flex-direction: column; gap: 6px; }
+  .slider-head { display: flex; justify-content: space-between; font-size: 13px; font-weight: 700; }
+  .slider-head span { color: var(--muted); font-weight: 500; font-variant-numeric: tabular-nums; }
+  input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 28px; background: transparent; cursor: pointer; margin: 0; }
+  input[type=range]::-webkit-slider-runnable-track { height: 10px; border-radius: 999px; background: var(--track); }
+  input[type=range]::-moz-range-track { height: 10px; border-radius: 999px; background: var(--track); }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 26px; height: 26px; border-radius: 50%; background: #fff; margin-top: -8px; box-shadow: 0 1px 4px rgba(0,0,0,0.3); }
+  input[type=range]::-moz-range-thumb { width: 26px; height: 26px; border-radius: 50%; background: #fff; border: 0; box-shadow: 0 1px 4px rgba(0,0,0,0.3); }
+  .slider-ends { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); }
+
+  .meter { display: flex; flex-direction: column; gap: 5px; }
+  .meter-bar { height: 6px; border-radius: 999px; background: var(--hair); overflow: hidden; }
+  .app:not(.night) .meter-bar { background: #E2E2E4; }
+  .meter-fill { height: 100%; background: var(--accent); border-radius: 999px; transition: width 200ms; }
+  .meter-txt { font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+  .notice { border-radius: 16px; padding: 11px 12px; font-size: 12.5px; line-height: 1.45; display: flex; gap: 10px; align-items: flex-start; background: var(--wash); color: var(--ink); }
+  .notice svg { width: 16px; height: 16px; flex: none; margin-top: 1px; color: var(--accent); }
+  .notice.warn { background: rgba(201,154,46,0.14); }
+  .notice.warn svg { color: var(--warn); }
+  .notice.bad { background: var(--danger-wash); }
+  .notice.bad svg { color: var(--danger); }
+  .notice b { font-weight: 700; }
+
+  .steps { display: flex; flex-direction: column; gap: 12px; margin: 0; padding: 0; list-style: none; counter-reset: s; }
+  .steps li { display: flex; gap: 12px; font-size: 13.5px; line-height: 1.45; counter-increment: s; }
+  .steps li::before { content: counter(s); width: 24px; height: 24px; border-radius: 50%; background: var(--wash); color: var(--accent); font-weight: 700; font-size: 12.5px; display: grid; place-items: center; flex: none; }
+
+  .found { display: flex; align-items: center; gap: 12px; padding: 4px 0; }
+  .spinner { width: 18px; height: 18px; border-radius: 50%; border: 2.5px solid var(--hair); border-top-color: var(--accent); animation: spin 0.9s linear infinite; flex: none; }
+  .app:not(.night) .spinner { border-color: #DADADC; border-top-color: var(--accent); }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Rotina */
+  .existing { opacity: 0.55; }
+  .val { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .stepper { display: inline-flex; align-items: center; gap: 2px; background: var(--stage); border-radius: 999px; padding: 3px; }
+  .stepper button { appearance: none; border: 0; background: transparent; color: var(--accent); font: inherit; font-size: 18px; font-weight: 700; width: 30px; height: 28px; border-radius: 999px; cursor: pointer; }
+  .stepper output { min-width: 58px; text-align: center; font-size: 13.5px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .mini-swatches { display: flex; gap: 6px; }
+  .mini-swatches button { appearance: none; border: 0; width: 26px; height: 26px; border-radius: 50%; cursor: pointer; box-shadow: 0 0 0 2px transparent; }
+  .mini-swatches button.on { box-shadow: 0 0 0 2px var(--card), 0 0 0 4px var(--accent); }
+  .color-line { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .color-line-label { font-size: 13px; font-weight: 700; }
+  .color-line-label span { display: block; font-size: 11.5px; color: var(--muted); font-weight: 500; }
+
+  .preview { display: flex; flex-direction: column; gap: 6px; }
+  .preview canvas { width: 100%; height: 46px; border-radius: 12px; display: block; background: #1F1E1C; }
+  .preview-axis { position: relative; height: 14px; font-size: 10.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .preview-axis span { position: absolute; top: 0; transform: translateX(-50%); white-space: nowrap; }
+  .preview-axis span:first-child { transform: none; }
+  .preview-axis span:last-child { transform: translateX(-100%); }
+  .disabled-body { opacity: 0.4; pointer-events: none; }
+
+  .foot-note { font-size: 12px; color: var(--muted); line-height: 1.45; padding: 0 6px; }
+
+  .notes { max-width: 70ch; display: flex; flex-direction: column; gap: 10px; font-size: 14px; line-height: 1.55; color: var(--page-muted); }
+  .notes h2 { font-size: 15px; color: var(--page-ink); margin: 0; }
+  .notes ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; }
+
+  @media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 3s; } * { transition: none !important; } }
+</style>
+
+<div class="lab">
+  <header class="lab-head">
+    <div class="eyebrow">Protótipo · lâmpada Bluetooth</div>
+    <h1>Lâmpada Zleepy no app Luminária</h1>
+    <p>Três telas pra aprovar antes do Swift: o controle da lâmpada (aberto pelo menu de Configurações), o pareamento e a parte da lâmpada dentro de cada rotina de sono. Tudo aqui mexe de verdade: arraste os controles, troque o modo do app e os estados de exemplo pra ver as mensagens de erro.</p>
+  </header>
+
+  <div class="controls">
+    <div class="ctl">
+      <div class="ctl-label">Modo do app</div>
+      <div class="seg" id="seg-mode">
+        <button class="on" data-v="day">Dia</button>
+        <button data-v="night">Noite</button>
+      </div>
+    </div>
+    <div class="ctl">
+      <div class="ctl-label">Estado da lâmpada (exemplo)</div>
+      <div class="seg" id="seg-state">
+        <button class="on" data-v="ok">Normal</button>
+        <button data-v="limit">Limitador agindo</button>
+        <button data-v="clock">Hora perdida</button>
+        <button data-v="version">Versão desconhecida</button>
+        <button data-v="off">Fora de alcance</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="phones">
+    <!-- ============ 1. LÂMPADA ============ -->
+    <div class="phone-wrap">
+      <div class="phone-cap">1 · Lâmpada<span>Controle manual. Funciona a qualquer hora, sem rotina nenhuma.</span></div>
+      <div class="phone"><div class="app" id="app1">
+        <div class="notch"></div>
+        <div class="nav"><div class="nav-btn">‹</div><div class="nav-title">Lâmpada</div><div style="width:34px"></div></div>
+        <div class="scroll">
+          <div class="page-title">Lâmpada</div>
+
+          <div class="card">
+            <div class="row">
+              <div class="badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7l10 10-5 5V2l5 5L7 17"/></svg></div>
+              <div class="row-text">
+                <div class="row-title">Zleepy Lamp</div>
+                <div class="row-sub" id="conn-sub"><span class="dot"></span>Conectada · simulada</div>
+              </div>
+              <button class="switch on" id="power" aria-label="Ligar ou desligar a lâmpada"></button>
+            </div>
+            <div id="state-notice"></div>
+          </div>
+
+          <div id="lamp-body">
+            <div class="lamp-hero">
+              <div class="lamp-glow" id="glow"><div class="lamp-bulb" id="bulb"></div></div>
+              <div class="lamp-readout" id="readout"></div>
+            </div>
+
+            <div class="group-label">Cores prontas</div>
+            <div class="card">
+              <div class="presets" id="presets"></div>
+            </div>
+          </div>
+
+          <div id="lamp-body2" style="display:flex;flex-direction:column;gap:16px">
+            <div>
+              <div class="group-label">Ajuste fino</div>
+              <div class="card">
+                <div class="slider">
+                  <div class="slider-head">Mistura <span id="mix-val"></span></div>
+                  <input type="range" id="mix" min="0" max="100" value="33" style="--track: linear-gradient(90deg,#FFB21E,#FF6A12,#FF2A0A)">
+                  <div class="slider-ends"><span>Amarelo</span><span>Vermelho</span></div>
+                </div>
+                <div class="slider">
+                  <div class="slider-head">Brilho <span id="bri-val"></span></div>
+                  <input type="range" id="bri" min="1" max="100" value="80">
+                </div>
+                <div class="meter">
+                  <div class="meter-bar"><div class="meter-fill" id="meter"></div></div>
+                  <div class="meter-txt" id="meter-txt"></div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div class="group-label">Hoje</div>
+              <div class="card">
+                <div class="row">
+                  <div class="badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></div>
+                  <div class="row-text">
+                    <div class="row-title" id="today-title">Luz da manhã às 6:45</div>
+                    <div class="row-sub" id="today-sub">Armada ontem à noite pela luminária · Minha rotina</div>
+                  </div>
+                </div>
+                <button class="ghost-btn danger" id="cancel-today">Cancelar a luz de hoje</button>
+              </div>
+            </div>
+
+            <div class="btn-row">
+              <button class="ghost-btn" id="identify">Identificar</button>
+              <button class="ghost-btn danger">Esquecer lâmpada</button>
+            </div>
+            <div class="foot-note" id="identify-note">“Identificar” faz a lâmpada piscar 3 vezes.</div>
+            <div class="foot-note">Relógio da lâmpada: <span id="lamp-clock">22:41 · acertado pelo iPhone</span></div>
+          </div>
+        </div>
+      </div></div>
+    </div>
+
+    <!-- ============ 2. ADICIONAR ============ -->
+    <div class="phone-wrap">
+      <div class="phone-cap">2 · Adicionar lâmpada<span>Pareamento. Use os botões no fim da tela pra passar pelos passos.</span></div>
+      <div class="phone"><div class="app" id="app2">
+        <div class="notch"></div>
+        <div class="nav"><div class="nav-btn">‹</div><div class="nav-title">Adicionar lâmpada</div><div style="width:34px"></div></div>
+        <div class="scroll">
+          <div class="page-title">Adicionar lâmpada</div>
+
+          <div class="card">
+            <ol class="steps">
+              <li><span>Ligue a lâmpada na tomada e deixe o iPhone perto dela.</span></li>
+              <li><span>Se for a primeira vez, ela já está pronta pra parear. Senão, <b>segure o toque da lâmpada por 3 segundos</b> até ela piscar âmbar duas vezes.</span></li>
+              <li><span>Toque em “Procurar lâmpada” e aceite o pedido de pareamento do iPhone.</span></li>
+            </ol>
+          </div>
+
+          <div class="card" id="pair-card"></div>
+
+          <div class="foot-note">Segurar o toque por 10 segundos apaga todos os celulares pareados (a lâmpada pisca vermelho). Depois disso, vá em Ajustes → Bluetooth no iPhone, toque no ⓘ da Zleepy Lamp e em “Esquecer este dispositivo” antes de parear de novo.</div>
+
+          <div>
+            <div class="group-label">Ver estado (protótipo)</div>
+            <div class="seg" id="seg-pair" style="--chip-on:var(--card)">
+              <button class="on" data-v="idle">Início</button>
+              <button data-v="search">Procurando</button>
+              <button data-v="pairing">Pareando</button>
+              <button data-v="rejected">Recusada</button>
+              <button data-v="stale">Chave antiga</button>
+              <button data-v="done">Pronta</button>
+            </div>
+          </div>
+        </div>
+      </div></div>
+    </div>
+
+    <!-- ============ 3. ROTINA ============ -->
+    <div class="phone-wrap">
+      <div class="phone-cap">3 · Rotina de sono → lâmpada<span>Duas partes novas no editor de cada rotina. Os campos de cima já existem hoje.</span></div>
+      <div class="phone"><div class="app" id="app3">
+        <div class="notch"></div>
+        <div class="nav"><div class="nav-btn">‹</div><div class="nav-title">Editar rotina</div><div style="width:34px"></div></div>
+        <div class="scroll">
+          <div class="page-title">Minha rotina</div>
+
+          <div class="card existing">
+            <div class="row"><div class="row-text"><div class="row-title">Despertador</div></div><div class="val">07:00</div></div>
+            <div class="hair"></div>
+            <div class="row"><div class="row-text"><div class="row-title">Som</div></div><div class="val" style="font-weight:500">Sabiá</div></div>
+          </div>
+
+          <div class="notice">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+            <span>A lâmpada segue o despertador: <b>só acontece nas noites em que você arma o modo noite e encosta na luminária.</b> Não repete sozinha nos outros dias.</span>
+          </div>
+
+          <!-- AO DORMIR -->
+          <div>
+            <div class="group-label">Lâmpada ao dormir</div>
+            <div class="card">
+              <div class="row">
+                <div class="row-text"><div class="row-title">Apagar devagar</div><div class="row-sub">Começa quando a luminária é reconhecida</div></div>
+                <button class="switch on" id="sleep-on" aria-label="Usar a lâmpada ao dormir"></button>
+              </div>
+              <div id="sleep-body" style="display:flex;flex-direction:column;gap:12px">
+                <div class="hair"></div>
+                <div class="color-line">
+                  <div class="color-line-label">Cor<span id="sleep-color-name"></span></div>
+                  <div class="mini-swatches" data-target="sleep"></div>
+                </div>
+                <div class="slider">
+                  <div class="slider-head">Brilho inicial <span id="sleep-bri-val"></span></div>
+                  <input type="range" id="sleep-bri" min="1" max="100" value="60">
+                </div>
+                <div class="row">
+                  <div class="row-text"><div class="row-title" style="font-size:14px">Apaga em</div></div>
+                  <div class="stepper" data-key="sleepMin" data-min="1" data-max="120" data-step="5"><button aria-label="Menos">−</button><output></output><button aria-label="Mais">+</button></div>
+                </div>
+                <div class="preview">
+                  <canvas id="sleep-canvas" width="560" height="92"></canvas>
+                  <div class="preview-axis" id="sleep-axis"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- AO ACORDAR -->
+          <div>
+            <div class="group-label">Lâmpada ao acordar</div>
+            <div class="card">
+              <div class="row">
+                <div class="row-text"><div class="row-title">Amanhecer</div><div class="row-sub" id="wake-sub"></div></div>
+                <button class="switch on" id="wake-on" aria-label="Usar a lâmpada ao acordar"></button>
+              </div>
+              <div id="wake-body" style="display:flex;flex-direction:column;gap:12px">
+                <div class="hair"></div>
+                <div class="row">
+                  <div class="row-text"><div class="row-title" style="font-size:14px">Começa antes do despertador</div></div>
+                  <div class="stepper" data-key="rampMin" data-min="1" data-max="120" data-step="5"><button aria-label="Menos">−</button><output></output><button aria-label="Mais">+</button></div>
+                </div>
+                <div class="hair"></div>
+                <div class="color-line">
+                  <div class="color-line-label">Começa em<span id="from-name"></span></div>
+                  <div class="mini-swatches" data-target="from"></div>
+                </div>
+                <div class="slider">
+                  <div class="slider-head">Brilho no começo <span id="from-bri-val"></span></div>
+                  <input type="range" id="from-bri" min="0" max="100" value="0">
+                </div>
+                <div class="hair"></div>
+                <div class="color-line">
+                  <div class="color-line-label">Termina em<span id="to-name"></span></div>
+                  <div class="mini-swatches" data-target="to"></div>
+                </div>
+                <div class="slider">
+                  <div class="slider-head">Brilho no fim <span id="to-bri-val"></span></div>
+                  <input type="range" id="to-bri" min="1" max="100" value="100">
+                </div>
+                <div class="hair"></div>
+                <div class="row">
+                  <div class="row-text"><div class="row-title" style="font-size:14px">Fica acesa depois</div></div>
+                  <div class="stepper" data-key="holdMin" data-min="0" data-max="240" data-step="5"><button aria-label="Menos">−</button><output></output><button aria-label="Mais">+</button></div>
+                </div>
+                <div class="preview">
+                  <canvas id="wake-canvas" width="560" height="92"></canvas>
+                  <div class="preview-axis" id="wake-axis"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="foot-note">Uma rotina com as duas chaves desligadas não mexe na lâmpada. Assim dá pra ter uma rotina que usa a lâmpada e outra que não usa.</div>
+        </div>
+      </div></div>
+    </div>
+  </div>
+
+  <section class="notes">
+    <h2>O que precisa mudar no firmware pra isso funcionar</h2>
+    <ul>
+      <li><b>Só a próxima vez:</b> a luz da manhã vale uma noite só (gravada quando a luminária é reconhecida). Hoje a rotina da lâmpada repete pelos dias da semana.</li>
+      <li><b>Apagar devagar:</b> um comando novo “acende nesta cor e apaga em N minutos”. Hoje não existe.</li>
+      <li><b>Brilho separado da cor no amanhecer:</b> “vermelho a 0% → amarelo a 100%” não cabe em de/para âmbar+vermelho, porque vermelho a 0% vira (0, 0) e perde a cor.</li>
+    </ul>
+  </section>
+</div>
+
+<script>
+(() => {
+  // ---------- Cor: mesma conta que vai pro Swift ----------
+  // Mistura m = vermelho / (âmbar + vermelho), preserva a proporção exata.
+  // Cor "cheia" de uma mistura: canal maior em 255, soma limitada a 408 (160%).
+  const LIMIT = 408;
+  function full(m) {
+    const k = 255 / Math.max(1 - m, m);
+    let a = k * (1 - m), r = k * m;
+    const s = a + r;
+    if (s > LIMIT) { a *= LIMIT / s; r *= LIMIT / s; }
+    return [a, r];
+  }
+  function channels(m, b) { const [a, r] = full(m); return [Math.round(a * b), Math.round(r * b)]; }
+  // Cor de LED aproximada pra tela (aditiva âmbar + vermelho)
+  const AMB = [255, 176, 28], RED = [255, 36, 8];
+  function rgbOf(m) {
+    const [a, r] = full(m);
+    let c = [0, 1, 2].map(i => AMB[i] * a / 255 + RED[i] * r / 255);
+    const mx = Math.max(...c); c = c.map(v => v * 255 / mx);
+    return c.map(Math.round);
+  }
+  const css = (c, al = 1) => `rgba(${c[0]},${c[1]},${c[2]},${al})`;
+
+  const PRESETS = [
+    { name: "Amarelo", a: 255, r: 0 },
+    { name: "Âmbar quente", a: 255, r: 50 },
+    { name: "Laranja", a: 204, r: 102 },
+    { name: "Laranja-avermelhado", a: 100, r: 180 },
+    { name: "Vermelho", a: 0, r: 255 },
+  ].map(p => {
+    const m = p.r / (p.a + p.r); const [fa, fr] = full(m);
+    return { ...p, m, b: Math.max(fa ? p.a / fa : 0, fr ? p.r / fr : 0) };
+  });
+  const SHORT = ["Amarelo", "Âmbar", "Laranja", "Laranja-\nverm.", "Vermelho"];
+  function nameFor(m) {
+    let best = PRESETS[0], d = 9;
+    for (const p of PRESETS) { const dd = Math.abs(p.m - m); if (dd < d) { d = dd; best = p; } }
+    return d < 0.04 ? best.name : (m < 0.5 ? "entre amarelo e laranja" : "entre laranja e vermelho");
+  }
+
+  // ---------- Estado ----------
+  const S = {
+    night: false, demo: "ok", power: true, m: PRESETS[2].m, b: 0.8,
+    sleepOn: true, sleepM: PRESETS[3].m, sleepB: 0.6, sleepMin: 15,
+    wakeOn: true, fromM: 1, fromB: 0, toM: 0, toB: 1, rampMin: 15, holdMin: 30,
+    cancelled: false, pair: "idle",
+  };
+  const $ = id => document.getElementById(id);
+
+  // ---------- Segmentos ----------
+  function seg(id, fn) {
+    const el = $(id);
+    el.addEventListener("click", e => {
+      const b = e.target.closest("button"); if (!b) return;
+      el.querySelectorAll("button").forEach(x => x.classList.toggle("on", x === b));
+      fn(b.dataset.v);
+    });
+  }
+  seg("seg-mode", v => { S.night = v === "night"; ["app1", "app2", "app3"].forEach(i => $(i).classList.toggle("night", S.night)); drawAll(); });
+  seg("seg-state", v => { S.demo = v; renderLamp(); });
+  seg("seg-pair", v => { S.pair = v; renderPair(); });
+
+  // ---------- Tela 1 ----------
+  const presetsEl = $("presets");
+  PRESETS.forEach((p, i) => {
+    const b = document.createElement("button"); b.className = "preset"; b.type = "button";
+    b.innerHTML = `<i style="background:${css(rgbOf(p.m))}"></i><span>${SHORT[i].replace("\n", "<br>")}</span>`;
+    b.addEventListener("click", () => { S.m = p.m; S.b = p.b; S.power = true; syncSliders(); renderLamp(); });
+    presetsEl.appendChild(b);
+  });
+  function syncSliders() { $("mix").value = Math.round(S.m * 100); $("bri").value = Math.round(S.b * 100); }
+  $("mix").addEventListener("input", e => { S.m = e.target.value / 100; S.power = true; renderLamp(); });
+  $("bri").addEventListener("input", e => { S.b = e.target.value / 100; S.power = true; renderLamp(); });
+  $("power").addEventListener("click", () => { S.power = !S.power; renderLamp(); });
+  $("cancel-today").addEventListener("click", () => { S.cancelled = !S.cancelled; renderLamp(); });
+  $("identify").addEventListener("click", () => {
+    const g = $("glow"); let n = 0;
+    const t = setInterval(() => { g.style.opacity = n % 2 ? 1 : 0.15; if (++n > 5) { clearInterval(t); g.style.opacity = 1; } }, 220);
+  });
+
+  const ICON_INFO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></svg>';
+  const ICON_WARN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18h.01"/></svg>';
+
+  function renderLamp() {
+    const off = S.demo === "off", ver = S.demo === "version";
+    const unusable = off || ver;
+    $("conn-sub").innerHTML = off ? '<span class="dot off"></span>Fora de alcance · tentando reconectar'
+      : ver ? '<span class="dot bad"></span>Conectada, mas não reconhecida'
+      : '<span class="dot"></span>Conectada · simulada';
+    $("power").classList.toggle("on", S.power && !unusable);
+
+    let n = "";
+    if (S.demo === "limit") n = `<div class="notice warn">${ICON_WARN}<span>Brilho limitado pra proteger a fonte. A lâmpada reduziu as duas cores na mesma proporção.</span></div>`;
+    if (S.demo === "clock") n = `<div class="notice warn">${ICON_WARN}<span>A lâmpada perdeu a hora (pilha fraca ou primeira vez ligada). Acertando pela hora do iPhone…</span></div>`;
+    if (S.demo === "version") n = `<div class="notice bad">${ICON_WARN}<span>Esta lâmpada usa uma versão mais nova do protocolo (v2). Atualize o app Luminária pra controlar ela.</span></div>`;
+    if (off) n = `<div class="notice">${ICON_INFO}<span>Chegue perto da lâmpada e confira se ela está na tomada. O app conecta sozinho quando ela aparecer.</span></div>`;
+    $("state-notice").innerHTML = n;
+    $("state-notice").style.display = n ? "" : "none";
+
+    ["lamp-body", "lamp-body2"].forEach(id => $(id).classList.toggle("disabled-body", unusable));
+
+    const on = S.power && !unusable;
+    const [a, r] = on ? channels(S.m, S.b) : [0, 0];
+    const c = rgbOf(S.m);
+    const glow = $("glow");
+    glow.style.setProperty("--glow", css(c));
+    glow.style.setProperty("--glow-a", on ? (0.25 + 0.75 * S.b).toFixed(2) : 0);
+    $("bulb").style.setProperty("--bulb", on ? `radial-gradient(circle at 40% 35%, #fff 0%, ${css(c, 0.55 + 0.45 * S.b)} 55%)` : (S.night ? "#5E5E5E" : "#E4E4E6"));
+    $("readout").innerHTML = on
+      ? `<b>${nameFor(S.m)}</b><br>âmbar ${a} · vermelho ${r}`
+      : `<b>Desligada</b><br>âmbar 0 · vermelho 0`;
+
+    $("mix-val").textContent = nameFor(S.m);
+    $("bri-val").textContent = Math.round(S.b * 100) + "%";
+    $("bri").style.setProperty("--track", `linear-gradient(90deg, ${S.night ? "#2E2E2E" : "#D5D5D7"}, ${css(c)})`);
+    const pct = Math.round((a + r) / 255 * 100);
+    $("meter").style.width = (pct / 160 * 100) + "%";
+    $("meter-txt").textContent = `Potência ${pct}% de 160%`;
+
+    presetsEl.querySelectorAll(".preset").forEach((el, i) => {
+      const p = PRESETS[i];
+      el.classList.toggle("on", on && Math.abs(p.m - S.m) < 0.01 && Math.abs(p.b - S.b) < 0.02);
+    });
+
+    const start = startTime();
+    $("today-title").textContent = S.cancelled ? "Luz de hoje cancelada" : `Luz da manhã às ${start}`;
+    $("today-sub").textContent = S.cancelled ? "Volta na próxima noite em que você armar o modo noite" : "Armada ontem à noite pela luminária · Minha rotina";
+    $("cancel-today").textContent = S.cancelled ? "Desfazer" : "Cancelar a luz de hoje";
+    $("lamp-clock").textContent = S.demo === "clock" ? "acertando…" : "22:41 · acertado pelo iPhone";
+  }
+
+  // ---------- Tela 2 ----------
+  function renderPair() {
+    const el = $("pair-card");
+    const views = {
+      idle: `<button class="pill-btn">Procurar lâmpada</button>`,
+      search: `<div class="found"><div class="spinner"></div><div class="row-text"><div class="row-title">Procurando a Zleepy Lamp…</div><div class="row-sub">Deixe o iPhone a menos de 2 metros da lâmpada.</div></div></div>`,
+      pairing: `<div class="found"><div class="spinner"></div><div class="row-text"><div class="row-title">Zleepy Lamp encontrada</div><div class="row-sub">Toque em “Parear” no aviso do iPhone.</div></div></div>`,
+      rejected: `<div class="notice bad">${ICON_WARN}<span><b>A lâmpada recusou o pareamento.</b> Segure o toque da lâmpada por 3 segundos até ela piscar âmbar e tente de novo.</span></div><button class="pill-btn">Tentar de novo</button>`,
+      stale: `<div class="notice bad">${ICON_WARN}<span><b>O iPhone ainda guarda um pareamento antigo desta lâmpada.</b> Vá em Ajustes → Bluetooth, toque no ⓘ da Zleepy Lamp e em “Esquecer este dispositivo”. Depois volte aqui.</span></div><button class="pill-btn">Tentar de novo</button>`,
+      done: `<div class="found"><div class="badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg></div><div class="row-text"><div class="row-title">Lâmpada pronta</div><div class="row-sub">Hora acertada e rotina ativa gravada nela.</div></div></div><button class="ghost-btn">Piscar pra confirmar</button>`,
+    };
+    el.innerHTML = views[S.pair];
+  }
+
+  // ---------- Tela 3 ----------
+  function mins(t) { return `${t} min`; }
+  function fmt(totalMin) { totalMin = ((totalMin % 1440) + 1440) % 1440; return `${Math.floor(totalMin / 60)}:${String(totalMin % 60).padStart(2, "0")}`; }
+  const ALARM = 7 * 60;
+  function startTime() { return fmt(ALARM - S.rampMin); }
+
+  document.querySelectorAll(".stepper").forEach(st => {
+    const key = st.dataset.key, mn = +st.dataset.min, mx = +st.dataset.max, step = +st.dataset.step;
+    const [minus, , plus] = st.children;
+    const bump = d => { let v = S[key] + d; if (S[key] === 1 && d > 0 && step > 1) v = step; S[key] = Math.min(mx, Math.max(mn, v)); drawAll(); };
+    minus.addEventListener("click", () => bump(-step));
+    plus.addEventListener("click", () => bump(step));
+  });
+
+  const SW = [PRESETS[0], PRESETS[1], PRESETS[2], PRESETS[3], PRESETS[4]];
+  document.querySelectorAll(".mini-swatches").forEach(box => {
+    const t = box.dataset.target;
+    SW.forEach(p => {
+      const b = document.createElement("button"); b.type = "button"; b.setAttribute("aria-label", p.name);
+      b.style.background = css(rgbOf(p.m));
+      b.addEventListener("click", () => { S[t + "M"] = p.m; drawAll(); });
+      box.appendChild(b);
+    });
+  });
+  const bind = (id, key) => $(id).addEventListener("input", e => { S[key] = e.target.value / 100; drawAll(); });
+  bind("sleep-bri", "sleepB"); bind("from-bri", "fromB"); bind("to-bri", "toB");
+  $("sleep-on").addEventListener("click", () => { S.sleepOn = !S.sleepOn; drawAll(); });
+  $("wake-on").addEventListener("click", () => { S.wakeOn = !S.wakeOn; drawAll(); });
+
+  function drawBar(canvas, samples) {
+    const ctx = canvas.getContext("2d"), W = canvas.width, H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = "#1F1E1C"; ctx.fillRect(0, 0, W, H);
+    for (let x = 0; x < W; x++) {
+      const [m, b] = samples(x / (W - 1));
+      ctx.fillStyle = css(rgbOf(m), b);
+      ctx.fillRect(x, 0, 1, H);
+    }
+  }
+  function axis(el, items) {
+    el.innerHTML = items.map(([p, t]) => `<span style="left:${(p * 100).toFixed(1)}%">${t}</span>`).join("");
+  }
+  const lerp = (a, b, t) => a + (b - a) * t;
+
+  function drawAll() {
+    // Ao dormir
+    $("sleep-on").classList.toggle("on", S.sleepOn);
+    $("sleep-body").classList.toggle("disabled-body", !S.sleepOn);
+    $("sleep-color-name").textContent = nameFor(S.sleepM);
+    $("sleep-bri-val").textContent = Math.round(S.sleepB * 100) + "%";
+    $("sleep-bri").style.setProperty("--track", `linear-gradient(90deg, ${S.night ? "#2E2E2E" : "#D5D5D7"}, ${css(rgbOf(S.sleepM))})`);
+    document.querySelector('[data-key="sleepMin"] output').textContent = mins(S.sleepMin);
+    drawBar($("sleep-canvas"), t => [S.sleepM, S.sleepB * (1 - t)]);
+    axis($("sleep-axis"), [[0, "ao encostar"], [1, `+${S.sleepMin} min · apagada`]]);
+    markSw("sleep", S.sleepM);
+
+    // Ao acordar
+    $("wake-on").classList.toggle("on", S.wakeOn);
+    $("wake-body").classList.toggle("disabled-body", !S.wakeOn);
+    $("wake-sub").textContent = S.wakeOn ? `${startTime()} até ${fmt(ALARM + S.holdMin)}, com despertador às 7:00` : "Desligado nesta rotina";
+    $("from-name").textContent = nameFor(S.fromM);
+    $("to-name").textContent = nameFor(S.toM);
+    $("from-bri-val").textContent = Math.round(S.fromB * 100) + "%";
+    $("to-bri-val").textContent = Math.round(S.toB * 100) + "%";
+    $("from-bri").style.setProperty("--track", `linear-gradient(90deg, ${S.night ? "#2E2E2E" : "#D5D5D7"}, ${css(rgbOf(S.fromM))})`);
+    $("to-bri").style.setProperty("--track", `linear-gradient(90deg, ${S.night ? "#2E2E2E" : "#D5D5D7"}, ${css(rgbOf(S.toM))})`);
+    document.querySelector('[data-key="rampMin"] output').textContent = mins(S.rampMin);
+    document.querySelector('[data-key="holdMin"] output').textContent = mins(S.holdMin);
+    const total = S.rampMin + S.holdMin, split = S.rampMin / total;
+    drawBar($("wake-canvas"), t => {
+      if (t <= split) { const k = split ? t / split : 1; return [lerp(S.fromM, S.toM, k), lerp(S.fromB, S.toB, k)]; }
+      return [S.toM, S.toB];
+    });
+    const ax = [[0, startTime()], [split, "7:00 ⏰"]];
+    if (S.holdMin > 0) ax.push([1, `${fmt(ALARM + S.holdMin)} apaga`]);
+    axis($("wake-axis"), ax);
+    markSw("from", S.fromM); markSw("to", S.toM);
+
+    renderLamp();
+  }
+  function markSw(t, m) {
+    document.querySelectorAll(`.mini-swatches[data-target="${t}"] button`).forEach((b, i) => b.classList.toggle("on", Math.abs(SW[i].m - m) < 0.01));
+  }
+
+  syncSliders();
+  renderPair();
+  drawAll();
+})();
+</script>
