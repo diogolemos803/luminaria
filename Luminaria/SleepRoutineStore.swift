@@ -190,6 +190,10 @@ struct SleepRoutine: Identifiable, Codable, Equatable {
     var autoActivateWeekday: Bool
     var autoActivateWeekend: Bool
     var autoActivateEventKeyword: String?
+    /// Lâmpada Zleepy (Bluetooth): apagar devagar ao encostar na luminária e amanhecer
+    /// antes do despertador. Sem lâmpada pareada não fazem nada. Ver `LampManager`.
+    var lampSleep: LampSleepSettings
+    var lampWake: LampWakeSettings
 
     init(
         id: UUID = UUID(),
@@ -202,7 +206,9 @@ struct SleepRoutine: Identifiable, Codable, Equatable {
         appSelection: FamilyActivitySelection = FamilyActivitySelection(),
         autoActivateWeekday: Bool = false,
         autoActivateWeekend: Bool = false,
-        autoActivateEventKeyword: String? = nil
+        autoActivateEventKeyword: String? = nil,
+        lampSleep: LampSleepSettings = LampSleepSettings(),
+        lampWake: LampWakeSettings = LampWakeSettings()
     ) {
         self.id = id
         self.name = name
@@ -215,11 +221,14 @@ struct SleepRoutine: Identifiable, Codable, Equatable {
         self.autoActivateWeekday = autoActivateWeekday
         self.autoActivateWeekend = autoActivateWeekend
         self.autoActivateEventKeyword = autoActivateEventKeyword
+        self.lampSleep = lampSleep
+        self.lampWake = lampWake
     }
 
     private enum CodingKeys: String, CodingKey {
         case id, name, alarmHour, alarmMinute, nightShiftOffHour, nightShiftOffMinute, soundOption, appSelection
         case autoActivateWeekday, autoActivateWeekend, autoActivateEventKeyword
+        case lampSleep, lampWake
     }
 
     /// `init(from:)` escrito à mão só pra tratar `appSelection` e os campos de
@@ -253,6 +262,9 @@ struct SleepRoutine: Identifiable, Codable, Equatable {
             autoActivateWeekend = false
         }
         autoActivateEventKeyword = (try? container.decodeIfPresent(String.self, forKey: .autoActivateEventKeyword)) ?? nil
+        // Rotinas salvas antes da lâmpada existir não têm essas chaves — padrão em vez de falhar.
+        lampSleep = ((try? container.decodeIfPresent(LampSleepSettings.self, forKey: .lampSleep)) ?? nil) ?? LampSleepSettings()
+        lampWake = ((try? container.decodeIfPresent(LampWakeSettings.self, forKey: .lampWake)) ?? nil) ?? LampWakeSettings()
     }
 }
 
@@ -272,6 +284,9 @@ private struct SyncableRoutine: Codable {
     var autoActivateWeekday: Bool
     var autoActivateWeekend: Bool
     var autoActivateEventKeyword: String?
+    /// Opcionais: backups antigos no iCloud não têm.
+    var lampSleep: LampSleepSettings?
+    var lampWake: LampWakeSettings?
 
     init(_ routine: SleepRoutine) {
         id = routine.id
@@ -284,6 +299,8 @@ private struct SyncableRoutine: Codable {
         autoActivateWeekday = routine.autoActivateWeekday
         autoActivateWeekend = routine.autoActivateWeekend
         autoActivateEventKeyword = routine.autoActivateEventKeyword
+        lampSleep = routine.lampSleep
+        lampWake = routine.lampWake
     }
 
     func toRoutine() -> SleepRoutine {
@@ -297,7 +314,9 @@ private struct SyncableRoutine: Codable {
             soundOption: soundOption,
             autoActivateWeekday: autoActivateWeekday,
             autoActivateWeekend: autoActivateWeekend,
-            autoActivateEventKeyword: autoActivateEventKeyword
+            autoActivateEventKeyword: autoActivateEventKeyword,
+            lampSleep: lampSleep ?? LampSleepSettings(),
+            lampWake: lampWake ?? LampWakeSettings()
         )
     }
 }

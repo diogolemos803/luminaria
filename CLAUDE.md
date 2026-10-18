@@ -332,6 +332,53 @@ depende de CI num runner macOS na nuvem (GitHub Actions) e de sideload via AltSt
   cones, fita zebrada, placa "EM OBRAS", pilha de peças e 4 bonequinhos de capacete e
   colete em loop — um martela, um solda (faíscas), um carrega painéis, um sinaliza pro
   guindaste. Tudo função do relógio, no espaço de coordenadas do chão da decolagem.
+- **Lâmpada Zleepy por Bluetooth (2026-10-18)** — placa própria (ESP32-C3, BLE, duas fitas
+  de LED âmbar e vermelha, 12 V; firmware escrito em outra conversa, testado só em PC, a
+  placa ainda não foi fabricada). Independente do NFC: a luminária/tag continua armando o
+  modo noite; a lâmpada é um segundo aparelho. Telas aprovadas em
+  `design/lampada_prototipo.html` e `design/integracao_prototipo.html` (desenho de
+  referência do usuário em `design/referencia_luminaria.png`). Arquivos:
+  - `Luminaria/LampProtocol.swift` — só bytes (sem CoreBluetooth/SwiftUI): UUIDs, opcodes,
+    `LampColor` (âmbar/vermelho 0–255 ↔ **mistura** 0 = amarelo…1 = vermelho e **brilho**;
+    a "cor cheia" de uma mistura preserva a proporção e respeita o limitador de 160% =
+    soma ≤ 408, então o seletor nunca pede algo que a lâmpada corte), `LampPreset` (as 5
+    mesclas), `LampState` (STATE 12 bytes), `LampRoutine` (ROUTINE), `LampCommand` e os
+    ajustes por rotina `LampSleepSettings`/`LampWakeSettings`.
+  - `Luminaria/LampManager.swift` — `LampManager.shared` (ObservableObject, estilo
+    `AlarmManager`) atrás de um `protocol LampTransport` com duas implementações:
+    `BluetoothLampTransport` (CoreBluetooth, fila principal) e `SimulatedLampTransport`
+    (imita o firmware v2: limitador, recusa de valor fora da faixa, começa SEM hora até o
+    app acertar, apagar devagar, piscar, rampa da manhã de uma vez só; responde com os
+    mesmos bytes, então o caminho de leitura é o mesmo). Guarda o identificador da lâmpada
+    (um pro real, outro pro simulado), reconecta sozinho com o app aberto, acerta a hora a
+    cada conexão e sempre que o STATE diz bit0 = 0, confere o byte 11 depois de cada
+    escrita, recusa versão de protocolo desconhecida com mensagem clara, relê a ROUTINE
+    depois de gravar (a lâmpada é a fonte da verdade). O `CBCentralManager` só é criado
+    (e a permissão de Bluetooth só é pedida) quando existe lâmpada pareada ou a pessoa
+    toca em "Procurar lâmpada".
+  - `Luminaria/LampDrawing.swift` — `LampIllustration` (o desenho da referência em
+    `Canvas`, mesma geometria do protótipo: câmera só inclinada, elipses com altura 0,49 ×
+    largura, base em pílula girada ~29°, cúpula que acende na cor/brilho da lâmpada),
+    `LampGlyph` (ícone da bolinha do canto), `GradientSlider`, `LampTimelinePreview`.
+  - `Luminaria/LampView.swift` — `LampControlView` (tela da lâmpada: luminária parada no
+    meio, 5 bolinhas em cima — cores prontas, mistura, brilho, luz programada, ajustes da
+    lâmpada — e o painel da bolinha tocada embaixo, altura fixa pra luminária não pular),
+    `LampPairingContent`/`LampPairingScreen` (passo a passo da janela de pareamento,
+    estados procurando/pareando/recusada/chave antiga), `LampSettingsCard` (cartão no
+    menu) e `LampRoutineSections` ("Lâmpada ao dormir" e "Lâmpada ao acordar" no editor
+    de rotina, só com lâmpada pareada).
+  - Integração (decisões do usuário): **opção C** — bolinha no canto de cima à esquerda
+    (toolbar `.topBarLeading`) na tela do botão mostra a luminária na cor real da lâmpada;
+    na tela da lâmpada a mesma bolinha mostra o rostinho do botão e volta; as duas telas
+    trocam no lugar (fade), sem empurrar. **Fundo acompanha a cor**: o brilho de "nascer
+    do sol" usa a cor da lâmpada acesa. **Encostar na luminária** (`onRecognizedTap`)
+    chama `LampManager.beginNight`: apagar devagar + luz da manhã gravada só pra manhã
+    seguinte; se a lâmpada não responder em 12 s, alerta "a luz da manhã não vai acender
+    hoje". **Desarmar pelo botão** (`toggleNightMode`) chama `endNight` (cancela o apagar
+    devagar e a luz da manhã). **Pouso** (`AlarmRingingView`): botão "Apagar a luz" se a
+    lâmpada estiver acesa. Sem lâmpada pareada, nada disso aparece.
+  - `SleepRoutine` ganhou `lampSleep`/`lampWake` (decode tolerante, padrão quando a chave
+    falta — mesmo padrão de `appSelection`; também no backup do iCloud, opcionais).
 - `Luminaria/FriendsStore.swift` / `FriendsView.swift` — **amigos e ranking de detox
   (2026-09-26)**, sobre o **banco público do CloudKit** (container
   `iCloud.com.luminaria.app`, identidade = conta iCloud do iPhone, sem login extra).
@@ -600,7 +647,7 @@ Fluxo usado pra testar de verdade, todo do Windows:
 
 - **`Luminaria.xcodeproj/project.pbxproj` foi escrito à mão**, linha por linha — não existe
   Xcode/macOS neste ambiente de desenvolvimento (Windows). IDs de objeto seguem o padrão
-  `AAAAAAAAAAAAAAAAAAAAAA` + 2 dígitos hex incrementais (maior em uso: `9F`); qualquer
+  `AAAAAAAAAAAAAAAAAAAAAA` + 2 dígitos hex incrementais (maior em uso: `A7`); qualquer
   novo arquivo precisa de entradas em `PBXBuildFile`, `PBXFileReference`, no grupo, e na
   build phase certa (`Sources` pra `.swift`, `Resources` pra assets/sons). Sempre
   verificar balanço de chaves/parênteses e contagem de referências de cada ID novo
@@ -1271,7 +1318,45 @@ instalar via TestFlight, e testar especificamente essa build (conferir o número
 Ajustes → Geral → Armazenamento do iPhone → Luminária → Info do App, ou dentro do
 TestFlight) — só depois disso vale reabrir a investigação com mais profundidade.
 
-## Ideia futura, ainda não iniciada: controle Bluetooth da luminária física
+## ⚠️ Pendência da lâmpada Zleepy (Bluetooth) — firmware v2 e teste real (não esquecer)
+
+O app já fala o **protocolo v2**, que é uma PROPOSTA do app pro firmware (o texto pra colar
+na conversa do firmware foi passado ao usuário em 2026-10-18). Até o firmware implementar,
+a lâmpada de verdade vai responder versão 1 e o app mostra "versão do protocolo que o app
+não conhece". Mudanças da v2 em relação à v1 que o usuário mandou:
+1. **Rotina de uma vez só**: bit7 de `dias` = só a próxima ocorrência; a lâmpada roda uma
+   vez e grava `ligada = 0` sozinha. Rampa que começa antes da meia-noite (despertador
+   00:10, rampa 15) começa no dia anterior; `dias` se refere ao dia do despertador.
+2. **Apagar devagar**: opcode `0x07 âmbar, vermelho, minutos (1–120)`; toque, 0x01 e 0x02
+   cancelam; STATE modo 3 = apagando.
+3. **Brilho separado da cor no amanhecer**: ROUTINE com 12 bytes (comando 0x04 com 13) —
+   `ligada, dias, hora, minuto, rampa, mantém, de_âmbar, de_vermelho, de_brilho,
+   para_âmbar, para_vermelho, para_brilho`; cores no brilho máximo, saída = cor
+   interpolada × brilho interpolado, limitador depois. Byte 0 do STATE = 2.
+Se o firmware fizer diferente, só `LampProtocol.swift` (e o simulado) mudam.
+
+Decisões: **só Bluetooth, sem Wi-Fi** (o firmware não liga o Wi-Fi do ESP32; controle de
+fora de casa exigiria rede + servidor, fora do escopo). **Sem `bluetooth-central` em
+segundo plano**: a lâmpada roda a luz da manhã pelo próprio relógio (RTC), o app só precisa
+conectar com a tela aberta. **Lâmpada só nas noites armadas** (decisão do usuário, "1 b"):
+a luz da manhã é gravada a cada leitura do NFC, nunca recorrente. **Modo simulado
+visível também no TestFlight** (interruptor "Lâmpada simulada" na tela da lâmpada e no
+pareamento) — `#if DEBUG` esconderia, porque o TestFlight é build Release; tirar quando a
+placa chegar.
+
+Só dá pra confirmar com a placa (nada disso foi testado em aparelho):
+- PWM, relógio (RTC), sensor de toque e alcance do Bluetooth (bancada, lado do firmware).
+- Pareamento "Just Works" pelo iOS no primeiro acesso a característica protegida
+  (`setNotifyValue`/`readValue` do STATE) e a recusa fora da janela (a lâmpada desfaz o
+  vínculo e desconecta → o app mostra "Segure o toque por 3 s"). Depende do NimBLE.
+- Depois de segurar 10 s (apaga pareamentos), o iPhone continua com a chave antiga: o app
+  trata `CBError.peerRemovedPairingInformation` como "esqueça em Ajustes → Bluetooth".
+  "Esquecer" no app não apaga o pareamento do iOS (não existe API).
+- Se a pessoa recusar o aviso de pareamento do iOS, a leitura falha e a tela fica em
+  "Pareando…" com o erro — conferir o comportamento real.
+- Conexão pendente (`connect` sem timeout) reconectando quando a lâmpada volta pro alcance.
+
+## Ideia anterior (2026-08): controle Bluetooth da luminária física — virou a lâmpada Zleepy acima
 
 O usuário perguntou sobre viabilidade de controlar a luminária de verdade via Bluetooth
 (trocar cor, brilho, e rotinas automáticas tipo "nascer do sol" gradual das 7:00 às

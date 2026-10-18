@@ -144,6 +144,8 @@ struct RoutineEditView: View {
     @State private var routine: SleepRoutine
     /// Grupos de som abertos — todos começam recolhidos.
     @State private var expandedSoundCategories: Set<AlarmSoundOption.Category> = []
+    /// As seções da lâmpada só aparecem com uma lâmpada pareada.
+    @ObservedObject private var lampManager = LampManager.shared
     var isNew: Bool = false
 
     private var theme: ModeTheme { .current(armed: isNightModeArmed) }
@@ -274,6 +276,10 @@ struct RoutineEditView: View {
                                     }
                                 )
                             }
+                        }
+
+                        if lampManager.hasLamp {
+                            LampRoutineSections(routine: $routine, theme: theme)
                         }
 
                         ThemedCard(title: "Ativar automaticamente quando", theme: theme) {

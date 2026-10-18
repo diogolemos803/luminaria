@@ -10,6 +10,8 @@ struct ContentView: View {
     // ciclo de vida é ele mesmo, `ContentView` só observa) — a fase dele decide se
     // a cena de decolagem mostra o foguete ou a explosão (ver `soveeMainScreen`).
     @ObservedObject private var growthTracker = NightSessionActivityTracker.shared
+    /// Lâmpada Zleepy (Bluetooth) — singleton, só observado aqui.
+    @ObservedObject private var lampManager = LampManager.shared
     @Environment(\.scenePhase) private var scenePhase
     @State private var isNightModeArmed = false
     @State private var isPressed = false
@@ -28,6 +30,11 @@ struct ContentView: View {
     /// real: rotina às 20:09 lida às 22:37 armava pro dia seguinte às 8 da noite, e o
     /// alarme parecia tocar "sem ter lido o NFC").
     @State private var longNightWarning: String?
+    /// Tela da lâmpada no lugar da tela do botão (opção C de `design/integracao_prototipo.html`:
+    /// a bolinha do canto troca uma pela outra, no lugar, sem empurrar pro lado).
+    @State private var showLampScreen = false
+    /// A lâmpada não respondeu na hora de encostar na luminária.
+    @State private var lampWarning: String?
 
     /// Alterna entre a tela principal nova (SOVEE) e a antiga (Zleepy Lamp) — pedido
     /// explícito do usuário: "crie uma nova, mas deixe no código uma opção de
@@ -62,7 +69,22 @@ struct ContentView: View {
             Group {
                 if nfcManager.isLinked {
                     if Self.useSoveeMainScreen {
-                        soveeMainScreen
+                        // ZStack (um filho só) pra trocar de tela sem disparar de novo o
+                        // `.onAppear` do Group, que configura os callbacks do NFC.
+                        ZStack {
+                            if showLampScreen {
+                                LampControlView(
+                                    lamp: lampManager,
+                                    theme: ModeTheme.current(armed: isNightModeArmed),
+                                    isNight: isNightModeArmed
+                                )
+                                .transition(.opacity)
+                            } else {
+                                soveeMainScreen
+                                    .transition(.opacity)
+                            }
+                        }
+                        .animation(.easeInOut(duration: 0.3), value: showLampScreen)
                     } else {
                         legacyMainScreen
                     }
@@ -73,6 +95,20 @@ struct ContentView: View {
                 }
             }
             .toolbar {
+                // Bolinha do canto: na tela do botão mostra a luminária (na cor real da
+                // lâmpada); na tela da lâmpada mostra o rostinho do botão e leva de volta.
+                // Escondida durante a viagem do foguete e sem lâmpada pareada.
+                ToolbarItem(placement: .topBarLeading) {
+                    if showsLampBubble {
+                        Button {
+                            showLampScreen.toggle()
+                        } label: {
+                            lampBubbleLabel
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(showLampScreen ? "Voltar pro botão" : "Abrir a lâmpada")
+                    }
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         showSettings = true
@@ -83,6 +119,8 @@ struct ContentView: View {
                 }
             }
             .onAppear {
+                // Reconecta na lâmpada pareada (se houver) — sem lâmpada, não faz nada.
+                lampManager.start()
                 alarmManager.requestNotificationPermission()
                 // Permissão de "Alarmes" (AlarmKit, iOS 26+) — é ela que faz o
                 // despertador tocar no silencioso, com Foco e com o app fechado.
@@ -126,6 +164,12 @@ struct ContentView: View {
                         screenTimeManager.applyShield(selection: routine.appSelection)
                         // cartão da noite na tela bloqueada (ver WidgetBridge)
                         WidgetBridge.startNightActivity(alarmDate: alarmManager.nextFireDate)
+                        // Lâmpada: apaga devagar agora e grava a luz da manhã (só amanhã).
+                        lampManager.beginNight(routine: routine, alarmDate: alarmManager.nextFireDate) { responded in
+                            if !responded {
+                                lampWarning = "A lâmpada não respondeu — a luz da manhã não vai acender hoje. Confira se ela está na tomada e perto do iPhone."
+                            }
+                        }
                         if let fire = alarmManager.nextFireDate, fire.timeIntervalSinceNow > 14 * 3600 {
                             let hours = Int(fire.timeIntervalSinceNow / 3600)
                             let time = fire.formatted(date: .omitted, time: .shortened)
@@ -173,6 +217,7 @@ struct ContentView: View {
             }
             .onChange(of: scenePhase) { newPhase in
                 if newPhase == .active {
+                    lampManager.start()
                     alarmManager.checkForMissedAlarm()
                     screenTimeManager.refreshAuthorizationStatus()
                     // Atualiza o estado da permissão de Alarmes (pode ter mudado em Ajustes).
@@ -203,13 +248,25 @@ struct ContentView: View {
             } message: {
                 Text(longNightWarning ?? "")
             }
+            .alert("Lâmpada", isPresented: Binding(
+                get: { lampWarning != nil },
+                set: { if !$0 { lampWarning = nil } }
+            )) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(lampWarning ?? "")
+            }
             .sheet(isPresented: $showSettings) {
                 SettingsView(
                     nfcManager: nfcManager,
                     alarmManager: alarmManager,
                     routineStore: routineStore,
                     screenTimeManager: screenTimeManager,
-                    sleepReportStore: sleepReportStore
+                    sleepReportStore: sleepReportStore,
+                    onOpenLamp: {
+                        showSettings = false
+                        showLampScreen = true
+                    }
                 )
                 .environment(\.isNightModeArmed, isNightModeArmed)
             }
@@ -267,9 +324,21 @@ struct ContentView: View {
                     // própria cena a partir de `sceneStartDate` — sem fade por cima.
                     .transition(.identity)
                 }
+                // Fundo acompanha a cor da lâmpada acesa (aprovado no protótipo de integração).
+                if !showsJourney, let glow = lampGlow {
+                    lampBackgroundGlow(color: glow.color, opacity: 0.3 * glow.brightness)
+                        .ignoresSafeArea()
+                        .transition(.opacity)
+                }
             } else {
                 Color.white.ignoresSafeArea()
-                soveeDayGlow.ignoresSafeArea()
+                if let glow = lampGlow {
+                    soveeDayGlow.opacity(1 - 0.8 * glow.brightness).ignoresSafeArea()
+                    lampBackgroundGlow(color: glow.color, opacity: 0.45 * glow.brightness)
+                        .ignoresSafeArea()
+                } else {
+                    soveeDayGlow.ignoresSafeArea()
+                }
             }
 
             if showsRoundButton {
@@ -336,6 +405,50 @@ struct ContentView: View {
             showsRoundButton ? Animation.easeOut(duration: 0.5) : Animation.timingCurve(0.5, 0, 0.75, 0, duration: 0.6),
             value: showsRoundButton
         )
+    }
+
+    /// Cor e brilho da lâmpada quando ela está acesa (nil = apagada/sem lâmpada).
+    private var lampGlow: (color: Color, brightness: Double)? {
+        guard lampManager.isLit, let color = lampManager.state?.color else { return nil }
+        return (LampDisplayColor.color(mix: color.mix), color.brightness)
+    }
+
+    /// Mesmo "nascer do sol" do fundo de dia, na cor da lâmpada.
+    private func lampBackgroundGlow(color: Color, opacity: Double) -> some View {
+        RadialGradient(
+            colors: [color.opacity(opacity), color.opacity(0)],
+            center: .bottom,
+            startRadius: 0,
+            endRadius: 260
+        )
+        .scaleEffect(x: 1, y: 2.4, anchor: .bottom)
+        .allowsHitTesting(false)
+    }
+
+    private var showsLampBubble: Bool {
+        guard nfcManager.isLinked, Self.useSoveeMainScreen else { return false }
+        if showLampScreen { return true }
+        return lampManager.hasLamp && showsRoundButton
+    }
+
+    private var lampBubbleLabel: some View {
+        let theme = ModeTheme.current(armed: isNightModeArmed)
+        let fill: Color? = lampGlow.map { $0.color.opacity(0.35 + 0.65 * $0.brightness) }
+        return ZStack {
+            Circle().fill(theme.card)
+            if showLampScreen {
+                Image(isNightModeArmed ? "LogoSono" : "LogoAcordado")
+                    .renderingMode(.template)
+                    .resizable()
+                    .scaledToFit()
+                    .padding(4)
+                    .foregroundStyle(isNightModeArmed ? theme.accent : SoveeColor.carvao)
+            } else {
+                LampGlyph(fill: fill, line: theme.ink)
+                    .padding(7)
+            }
+        }
+        .frame(width: 34, height: 34)
     }
 
     /// Dia: grafite. Noite: azul de luar enquanto espera a luminária; verde (sage)
@@ -488,12 +601,15 @@ struct ContentView: View {
         }
         isNightModeArmed.toggle()
         if isNightModeArmed {
+            showLampScreen = false
             isTagRecognized = false
             nfcManager.beginScanning()
         } else {
             nfcManager.stopScanning()
             alarmManager.disarmAlarm()
             screenTimeManager.removeShield(reason: .manualDisarm)
+            // Cancela o apagar devagar e a luz da manhã daquela noite.
+            lampManager.endNight()
             // Desliga o Foco da noite (Atalho "Acordar") — só roda se o de dormir rodou.
             ShortcutManager.shared.requestWakeShortcut()
             resetEntrance()
@@ -515,6 +631,7 @@ struct AlarmRingingView: View {
     @ObservedObject var alarmManager: AlarmManager
     @ObservedObject var sleepReportStore: SleepReportStore = .shared
     @ObservedObject var growthTracker: NightSessionActivityTracker = .shared
+    @ObservedObject var lampManager: LampManager = .shared
 
     private let theme = ModeTheme.zleepy
 
@@ -554,6 +671,22 @@ struct AlarmRingingView: View {
                         .shadow(color: .black.opacity(0.35), radius: 6, x: 0, y: 2)
                         .padding(.top, 2)
                 }
+                // Amanhecer da lâmpada ainda aceso: dá pra apagar daqui mesmo.
+                if lampManager.isLit {
+                    Button {
+                        lampManager.turnOff()
+                    } label: {
+                        Text("Apagar a luz")
+                            .font(.soveeBody(.subheadline, weight: .bold))
+                            .padding(.horizontal, 18)
+                            .padding(.vertical, 9)
+                            .foregroundStyle(theme.ink)
+                            .background(theme.card.opacity(0.85))
+                            .clipShape(Capsule())
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.top, 10)
+                }
                 Button {
                     alarmManager.stopRingingAlarm()
                 } label: {
@@ -579,6 +712,9 @@ struct SettingsView: View {
     @ObservedObject var routineStore: SleepRoutineStore
     @ObservedObject var screenTimeManager: ScreenTimeManager
     @ObservedObject var sleepReportStore: SleepReportStore
+    @ObservedObject var lampManager: LampManager = .shared
+    /// Fecha o menu e abre a tela da lâmpada (mesmo lugar da bolinha do canto).
+    var onOpenLamp: () -> Void = {}
     @Environment(\.dismiss) private var dismiss
     @Environment(\.isNightModeArmed) private var isNightModeArmed
     @State private var showHelp = false
@@ -638,6 +774,8 @@ struct SettingsView: View {
                                 .foregroundStyle(theme.inkMuted)
                                 .padding(.horizontal, 10)
                         }
+
+                        LampSettingsCard(lamp: lampManager, theme: theme, onOpenLamp: onOpenLamp)
 
                         ThemedCard(title: "Rotina de sono", theme: theme) {
                             NavigationLink {
