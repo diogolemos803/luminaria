@@ -159,8 +159,9 @@ export default function HowItWorks() {
       }
       // deitado no nicho: corpo escuro e fosco com o traço fino claro do desenho
       if (frameEl.current) frameEl.current.style.opacity = "1";
-      if (wireEl.current) wireEl.current.style.opacity = String(tilt);
-      if (slabsEl.current) slabsEl.current.style.opacity = String(tilt);
+      // a espessura e o traço acompanham o celular em toda a animação; de frente o traço fica mais suave
+      if (wireEl.current) wireEl.current.style.opacity = String(0.55 + 0.45 * tilt);
+      if (slabsEl.current) slabsEl.current.style.opacity = "1";
       // tela apagada enquanto o celular fica no nicho
       const off = p < 0.5 ? ease(seg(p, 0.265, 0.3)) : p < 0.88 ? 1 - ease(seg(p, 0.545, 0.575)) : ease(seg(p, 0.9, 0.93));
       if (blackLayer.current) blackLayer.current.style.opacity = String(off);
@@ -428,7 +429,7 @@ export default function HowItWorks() {
 
           {/* o celular, com a tela do app */}
           <div className="hw-phone" ref={phone}>
-            <div className="hw-slabs" ref={slabsEl} style={{ opacity: 0 }}>
+            <div className="hw-slabs" ref={slabsEl}>
               {[1.5, 3, 4.5, 6, 7.5].map((z) => (
                 <div key={z} className="hw-slab hw-slab-fill" style={{ transform: `translateZ(${-z}px)` }} />
               ))}
