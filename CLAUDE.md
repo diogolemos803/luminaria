@@ -810,6 +810,17 @@ Fluxo usado pra testar de verdade, todo do Windows:
   envio anterior (que a Apple rejeita). Fix: trocado pra
   `get-latest-testflight-build-number`, que busca o último número já usado no
   TestFlight (o lugar certo, já que é pra lá que a gente manda).
+- **Envio pro TestFlight falhando com "Cannot determine the Apple ID from Bundle ID"
+  (2026-10-19)** — e o número do build saindo "1" no mesmo log. Causa: **acordo novo do
+  Apple Developer Program pendente** (faixa amarela em App Store Connect → Negócios). Com
+  ele pendente a Apple bloqueia as consultas e o envio, mas a assinatura funciona — por
+  isso o build compila e assina e só falha no "Publishing". Resolve aceitando o acordo em
+  developer.apple.com/account (titular da conta). Os outros avisos da mesma página (UE /
+  comerciante, conta bancária, impostos) não bloqueiam o TestFlight. Logo depois veio
+  "attribute with a value that has already been used": a consulta do último build
+  continuava falhando calada e caía no "1". O passo de incremento no `codemagic.yaml`
+  agora usa o MAIOR entre "último do TestFlight + 1" e `$BUILD_NUMBER` do Codemagic
+  (contador que só cresce) e mostra o resultado da consulta no log.
 - **A partir de agora, desenvolvimento só no `main`** — decisão do usuário depois de
   conseguir a conta Apple Developer paga: bloqueio de apps e o gate de "inútil sem
   luminária" só fazem sentido com a entitlement paga mesmo, então a

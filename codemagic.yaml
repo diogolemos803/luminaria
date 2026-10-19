@@ -31,8 +31,22 @@ workflows:
           # pela Apple ("bundle version must be higher than the previously uploaded
           # version"). get-latest-testflight-build-number busca o último número já no
           # TestFlight, que é o que precisamos aqui.
-          BUILD_NUMBER=$(app-store-connect get-latest-testflight-build-number "$APP_STORE_APPLE_ID" || echo "0")
-          agvtool new-version -all $(($BUILD_NUMBER + 1))
+          #
+          # 2026-10-19: a consulta voltou a falhar calada (caía no "0" e gerava "1", já
+          # usado → "attribute with a value that has already been used"). Agora o número
+          # é o MAIOR entre "último do TestFlight + 1" e o contador de builds do próprio
+          # Codemagic ($BUILD_NUMBER, que só cresce e nunca é menor que qualquer número já
+          # enviado, porque cada envio saiu de um build). E o resultado da consulta
+          # aparece no log, pra não falhar escondido de novo.
+          LATEST=$(app-store-connect get-latest-testflight-build-number "$APP_STORE_APPLE_ID" 2>&1 | tail -1)
+          echo "Último build no TestFlight (consulta): $LATEST"
+          case "$LATEST" in
+            ''|*[!0-9]*) LATEST=0 ;;
+          esac
+          NEXT=$((LATEST + 1))
+          if [ "${BUILD_NUMBER:-0}" -gt "$NEXT" ]; then NEXT=$BUILD_NUMBER; fi
+          echo "Número deste build: $NEXT"
+          agvtool new-version -all "$NEXT"
 
       - name: Compilar o IPA
         script: |
