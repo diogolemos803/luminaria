@@ -26,7 +26,7 @@ const chapters = [
   { id: "arme", from: 0.0, to: 0.13, title: "arme o modo noite", text: "No app SOVEE, um toque no botão redondo prepara a noite." },
   { id: "encoste", from: 0.13, to: 0.27, title: "encoste o celular", text: "A etiqueta NFC do Day Finisher reconhece o seu iPhone, e o rostinho do botão fica verde." },
   { id: "encaixe", from: 0.27, to: 0.4, title: "encaixe no nicho", text: "O celular descansa no nicho de madeira da base, à vista e longe da cama. A luz acende e os apps que você escolheu ficam bloqueados." },
-  { id: "noite", from: 0.4, to: 0.55, title: "a luz acompanha a noite", text: "Do âmbar ao vermelho, sempre em tons quentes, sem o azul que mantém o cérebro em alerta." },
+  { id: "noite", from: 0.4, to: 0.55, title: "três cores de luz", text: "Âmbar, laranja e vermelho, sempre em tons quentes, sem o azul que mantém o cérebro em alerta. Fixe a cor que preferir ou deixe o Day Finisher alternar sozinho." },
   { id: "foguete", from: 0.55, to: 0.67, title: "o foguete decola", text: "No app, o foguete parte assim que o celular é reconhecido e segue viagem enquanto você dorme." },
   { id: "meteoro", from: 0.67, to: 0.78, title: "se você pegar o celular", text: "Um meteoro atinge o foguete e ele fica em obras até de manhã. Aquela noite não conta na sua sequência." },
   { id: "manha", from: 0.78, to: 0.91, title: "o despertador toca", text: "No horário da rotina, o despertador toca com um som calmo, os apps voltam e o foguete pousa na Lua. Quanto mais noites seguidas, mais longe ele chega." },
@@ -37,7 +37,7 @@ const FINAL = { from: 0.91, to: 1.01 };
 const T = [526.5, 697.5];
 const U = [333, 96.6];
 const V = [-117.5, 101.5];
-const NICHE = [609, 789];
+const NICHE = [634, 797];
 const LAMP_PATH = "M219.5 467 A117 58 0 0 1 453.5 467 L453.5 669 A117 58 0 0 1 219.5 669 Z";
 /* escala do celular em relação ao desenho: o celular deitado cobre ~84% do comprimento do nicho */
 const PHONE_SCALE = 0.52;
@@ -69,6 +69,8 @@ export default function HowItWorks() {
   const hint = useRef<HTMLDivElement>(null);
   const cards = useRef<(HTMLDivElement | null)[]>([]);
   const finalCard = useRef<HTMLDivElement>(null);
+  const swatches = useRef<(HTMLSpanElement | null)[]>([]);
+  const colorName = useRef<HTMLDivElement>(null);
   const dots = useRef<(HTMLButtonElement | null)[]>([]);
 
   useEffect(() => {
@@ -147,7 +149,7 @@ export default function HowItWorks() {
         iso.current.style.top = `${L.isoY}px`;
       }
       const cx = px + lift * 0.1 * k;
-      const cy = py - lift * k;
+      const cy = py - (lift + 7) * k; // 7: o corpo do celular assenta dentro do nicho
       if (phone.current) {
         phone.current.style.transform = `translate(${cx - 150}px, ${cy - 313}px) perspective(3000px) rotateX(${60 * tilt}deg) rotateZ(${-59.9 * tilt}deg) scale(${PHONE_SCALE * k})`;
         phone.current.style.opacity = "1";
@@ -230,6 +232,18 @@ export default function HowItWorks() {
         el.setAttribute("ry", String(r));
         el.style.opacity = String(f > 0 && f < 1 ? (1 - f) * 0.9 : 0);
       });
+
+      // legenda da cor da luz
+      const ci = p < 0.47 ? 0 : p < 0.53 ? 1 : 2;
+      swatches.current.forEach((el, i) => el?.setAttribute("data-on", String(i === ci)));
+      if (colorName.current) {
+        colorName.current.textContent = ["luz âmbar", "luz laranja", "luz vermelha"][ci];
+        colorName.current.style.color = color;
+        colorName.current.style.opacity = String(I * (1 - seg(p, 0.545, 0.575)));
+        colorName.current.style.left = `${L.objCx}px`;
+        colorName.current.style.top = `${L.mobile ? H * 0.06 + 52 : H * 0.05 + 56}px`;
+      }
+      if (phone.current) phone.current.style.setProperty("--sh", String(1 - tilt));
 
       // sombra do celular no nicho
       if (isoShadow.current) isoShadow.current.style.opacity = String(tilt * clamp01(1 - lift / 260) * 0.85);
@@ -395,6 +409,7 @@ export default function HowItWorks() {
 
           <div className="hw-ambient" ref={ambient} />
           <div className="hw-clock" ref={clock} />
+          <div className="hw-colorname" ref={colorName} />
           <div className="hw-chip" ref={chip}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <rect x="5" y="11" width="14" height="9" rx="2.5" />
@@ -405,6 +420,11 @@ export default function HowItWorks() {
 
           {/* o celular, com a tela do app */}
           <div className="hw-phone" ref={phone}>
+            <div className="hw-slabs">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="hw-slab" style={{ transform: `translateZ(${-(i + 1) * 2.5}px)` }} />
+              ))}
+            </div>
             <div className="hw-frame">
               <div className="hw-screen">
                 <div className="hw-app hw-day" ref={dayLayer}>
@@ -448,6 +468,26 @@ export default function HowItWorks() {
                 <span className="hw-step">etapa {i + 1} de {chapters.length}</span>
                 <h2>{c.title}</h2>
                 <p>{c.text}</p>
+                {c.id === "noite" && (
+                  <div className="hw-sw">
+                    {[
+                      ["âmbar", AMBER],
+                      ["laranja", ORANGE],
+                      ["vermelho", RED],
+                    ].map(([name, col], i) => (
+                      <span
+                        key={name}
+                        data-on="false"
+                        ref={(el) => {
+                          swatches.current[i] = el;
+                        }}
+                      >
+                        <i style={{ background: col }} />
+                        {name}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
             ))}
             <div className="hover-card hw-card hw-final" style={{ opacity: 0, pointerEvents: "none" }} ref={finalCard}>
