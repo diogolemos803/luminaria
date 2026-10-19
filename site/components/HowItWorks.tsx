@@ -37,8 +37,10 @@ const FINAL = { from: 0.91, to: 1.01 };
 const T = [526.5, 697.5];
 const U = [333, 96.6];
 const V = [-117.5, 101.5];
-const NICHE = [635, 788];
+const NICHE = [609, 789];
 const LAMP_PATH = "M219.5 467 A117 58 0 0 1 453.5 467 L453.5 669 A117 58 0 0 1 219.5 669 Z";
+/* escala do celular em relação ao desenho: o celular deitado cobre ~84% do comprimento do nicho */
+const PHONE_SCALE = 0.52;
 const MATRIX = `matrix(${U[0]} ${U[1]} ${V[0]} ${V[1]} ${T[0]} ${T[1]})`;
 
 type Anim = Animation[];
@@ -52,7 +54,7 @@ export default function HowItWorks() {
   const glow = useRef<SVGEllipseElement>(null);
   const ambient = useRef<HTMLDivElement>(null);
   const waves = useRef<(SVGEllipseElement | null)[]>([]);
-  const isoPhone = useRef<SVGGElement>(null);
+  const blackLayer = useRef<HTMLDivElement>(null);
   const isoShadow = useRef<SVGGElement>(null);
   const phone = useRef<HTMLDivElement>(null);
   const dayLayer = useRef<HTMLDivElement>(null);
@@ -90,7 +92,7 @@ export default function HowItWorks() {
 
     let W = 0;
     let H = 0;
-    const L = { objCx: 0, objCy: 0, isoW: 0, isoH: 0, isoX: 0, isoY: 0, nicheX: 0, nicheY: 0, sBig: 1, mobile: false };
+    const L = { objCx: 0, objCy: 0, isoW: 0, isoH: 0, isoX: 0, isoY: 0, nicheX: 0, nicheY: 0, sBig: 1, mobile: false, k0: 1, kBig: 1, kBig2: 1, Sx: 0, Sy: 0, Ex: 0, Ey: 0 };
 
     function measure() {
       W = st!.clientWidth;
@@ -98,21 +100,17 @@ export default function HowItWorks() {
       L.mobile = W < 800;
       L.objCx = L.mobile ? W / 2 : W * 0.32;
       L.objCy = L.mobile ? H * 0.4 : H * 0.5;
-      L.isoH = L.mobile ? Math.min(H * 0.56, W * 1.2) : H * 0.92;
-      L.isoW = L.isoH * 0.8;
-      L.isoX = L.objCx - L.isoW / 2;
-      L.isoY = L.objCy - L.isoH / 2;
-      const k = L.isoW / 1080;
-      L.nicheX = L.isoX + NICHE[0] * k;
-      L.nicheY = L.isoY + NICHE[1] * k;
+      const isoH0 = L.mobile ? Math.min(H * 0.56, W * 1.2) : H * 0.92;
+      const isoW0 = isoH0 * 0.8;
+      L.k0 = isoW0 / 1080;
       L.sBig = (L.mobile ? H * 0.5 : H * 0.74) / 626;
-      const io = iso.current;
-      if (io) {
-        io.style.width = `${L.isoW}px`;
-        io.style.height = `${L.isoH}px`;
-        io.style.left = `${L.isoX}px`;
-        io.style.top = `${L.isoY}px`;
-      }
+      // o celular mantém o tamanho em relação ao Day Finisher: quem muda é a câmera
+      L.kBig = L.sBig / PHONE_SCALE;
+      L.kBig2 = L.kBig * 0.92;
+      L.Sx = L.objCx;
+      L.Sy = L.objCy;
+      L.Ex = L.objCx - isoW0 / 2 + NICHE[0] * L.k0;
+      L.Ey = L.objCy - isoH0 / 2 + NICHE[1] * L.k0;
     }
 
     function setLayer(el: HTMLElement | null, o: number) {
@@ -124,37 +122,39 @@ export default function HowItWorks() {
       const max = tr!.offsetHeight - sc!.clientHeight;
       const p = clamp01((sc!.scrollTop - tr!.offsetTop) / Math.max(1, max));
 
-      /* --- celular (tela plana) --- */
-      const arrive = 1;
-      const fly = ease(seg(p, 0.135, 0.265));
-      const grow = ease(seg(p, 0.545, 0.585));
-      const leave = seg(p, 0.905, 0.935);
-      const nx = L.nicheX;
-      const ny = L.nicheY - L.isoH * 0.2;
-      const small = L.sBig * 0.3;
-      let cx = L.objCx;
-      let cy = L.objCy;
-      let s = lerp(L.sBig * 0.9, L.sBig, arrive);
-      let rot = 0;
-      let op = arrive;
-      if (p < 0.5) {
-        cx = lerp(L.objCx, nx, fly);
-        cy = lerp(L.objCy, ny, fly);
-        s = lerp(s, small, fly);
-        rot = lerp(0, -10, fly);
-        op = arrive * (1 - seg(p, 0.255, 0.285));
-      } else {
-        cx = lerp(nx, L.objCx, grow);
-        cy = lerp(ny + L.isoH * 0.06, L.objCy, grow);
-        s = lerp(small, L.sBig * 0.92, grow);
-        rot = lerp(-10, 0, grow);
-        op = seg(p, 0.545, 0.575) * (1 - leave);
-        s *= lerp(1, 0.9, leave);
+      /* --- câmera e celular: o mesmo celular, com rotação rígida, sem deformar --- */
+      const segA = ease(seg(p, 0.135, 0.3));
+      const segB = ease(seg(p, 0.545, 0.6));
+      const segC = ease(seg(p, 0.9, 0.95));
+      const k = p < 0.5 ? lerp(L.kBig, L.k0, segA) : lerp(lerp(L.k0, L.kBig2, segB), L.k0, segC);
+      const px = p < 0.5 ? lerp(L.Sx, L.Ex, segA) : lerp(lerp(L.Ex, L.Sx, segB), L.Ex, segC);
+      const py = p < 0.5 ? lerp(L.Sy, L.Ey, segA) : lerp(lerp(L.Ey, L.Sy, segB), L.Ey, segC);
+      const tilt = p < 0.5 ? ease(seg(p, 0.16, 0.27)) : lerp(1 - segB, 1, segC);
+      const lift =
+        p < 0.5
+          ? 380 * ease(seg(p, 0.15, 0.27)) * (1 - ease(seg(p, 0.285, 0.355)))
+          : 190 * (Math.sin(Math.PI * segB) + Math.sin(Math.PI * segC));
+      L.isoW = 1080 * k;
+      L.isoH = 1350 * k;
+      L.isoX = px - NICHE[0] * k;
+      L.isoY = py - NICHE[1] * k;
+      L.nicheX = px;
+      L.nicheY = py;
+      if (iso.current) {
+        iso.current.style.width = `${L.isoW}px`;
+        iso.current.style.height = `${L.isoH}px`;
+        iso.current.style.left = `${L.isoX}px`;
+        iso.current.style.top = `${L.isoY}px`;
       }
+      const cx = px + lift * 0.1 * k;
+      const cy = py - lift * k;
       if (phone.current) {
-        phone.current.style.transform = `translate(${cx - 150}px, ${cy - 313}px) scale(${s}) rotate(${rot}deg)`;
-        phone.current.style.opacity = String(op);
+        phone.current.style.transform = `translate(${cx - 150}px, ${cy - 313}px) perspective(3000px) rotateX(${60 * tilt}deg) rotateZ(${-59.9 * tilt}deg) scale(${PHONE_SCALE * k})`;
+        phone.current.style.opacity = "1";
       }
+      // tela apagada enquanto o celular fica no nicho
+      const off = p < 0.5 ? ease(seg(p, 0.265, 0.3)) : p < 0.88 ? 1 - ease(seg(p, 0.545, 0.575)) : ease(seg(p, 0.9, 0.93));
+      if (blackLayer.current) blackLayer.current.style.opacity = String(off);
 
       /* --- telas do app --- */
       const toNight = seg(p, 0.05, 0.068);
@@ -231,14 +231,8 @@ export default function HowItWorks() {
         el.style.opacity = String(f > 0 && f < 1 ? (1 - f) * 0.9 : 0);
       });
 
-      // celular em perspectiva: desce e encaixa
-      const lift = lerp(380, 0, ease(seg(p, 0.285, 0.355)));
-      const isoPhoneOp = seg(p, 0.255, 0.285);
-      if (isoPhone.current) {
-        isoPhone.current.setAttribute("transform", `translate(${lift * 0.1} ${-lift})`);
-        isoPhone.current.style.opacity = String(isoPhoneOp);
-      }
-      if (isoShadow.current) isoShadow.current.style.opacity = String(isoPhoneOp * lerp(0.15, 0.9, 1 - lift / 380));
+      // sombra do celular no nicho
+      if (isoShadow.current) isoShadow.current.style.opacity = String(tilt * clamp01(1 - lift / 260) * 0.85);
 
       // relógio da noite
       if (clock.current) {
@@ -393,19 +387,7 @@ export default function HowItWorks() {
               {/* sombra e celular */}
               <g ref={isoShadow} style={{ opacity: 0 }}>
                 <g transform={MATRIX}>
-                  <rect x="0.06" y="0.12" width="0.74" height="0.8" rx="0.04" ry="0.09" fill="#000" opacity="0.5" filter="url(#hw-blur)" />
-                </g>
-              </g>
-              <g ref={isoPhone} style={{ opacity: 0 }}>
-                <g transform="translate(0 9)">
-                  <g transform={MATRIX}>
-                    <rect x="0.05" y="0.1" width="0.75" height="0.8" rx="0.04" ry="0.09" fill="#16181d" stroke="#FDF8C7" strokeWidth="3" vectorEffect="non-scaling-stroke" />
-                  </g>
-                </g>
-                <g transform={MATRIX}>
-                  <rect x="0.05" y="0.1" width="0.75" height="0.8" rx="0.04" ry="0.09" fill="#0d0f14" stroke="#FDF8C7" strokeWidth="3" vectorEffect="non-scaling-stroke" />
-                  <rect x="0.068" y="0.135" width="0.714" height="0.73" rx="0.03" ry="0.07" fill="url(#hw-screen)" />
-                  <image href="/como-funciona/logo_sono.png" x="0.315" y="0.255" width="0.22" height="0.49" preserveAspectRatio="xMidYMid meet" style={{ opacity: 0.85 }} />
+                  <rect x="0.08" y="0.2" width="0.7" height="0.62" rx="0.04" ry="0.09" fill="#000" opacity="0.5" filter="url(#hw-blur)" />
                 </g>
               </g>
             </svg>
@@ -446,6 +428,7 @@ export default function HowItWorks() {
                 <div className="hw-layer sc-dl" ref={launchEl} style={{ opacity: 0 }} dangerouslySetInnerHTML={{ __html: launch.svg }} />
                 <iframe className="hw-layer" ref={meteorEl} src="/como-funciona/meteoro.html" title="" aria-hidden="true" tabIndex={-1} style={{ opacity: 0 }} />
                 <div className="hw-layer sc-ld" ref={landEl} style={{ opacity: 0 }} dangerouslySetInnerHTML={{ __html: landing.svg }} />
+                <div className="hw-black" ref={blackLayer} style={{ opacity: 0 }} />
                 <div className="hw-notch" />
               </div>
             </div>
