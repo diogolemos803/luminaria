@@ -163,15 +163,18 @@ body {
 .hw-layer{position:absolute;inset:0;width:100%;height:100%;border:0;background:transparent;display:block}
 .hw-layer svg{display:block;width:100%;height:100%}
 .hw-notch{opacity:calc(1 - var(--tilt,0));position:absolute;z-index:5;top:10px;left:50%;transform:translateX(-50%);width:90px;height:22px;border-radius:14px;background:#050608}
-.hw-app{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px}
-.hw-day{background:radial-gradient(ellipse 120% 70% at 50% 100%,#fff8cf 0%,#FDF8C7 45%,#F6EFC0 100%);color:#444}
-.hw-night{background:#383838;color:#FDF8C7}
-.hw-btn{position:relative;display:flex;align-items:center;justify-content:center;width:148px;height:148px;border-radius:50%;background:#fffdf2;box-shadow:0 14px 30px rgba(68,68,68,.18)}
-.hw-night .hw-btn{background:#444;box-shadow:0 14px 34px rgba(0,0,0,.28)}
-.hw-ok{box-shadow:0 0 0 10px rgba(128,166,142,.22),0 14px 34px rgba(0,0,0,.28)!important}
-.hw-face{display:block;width:56%;aspect-ratio:546/604;background:currentColor;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-position:center;mask-position:center;-webkit-mask-size:contain;mask-size:contain}
-.hw-tap{position:absolute;left:50%;top:50%;width:190px;height:190px;border-radius:50%;border:3px solid #DB8149;opacity:0;pointer-events:none;transform:translate(-50%,-50%)}
-.hw-night p{margin:0;font-size:17px;letter-spacing:.02em;opacity:.85}
+.hw-app{position:absolute;inset:0}
+.hw-day{background:radial-gradient(ellipse 66.7% 74% at 50% 100%,rgba(253,248,199,.85) 0%,rgba(253,248,199,0) 100%),#fff;color:#444}
+.hw-night{background:#444444;color:#FDF8C7}
+/* tela do app, na escala 280/390 do iPhone: botão de 220 pt, centro da área útil, mesma posição em todas as telas */
+.hw-btn{position:absolute;left:50%;top:54%;width:158px;height:158px;margin:-79px 0 0 -79px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:#fff;box-shadow:0 6px 13px rgba(68,68,68,.12)}
+.hw-night .hw-btn{background:#525252;box-shadow:0 6px 13px rgba(253,248,199,.12)}
+.hw-ok{}
+.hw-face{display:block;width:91.8%;aspect-ratio:1/1;background:currentColor;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-position:center;mask-position:center;-webkit-mask-size:contain;mask-size:contain}
+.hw-tap{position:absolute;left:50%;top:50%;width:200px;height:200px;border-radius:50%;border:3px solid #DB8149;opacity:0;pointer-events:none;transform:translate(-50%,-50%)}
+.hw-night p{position:absolute;left:0;right:0;bottom:53px;margin:0;text-align:center;font-size:10.8px;font-weight:600;letter-spacing:.36px;color:rgba(253,248,199,.7)}
+.hw-hamb{position:absolute;right:14px;top:50px;width:16px;display:flex;flex-direction:column;gap:3.5px}
+.hw-hamb i{display:block;height:1.6px;border-radius:2px;background:currentColor}
 .hw-clock{position:absolute;transform:translateX(-50%);font-family:"Neue Machina",var(--font-dm-sans,"DM Sans"),system-ui,sans-serif;font-size:clamp(28px,4vw,48px);letter-spacing:.1em;color:#FDF8C7;opacity:0;font-variant-numeric:tabular-nums;pointer-events:none}
 .hw-chip{position:absolute;transform:translateX(-50%);display:inline-flex;align-items:center;gap:8px;padding:9px 16px;border-radius:999px;font-size:13px;white-space:nowrap;color:#FDF8C7;opacity:0;background:linear-gradient(160deg,rgba(120,98,76,.5),rgba(52,44,38,.6));-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);border:1px solid rgba(253,248,199,.16)}
 .hw-cards{position:absolute;inset:0;pointer-events:none;display:grid;align-items:center;justify-items:end;padding:0 max(24px,5vw) 0 0}

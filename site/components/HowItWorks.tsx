@@ -154,7 +154,7 @@ export default function HowItWorks() {
       const cx = px + lift * 0.3 * k;
       const cy = py - (lift + 7) * k; // 7: o corpo do celular assenta dentro do nicho
       if (phone.current) {
-        phone.current.style.transform = `translate(${cx - 150}px, ${cy - 313}px) perspective(3000px) rotateX(${60 * tilt}deg) rotateZ(${-59.9 * tilt}deg) scale(${PHONE_SCALE * k})`;
+        phone.current.style.transform = `translate(${cx - 150}px, ${cy - 313}px) perspective(3000px) rotateX(${60 * tilt}deg) rotateZ(${-59.9 * tilt}deg) scale3d(${PHONE_SCALE * k}, ${PHONE_SCALE * k}, ${PHONE_SCALE * k})`; // 3d: a espessura escala junto
         phone.current.style.opacity = "1";
       }
       // deitado no nicho: corpo escuro e fosco com o traço fino claro do desenho
@@ -430,27 +430,30 @@ export default function HowItWorks() {
           {/* o celular, com a tela do app */}
           <div className="hw-phone" ref={phone}>
             <div className="hw-slabs" ref={slabsEl}>
-              {[1.5, 3, 4.5, 6, 7.5].map((z) => (
+              {[2.5, 5, 7.5, 10, 12.5, 15].map((z) => (
                 <div key={z} className="hw-slab hw-slab-fill" style={{ transform: `translateZ(${-z}px)` }} />
               ))}
-              <div className="hw-slab" style={{ transform: "translateZ(-9px)" }} />
+              <div className="hw-slab" style={{ transform: "translateZ(-16px)" }} />
             </div>
             <div className="hw-wire" ref={wireEl} />
             <div className="hw-frame" ref={frameEl}>
               <div className="hw-screen">
                 <div className="hw-app hw-day" ref={dayLayer}>
+                  <div className="hw-hamb" aria-hidden="true"><i /><i /><i /></div>
                   <div className="hw-btn">
                     <i className="hw-face" style={{ color: "#444444", WebkitMaskImage: "url(/como-funciona/logo_acordado.png)", maskImage: "url(/como-funciona/logo_acordado.png)" }} />
                     <div className="hw-tap" ref={tap} />
                   </div>
                 </div>
                 <div className="hw-app hw-night" ref={nightLayer} style={{ opacity: 0 }}>
+                  <div className="hw-hamb" aria-hidden="true"><i /><i /><i /></div>
                   <div className="hw-btn">
                     <i className="hw-face" style={{ color: "#849FC8", WebkitMaskImage: "url(/como-funciona/logo_sono.png)", maskImage: "url(/como-funciona/logo_sono.png)" }} />
                   </div>
                   <p>hora de desligar.</p>
                 </div>
                 <div className="hw-app hw-night" ref={okLayer} style={{ opacity: 0 }}>
+                  <div className="hw-hamb" aria-hidden="true"><i /><i /><i /></div>
                   <div className="hw-btn hw-ok">
                     <i className="hw-face" style={{ color: "#80A68E", WebkitMaskImage: "url(/como-funciona/logo_sono.png)", maskImage: "url(/como-funciona/logo_sono.png)" }} />
                   </div>
