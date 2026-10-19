@@ -429,7 +429,7 @@ export default function HowItWorks() {
           {/* o celular, com a tela do app */}
           <div className="hw-phone" ref={phone}>
             <div className="hw-slabs" ref={slabsEl} style={{ opacity: 0 }}>
-              {[3.5, 7, 10.5].map((z) => (
+              {[10].map((z) => (
                 <div key={z} className="hw-slab" style={{ transform: `translateZ(${-z}px)` }} />
               ))}
             </div>
