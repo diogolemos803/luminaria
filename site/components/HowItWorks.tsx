@@ -157,11 +157,10 @@ export default function HowItWorks() {
         phone.current.style.transform = `translate(${cx - 150}px, ${cy - 313}px) perspective(3000px) rotateX(${60 * tilt}deg) rotateZ(${-59.9 * tilt}deg) scale(${PHONE_SCALE * k})`;
         phone.current.style.opacity = "1";
       }
-      // de frente é sólido (com a tela do app); deitado no nicho vira só linhas, como o desenho
-      const solid = p < 0.5 ? 1 - ease(seg(p, 0.22, 0.285)) : p < 0.88 ? ease(seg(p, 0.545, 0.585)) : 1 - ease(seg(p, 0.9, 0.94));
-      if (frameEl.current) frameEl.current.style.opacity = String(solid);
-      if (wireEl.current) wireEl.current.style.opacity = String(1 - solid);
-      if (slabsEl.current) slabsEl.current.style.opacity = String(1 - solid);
+      // deitado no nicho: corpo escuro e fosco com o traço fino claro do desenho
+      if (frameEl.current) frameEl.current.style.opacity = "1";
+      if (wireEl.current) wireEl.current.style.opacity = String(tilt);
+      if (slabsEl.current) slabsEl.current.style.opacity = String(tilt);
       // tela apagada enquanto o celular fica no nicho
       const off = p < 0.5 ? ease(seg(p, 0.265, 0.3)) : p < 0.88 ? 1 - ease(seg(p, 0.545, 0.575)) : ease(seg(p, 0.9, 0.93));
       if (blackLayer.current) blackLayer.current.style.opacity = String(off);
@@ -252,6 +251,7 @@ export default function HowItWorks() {
         colorName.current.style.top = `${L.mobile ? H * 0.06 + 52 : H * 0.05 + 56}px`;
       }
       if (phone.current) phone.current.style.setProperty("--sh", String(1 - tilt));
+      if (phone.current) phone.current.style.setProperty("--tilt", String(tilt));
 
       // sombra do celular no nicho
       if (isoShadow.current) isoShadow.current.style.opacity = String(tilt * clamp01(1 - lift / 260) * 0.4);
@@ -429,7 +429,7 @@ export default function HowItWorks() {
           {/* o celular, com a tela do app */}
           <div className="hw-phone" ref={phone}>
             <div className="hw-slabs" ref={slabsEl} style={{ opacity: 0 }}>
-              {[10].map((z) => (
+              {[4.5, 9].map((z) => (
                 <div key={z} className="hw-slab" style={{ transform: `translateZ(${-z}px)` }} />
               ))}
             </div>
