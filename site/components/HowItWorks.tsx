@@ -40,7 +40,7 @@ const V = [-117.5, 101.5];
 const NICHE = [634, 797];
 const LAMP_PATH = "M219.5 467 A117 58 0 0 1 453.5 467 L453.5 669 A117 58 0 0 1 219.5 669 Z";
 /* escala do celular em relação ao desenho: o celular deitado cobre ~84% do comprimento do nicho */
-const PHONE_SCALE = 0.52;
+const PHONE_SCALE = 0.57;
 const MATRIX = `matrix(${U[0]} ${U[1]} ${V[0]} ${V[1]} ${T[0]} ${T[1]})`;
 
 type Anim = Animation[];
@@ -429,9 +429,10 @@ export default function HowItWorks() {
           {/* o celular, com a tela do app */}
           <div className="hw-phone" ref={phone}>
             <div className="hw-slabs" ref={slabsEl} style={{ opacity: 0 }}>
-              {[4.5, 9].map((z) => (
-                <div key={z} className="hw-slab" style={{ transform: `translateZ(${-z}px)` }} />
+              {[1.5, 3, 4.5, 6, 7.5].map((z) => (
+                <div key={z} className="hw-slab hw-slab-fill" style={{ transform: `translateZ(${-z}px)` }} />
               ))}
+              <div className="hw-slab" style={{ transform: "translateZ(-9px)" }} />
             </div>
             <div className="hw-wire" ref={wireEl} />
             <div className="hw-frame" ref={frameEl}>

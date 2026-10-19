@@ -192,7 +192,8 @@ body {
 .hw-black{position:absolute;inset:0;z-index:4;pointer-events:none;opacity:0;background:#161616}
 
 .hw-slabs{position:absolute;inset:0;transform-style:preserve-3d;pointer-events:none}
-.hw-slab{position:absolute;inset:0;border-radius:46px;background:#262626;border:2.5px solid rgba(253,248,199,.9)}
+.hw-slab{position:absolute;inset:0;border-radius:46px;background:#3b3b3b;border:3px solid rgba(253,248,199,.95)}
+.hw-slab-fill{border:0}
 .hw-wire{position:absolute;inset:0;border-radius:46px;border:3px solid rgba(253,248,199,.95);opacity:0;pointer-events:none}
 .hw-wire::before{content:"";position:absolute;inset:9px;border-radius:37px;border:2px solid rgba(255,255,255,.16)}
 .hw-colorname{position:absolute;transform:translateX(-50%);font-family:"Neue Machina",var(--font-dm-sans,"DM Sans"),system-ui,sans-serif;font-size:14px;letter-spacing:.2em;opacity:0;pointer-events:none;white-space:nowrap}
