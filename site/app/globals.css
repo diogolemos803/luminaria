@@ -195,10 +195,10 @@ body {
 .hw-black{position:absolute;inset:0;z-index:4;pointer-events:none;opacity:0;background:#161616}
 
 .hw-slabs{position:absolute;inset:0;transform-style:preserve-3d;pointer-events:none}
-.hw-slab{position:absolute;inset:0;border-radius:46px;background:#3b3b3b;border:3px solid rgba(253,248,199,.95)}
-.hw-slab-fill{border:0}
-.hw-wire{position:absolute;inset:0;border-radius:46px;border:3px solid rgba(253,248,199,.95);opacity:0;pointer-events:none}
-.hw-wire::before{content:"";position:absolute;inset:9px;border-radius:37px;border:2px solid rgba(255,255,255,.16)}
+.hw-slab{position:absolute;inset:0;border-radius:46px;background:#3b3b3b;box-shadow:inset 0 0 0 3px rgba(253,248,199,.95)}
+.hw-slab-fill{box-shadow:none}
+.hw-wire{position:absolute;inset:0;border-radius:46px;box-shadow:inset 0 0 0 3px rgba(253,248,199,.95);opacity:0;pointer-events:none}
+.hw-wire::before{content:"";position:absolute;inset:9px;border-radius:37px;box-shadow:inset 0 0 0 2px rgba(255,255,255,.16)}
 .hw-colorname{position:absolute;transform:translateX(-50%);font-family:"Neue Machina",var(--font-dm-sans,"DM Sans"),system-ui,sans-serif;font-size:14px;letter-spacing:.2em;opacity:0;pointer-events:none;white-space:nowrap}
 .hw-sw{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
 .hw-sw span{display:inline-flex;align-items:center;gap:7px;padding:6px 12px;border-radius:999px;font-size:13px;background:rgba(253,248,199,.07);opacity:.5;transition:opacity .3s,background .3s}
