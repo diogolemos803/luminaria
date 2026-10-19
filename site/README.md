@@ -14,6 +14,7 @@ npm run build    # build de produção
 
 - `/` cena do quarto (noite/dia, luz do âmbar ao vermelho, menu, botão adquira)
 - `/produto`, `/sobre`, `/ciencia-do-sono` textos em `lib/content.json`
+- `/como-funciona` animação que avança com a rolagem (celular encaixando no nicho, luz do Day Finisher, foguete, meteoro e pouso); cenas geradas dos protótipos em `components/scenes/` e `public/como-funciona/`
 - `/comprar` página de compra de demonstração (nenhum pagamento é processado; preço em `app/comprar/page.tsx`)
 
 ## Deploy na Vercel

@@ -1,0 +1,521 @@
+"use client";
+
+import Link from "next/link";
+import { useEffect, useRef } from "react";
+import * as launch from "./scenes/launchScene";
+import * as landing from "./scenes/landingScene";
+
+/* ---------- matemática de rolagem ---------- */
+const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
+const seg = (p: number, a: number, b: number) => clamp01((p - a) / (b - a));
+const ease = (t: number) => t * t * (3 - 2 * t);
+const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+const hex = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+const mix = (a: string, b: string, t: number) => {
+  const x = hex(a);
+  const y = hex(b);
+  return `rgb(${x.map((v, i) => Math.round(lerp(v, y[i], t))).join(",")})`;
+};
+
+const AMBER = "#F2B05E";
+const ORANGE = "#E8742A";
+const RED = "#C8402F";
+
+/* Capítulos: janela de rolagem (0 a 1) em que cada card aparece e some. */
+const chapters = [
+  { id: "arme", from: 0.0, to: 0.13, title: "arme o modo noite", text: "No app SOVEE, um toque no botão redondo prepara a noite." },
+  { id: "encoste", from: 0.13, to: 0.27, title: "encoste o celular", text: "A etiqueta NFC do Day Finisher reconhece o seu iPhone, e o rostinho do botão fica verde." },
+  { id: "encaixe", from: 0.27, to: 0.4, title: "encaixe no nicho", text: "O celular descansa no nicho de madeira da base, à vista e longe da cama. A luz acende e os apps que você escolheu ficam bloqueados." },
+  { id: "noite", from: 0.4, to: 0.55, title: "a luz acompanha a noite", text: "Do âmbar ao vermelho, sempre em tons quentes, sem o azul que mantém o cérebro em alerta." },
+  { id: "foguete", from: 0.55, to: 0.67, title: "o foguete decola", text: "No app, o foguete parte assim que o celular é reconhecido e segue viagem enquanto você dorme." },
+  { id: "meteoro", from: 0.67, to: 0.78, title: "se você pegar o celular", text: "Um meteoro atinge o foguete e ele fica em obras até de manhã. Aquela noite não conta na sua sequência." },
+  { id: "manha", from: 0.78, to: 0.91, title: "o despertador toca", text: "No horário da rotina, o despertador toca com um som calmo, os apps voltam e o foguete pousa na Lua. Quanto mais noites seguidas, mais longe ele chega." },
+] as const;
+const FINAL = { from: 0.91, to: 1.01 };
+
+/* ---------- geometria do desenho do Day Finisher (viewBox 1080 x 1350) ---------- */
+const T = [526.5, 697.5];
+const U = [333, 96.6];
+const V = [-117.5, 101.5];
+const NICHE = [635, 788];
+const LAMP_PATH = "M219.5 467 A117 58 0 0 1 453.5 467 L453.5 669 A117 58 0 0 1 219.5 669 Z";
+const MATRIX = `matrix(${U[0]} ${U[1]} ${V[0]} ${V[1]} ${T[0]} ${T[1]})`;
+
+type Anim = Animation[];
+
+export default function HowItWorks() {
+  const scroller = useRef<HTMLElement>(null);
+  const track = useRef<HTMLDivElement>(null);
+  const stage = useRef<HTMLDivElement>(null);
+  const iso = useRef<HTMLDivElement>(null);
+  const lampFill = useRef<SVGGElement>(null);
+  const glow = useRef<SVGEllipseElement>(null);
+  const ambient = useRef<HTMLDivElement>(null);
+  const waves = useRef<(SVGEllipseElement | null)[]>([]);
+  const isoPhone = useRef<SVGGElement>(null);
+  const isoShadow = useRef<SVGGElement>(null);
+  const phone = useRef<HTMLDivElement>(null);
+  const dayLayer = useRef<HTMLDivElement>(null);
+  const nightLayer = useRef<HTMLDivElement>(null);
+  const okLayer = useRef<HTMLDivElement>(null);
+  const tap = useRef<HTMLDivElement>(null);
+  const launchEl = useRef<HTMLDivElement>(null);
+  const meteorEl = useRef<HTMLIFrameElement>(null);
+  const landEl = useRef<HTMLDivElement>(null);
+  const clock = useRef<HTMLDivElement>(null);
+  const chip = useRef<HTMLDivElement>(null);
+  const hint = useRef<HTMLDivElement>(null);
+  const cards = useRef<(HTMLDivElement | null)[]>([]);
+  const finalCard = useRef<HTMLDivElement>(null);
+  const dots = useRef<(HTMLButtonElement | null)[]>([]);
+
+  useEffect(() => {
+    const sc = scroller.current;
+    const tr = track.current;
+    const st = stage.current;
+    if (!sc || !tr || !st) return;
+
+    let launchAnims: Anim = [];
+    let landAnims: Anim = [];
+    const grab = (el: HTMLElement | null) => {
+      const list = el?.getAnimations ? el.getAnimations({ subtree: true }) : [];
+      list.forEach((a) => a.pause());
+      return list;
+    };
+    const setup = requestAnimationFrame(() => {
+      launchAnims = grab(launchEl.current);
+      landAnims = grab(landEl.current);
+      update();
+    });
+
+    let W = 0;
+    let H = 0;
+    const L = { objCx: 0, objCy: 0, isoW: 0, isoH: 0, isoX: 0, isoY: 0, nicheX: 0, nicheY: 0, sBig: 1, mobile: false };
+
+    function measure() {
+      W = st!.clientWidth;
+      H = st!.clientHeight;
+      L.mobile = W < 800;
+      L.objCx = L.mobile ? W / 2 : W * 0.32;
+      L.objCy = L.mobile ? H * 0.4 : H * 0.5;
+      L.isoH = L.mobile ? Math.min(H * 0.56, W * 1.2) : H * 0.92;
+      L.isoW = L.isoH * 0.8;
+      L.isoX = L.objCx - L.isoW / 2;
+      L.isoY = L.objCy - L.isoH / 2;
+      const k = L.isoW / 1080;
+      L.nicheX = L.isoX + NICHE[0] * k;
+      L.nicheY = L.isoY + NICHE[1] * k;
+      L.sBig = (L.mobile ? H * 0.5 : H * 0.74) / 626;
+      const io = iso.current;
+      if (io) {
+        io.style.width = `${L.isoW}px`;
+        io.style.height = `${L.isoH}px`;
+        io.style.left = `${L.isoX}px`;
+        io.style.top = `${L.isoY}px`;
+      }
+    }
+
+    function setLayer(el: HTMLElement | null, o: number) {
+      if (el) el.style.opacity = String(o);
+    }
+
+    function update() {
+      measure();
+      const max = tr!.offsetHeight - sc!.clientHeight;
+      const p = clamp01((sc!.scrollTop - tr!.offsetTop) / Math.max(1, max));
+
+      /* --- celular (tela plana) --- */
+      const arrive = 1;
+      const fly = ease(seg(p, 0.135, 0.265));
+      const grow = ease(seg(p, 0.545, 0.585));
+      const leave = seg(p, 0.905, 0.935);
+      const nx = L.nicheX;
+      const ny = L.nicheY - L.isoH * 0.2;
+      const small = L.sBig * 0.3;
+      let cx = L.objCx;
+      let cy = L.objCy;
+      let s = lerp(L.sBig * 0.9, L.sBig, arrive);
+      let rot = 0;
+      let op = arrive;
+      if (p < 0.5) {
+        cx = lerp(L.objCx, nx, fly);
+        cy = lerp(L.objCy, ny, fly);
+        s = lerp(s, small, fly);
+        rot = lerp(0, -10, fly);
+        op = arrive * (1 - seg(p, 0.255, 0.285));
+      } else {
+        cx = lerp(nx, L.objCx, grow);
+        cy = lerp(ny + L.isoH * 0.06, L.objCy, grow);
+        s = lerp(small, L.sBig * 0.92, grow);
+        rot = lerp(-10, 0, grow);
+        op = seg(p, 0.545, 0.575) * (1 - leave);
+        s *= lerp(1, 0.9, leave);
+      }
+      if (phone.current) {
+        phone.current.style.transform = `translate(${cx - 150}px, ${cy - 313}px) scale(${s}) rotate(${rot}deg)`;
+        phone.current.style.opacity = String(op);
+      }
+
+      /* --- telas do app --- */
+      const toNight = seg(p, 0.05, 0.068);
+      const recognized = seg(p, 0.235, 0.252);
+      setLayer(dayLayer.current, 1 - toNight);
+      setLayer(nightLayer.current, toNight * (1 - recognized));
+      setLayer(okLayer.current, toNight * recognized);
+      if (tap.current) {
+        const q = seg(p, 0.036, 0.062);
+        tap.current.style.opacity = String(q > 0 && q < 1 ? 1 - q : 0);
+        tap.current.style.transform = `translate(-50%,-50%) scale(${lerp(0.55, 1.35, q)})`;
+      }
+      const appOp = 1 - seg(p, 0.555, 0.575);
+      [dayLayer.current, nightLayer.current, okLayer.current].forEach((el) => {
+        if (el) el.style.visibility = appOp > 0 ? "visible" : "hidden";
+      });
+      if (appOp < 1) {
+        setLayer(dayLayer.current, (1 - toNight) * appOp);
+        setLayer(nightLayer.current, toNight * (1 - recognized) * appOp);
+        setLayer(okLayer.current, toNight * recognized * appOp);
+      }
+
+      const launchOp = seg(p, 0.555, 0.575) * (1 - seg(p, 0.665, 0.685));
+      setLayer(launchEl.current, launchOp);
+      const launchMs = lerp(0, 7500, seg(p, 0.56, 0.665));
+      if (launchOp > 0) launchAnims.forEach((a) => (a.currentTime = launchMs));
+
+      const meteorOp = seg(p, 0.665, 0.685) * (1 - seg(p, 0.775, 0.795));
+      setLayer(meteorEl.current as unknown as HTMLElement, meteorOp);
+      if (meteorOp > 0) {
+        try {
+          const w = meteorEl.current?.contentWindow as (Window & { __scrub?: (t: number) => void; __DURATION?: number }) | null | undefined;
+          w?.__scrub?.(lerp(0, w.__DURATION ?? 6.3, seg(p, 0.67, 0.775)));
+        } catch {
+          /* iframe ainda carregando */
+        }
+      }
+
+      const landOp = seg(p, 0.775, 0.795);
+      setLayer(landEl.current, landOp);
+      const landMs = lerp(0, 9200, seg(p, 0.785, 0.905));
+      if (landOp > 0) landAnims.forEach((a) => (a.currentTime = landMs));
+
+      /* --- desenho do Day Finisher --- */
+      const isoIn = ease(seg(p, 0.13, 0.2));
+      const dim = seg(p, 0.545, 0.58) * (1 - seg(p, 0.9, 0.94));
+      if (iso.current) iso.current.style.opacity = String(isoIn * lerp(1, 0.28, dim));
+
+      // luz: acende na etapa 3, muda de cor na 4, apaga de manhã
+      const I = ease(seg(p, 0.36, 0.42)) * (1 - ease(seg(p, 0.88, 0.93)));
+      let color = AMBER;
+      if (p >= 0.44 && p < 0.5) color = mix(AMBER, ORANGE, ease(seg(p, 0.44, 0.5)));
+      else if (p >= 0.5) color = mix(ORANGE, RED, ease(seg(p, 0.5, 0.56)));
+      if (iso.current) iso.current.style.setProperty("--lc", color);
+      if (lampFill.current) lampFill.current.style.opacity = String(I);
+      if (glow.current) glow.current.style.opacity = String(I * 0.85);
+      if (ambient.current) {
+        ambient.current.style.setProperty("--lc", color);
+        ambient.current.style.opacity = String(I * 0.55 * lerp(1, 0.5, dim));
+        ambient.current.style.left = `${L.isoX + 337 * (L.isoW / 1080)}px`;
+        ambient.current.style.top = `${L.isoY + 590 * (L.isoH / 1350)}px`;
+        ambient.current.style.width = `${L.isoW * 1.9}px`;
+        ambient.current.style.height = `${L.isoW * 1.9}px`;
+      }
+
+      // ondas do NFC
+      const q = seg(p, 0.215, 0.285);
+      waves.current.forEach((el, i) => {
+        if (!el) return;
+        const f = clamp01(q * 1.6 - i * 0.22);
+        const r = lerp(0.12, 0.95, f);
+        el.setAttribute("rx", String(r / 2.24));
+        el.setAttribute("ry", String(r));
+        el.style.opacity = String(f > 0 && f < 1 ? (1 - f) * 0.9 : 0);
+      });
+
+      // celular em perspectiva: desce e encaixa
+      const lift = lerp(380, 0, ease(seg(p, 0.285, 0.355)));
+      const isoPhoneOp = seg(p, 0.255, 0.285);
+      if (isoPhone.current) {
+        isoPhone.current.setAttribute("transform", `translate(${lift * 0.1} ${-lift})`);
+        isoPhone.current.style.opacity = String(isoPhoneOp);
+      }
+      if (isoShadow.current) isoShadow.current.style.opacity = String(isoPhoneOp * lerp(0.15, 0.9, 1 - lift / 380));
+
+      // relógio da noite
+      if (clock.current) {
+        const mins = Math.round(lerp(22 * 60 + 40, 24 * 60 + 6 * 60 + 30, seg(p, 0.3, 0.9)));
+        const hh = Math.floor((mins % 1440) / 60);
+        const mm = mins % 60;
+        clock.current.textContent = `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
+        clock.current.style.opacity = String(seg(p, 0.29, 0.32) * (1 - seg(p, 0.9, 0.93)));
+        clock.current.style.left = `${L.objCx}px`;
+        clock.current.style.top = `${L.mobile ? H * 0.06 : H * 0.05}px`;
+      }
+      if (chip.current) {
+        chip.current.style.opacity = String(seg(p, 0.36, 0.39) * (1 - seg(p, 0.54, 0.565)));
+        chip.current.style.left = `${L.nicheX}px`;
+        chip.current.style.top = `${L.nicheY + L.isoH * 0.13}px`;
+      }
+      if (hint.current) hint.current.style.opacity = String(1 - seg(p, 0.015, 0.05));
+
+      /* --- cards --- */
+      chapters.forEach((c, i) => {
+        const el = cards.current[i];
+        if (!el) return;
+        const a = seg(p, c.from + 0.012, c.from + 0.035);
+        const b = 1 - seg(p, c.to - 0.025, c.to - 0.004);
+        const o = Math.min(a, b);
+        el.style.opacity = String(o);
+        el.style.transform = `translateY(${(1 - a) * 22 - (1 - b) * 22}px)`;
+      });
+      if (finalCard.current) {
+        const a = seg(p, FINAL.from + 0.006, FINAL.from + 0.03);
+        finalCard.current.style.opacity = String(a);
+        finalCard.current.style.transform = `translateY(${(1 - a) * 22}px)`;
+        finalCard.current.style.pointerEvents = a > 0.6 ? "auto" : "none";
+      }
+      const active = p >= FINAL.from ? chapters.length : chapters.findIndex((c) => p >= c.from && p < c.to);
+      dots.current.forEach((d, i) => d?.setAttribute("aria-current", i === active ? "step" : "false"));
+    }
+
+    let raf = 0;
+    const onScroll = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(update);
+    };
+    sc.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    const ro = new ResizeObserver(onScroll);
+    ro.observe(st);
+    update();
+    return () => {
+      cancelAnimationFrame(setup);
+      cancelAnimationFrame(raf);
+      sc.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+      ro.disconnect();
+    };
+  }, []);
+
+  const goTo = (from: number) => {
+    const sc = scroller.current;
+    const tr = track.current;
+    if (!sc || !tr) return;
+    const max = tr.offsetHeight - sc.clientHeight;
+    sc.scrollTo({ top: tr.offsetTop + (from + 0.012) * max, behavior: "smooth" });
+  };
+
+  return (
+    <main className="buy hw" ref={scroller}>
+      <style>{launch.css}</style>
+      <style>{landing.css}</style>
+
+      <header className="hw-top">
+        <Link href="/" className="buy-back" aria-label="voltar ao quarto">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M15 5l-7 7 7 7" />
+          </svg>
+          <span>voltar ao quarto</span>
+        </Link>
+        <div className="buy-brand" aria-label="sovee">
+          <i className="brand-mark" aria-hidden="true" />
+          <span>sovee</span>
+        </div>
+      </header>
+
+      {/* texto para leitores de tela: a animação abaixo é decorativa */}
+      <section className="sr-only" aria-label="como funciona">
+        <h1>como funciona o Day Finisher</h1>
+        <ol>
+          {chapters.map((c) => (
+            <li key={c.id}>
+              <strong>{c.title}.</strong> {c.text}
+            </li>
+          ))}
+        </ol>
+        <p>hora de desligar.</p>
+        <Link href="/comprar">adquira</Link>
+        <Link href="/produto">conheça o produto</Link>
+      </section>
+
+      <div className="hw-track" ref={track}>
+        <div className="hw-stage" ref={stage} aria-hidden="true">
+
+          {/* o Day Finisher, em perspectiva */}
+          <div className="hw-iso" ref={iso}>
+            <svg viewBox="0 0 1080 1350" role="presentation">
+              <defs>
+                <radialGradient id="hw-glow" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" style={{ stopColor: "var(--lc)", stopOpacity: 0.7 }} />
+                  <stop offset="55%" style={{ stopColor: "var(--lc)", stopOpacity: 0.18 }} />
+                  <stop offset="100%" style={{ stopColor: "var(--lc)", stopOpacity: 0 }} />
+                </radialGradient>
+                <linearGradient id="hw-body" x1="0" x2="1" y1="0" y2="0">
+                  <stop offset="0%" style={{ stopColor: "var(--lc)", stopOpacity: 0.78 }} />
+                  <stop offset="45%" style={{ stopColor: "var(--lc)", stopOpacity: 1 }} />
+                  <stop offset="100%" style={{ stopColor: "var(--lc)", stopOpacity: 0.7 }} />
+                </linearGradient>
+                <linearGradient id="hw-screen" x1="0" x2="1" y1="0" y2="1">
+                  <stop offset="0%" stopColor="#1b2230" />
+                  <stop offset="100%" stopColor="#0c0f16" />
+                </linearGradient>
+                <filter id="hw-blur" x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="0.03" />
+                </filter>
+              </defs>
+
+              <image href="/produto/lampada_apagada.webp" x="0" y="0" width="1080" height="1350" />
+
+              {/* luz do Day Finisher */}
+              <ellipse ref={glow} cx="337" cy="590" rx="520" ry="430" fill="url(#hw-glow)" style={{ opacity: 0, mixBlendMode: "screen" }} />
+              <g ref={lampFill} style={{ opacity: 0, mixBlendMode: "screen" }}>
+                <path d={LAMP_PATH} fill="url(#hw-body)" />
+                <ellipse cx="336.5" cy="467" rx="117" ry="58" fill="var(--lc)" style={{ opacity: 0.55 }} />
+              </g>
+
+              {/* ondas do NFC no nicho */}
+              <g transform={MATRIX} fill="none" stroke="#FDF8C7" strokeWidth="3" style={{ opacity: 0.9 }}>
+                {[0, 1, 2].map((i) => (
+                  <ellipse
+                    key={i}
+                    ref={(el) => {
+                      waves.current[i] = el;
+                    }}
+                    cx="0.42"
+                    cy="0.5"
+                    rx="0"
+                    ry="0"
+                    vectorEffect="non-scaling-stroke"
+                    style={{ opacity: 0 }}
+                  />
+                ))}
+              </g>
+
+              {/* sombra e celular */}
+              <g ref={isoShadow} style={{ opacity: 0 }}>
+                <g transform={MATRIX}>
+                  <rect x="0.06" y="0.12" width="0.74" height="0.8" rx="0.04" ry="0.09" fill="#000" opacity="0.5" filter="url(#hw-blur)" />
+                </g>
+              </g>
+              <g ref={isoPhone} style={{ opacity: 0 }}>
+                <g transform="translate(0 9)">
+                  <g transform={MATRIX}>
+                    <rect x="0.05" y="0.1" width="0.75" height="0.8" rx="0.04" ry="0.09" fill="#16181d" stroke="#FDF8C7" strokeWidth="3" vectorEffect="non-scaling-stroke" />
+                  </g>
+                </g>
+                <g transform={MATRIX}>
+                  <rect x="0.05" y="0.1" width="0.75" height="0.8" rx="0.04" ry="0.09" fill="#0d0f14" stroke="#FDF8C7" strokeWidth="3" vectorEffect="non-scaling-stroke" />
+                  <rect x="0.068" y="0.135" width="0.714" height="0.73" rx="0.03" ry="0.07" fill="url(#hw-screen)" />
+                  <image href="/como-funciona/logo_sono.png" x="0.315" y="0.255" width="0.22" height="0.49" preserveAspectRatio="xMidYMid meet" style={{ opacity: 0.85 }} />
+                </g>
+              </g>
+            </svg>
+          </div>
+
+          <div className="hw-ambient" ref={ambient} />
+          <div className="hw-clock" ref={clock} />
+          <div className="hw-chip" ref={chip}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <rect x="5" y="11" width="14" height="9" rx="2.5" />
+              <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+            </svg>
+            apps bloqueados até o despertador
+          </div>
+
+          {/* o celular, com a tela do app */}
+          <div className="hw-phone" ref={phone}>
+            <div className="hw-frame">
+              <div className="hw-screen">
+                <div className="hw-app hw-day" ref={dayLayer}>
+                  <div className="hw-btn">
+                    <i className="hw-face" style={{ color: "#444444", WebkitMaskImage: "url(/como-funciona/logo_acordado.png)", maskImage: "url(/como-funciona/logo_acordado.png)" }} />
+                    <div className="hw-tap" ref={tap} />
+                  </div>
+                </div>
+                <div className="hw-app hw-night" ref={nightLayer} style={{ opacity: 0 }}>
+                  <div className="hw-btn">
+                    <i className="hw-face" style={{ color: "#849FC8", WebkitMaskImage: "url(/como-funciona/logo_sono.png)", maskImage: "url(/como-funciona/logo_sono.png)" }} />
+                  </div>
+                  <p>hora de desligar.</p>
+                </div>
+                <div className="hw-app hw-night" ref={okLayer} style={{ opacity: 0 }}>
+                  <div className="hw-btn hw-ok">
+                    <i className="hw-face" style={{ color: "#80A68E", WebkitMaskImage: "url(/como-funciona/logo_sono.png)", maskImage: "url(/como-funciona/logo_sono.png)" }} />
+                  </div>
+                  <p>hora de desligar.</p>
+                </div>
+                <div className="hw-layer sc-dl" ref={launchEl} style={{ opacity: 0 }} dangerouslySetInnerHTML={{ __html: launch.svg }} />
+                <iframe className="hw-layer" ref={meteorEl} src="/como-funciona/meteoro.html" title="" aria-hidden="true" tabIndex={-1} style={{ opacity: 0 }} />
+                <div className="hw-layer sc-ld" ref={landEl} style={{ opacity: 0 }} dangerouslySetInnerHTML={{ __html: landing.svg }} />
+                <div className="hw-notch" />
+              </div>
+            </div>
+          </div>
+
+          {/* cards de cada etapa */}
+          <div className="hw-cards">
+            {chapters.map((c, i) => (
+              <div
+                key={c.id}
+                className="hover-card hw-card"
+                style={{ opacity: 0 }}
+                ref={(el) => {
+                  cards.current[i] = el;
+                }}
+              >
+                <span className="hw-step">etapa {i + 1} de {chapters.length}</span>
+                <h2>{c.title}</h2>
+                <p>{c.text}</p>
+              </div>
+            ))}
+            <div className="hover-card hw-card hw-final" style={{ opacity: 0, pointerEvents: "none" }} ref={finalCard}>
+              <span className="hw-step">pronto</span>
+              <h2>hora de desligar.</h2>
+              <p>Um gesto, uma luz e uma noite sem o celular.</p>
+              <div className="hw-actions">
+                <Link href="/comprar" className="buy-btn" tabIndex={-1}>
+                  adquira
+                </Link>
+                <Link href="/produto" className="hw-link" tabIndex={-1}>
+                  conheça o produto
+                </Link>
+              </div>
+            </div>
+          </div>
+
+          <nav className="hw-dots" aria-hidden="true">
+            {chapters.map((c, i) => (
+              <button
+                key={c.id}
+                type="button"
+                tabIndex={-1}
+                ref={(el) => {
+                  dots.current[i] = el;
+                }}
+                onClick={() => goTo(c.from)}
+                aria-label={c.title}
+                title={c.title}
+              />
+            ))}
+          </nav>
+
+          <div className="hw-hint" ref={hint}>
+            <span>role para ver como funciona</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M6 9l6 6 6-6" />
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <footer className="pg-foot hw-foot">
+        <nav aria-label="páginas">
+          <Link href="/produto">produto</Link>
+          <Link href="/sobre">sobre</Link>
+          <Link href="/ciencia-do-sono">a ciência do sono</Link>
+          <Link href="/comprar">adquira</Link>
+        </nav>
+        <p>hora de desligar.</p>
+      </footer>
+    </main>
+  );
+}

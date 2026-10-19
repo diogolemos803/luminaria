@@ -28,6 +28,9 @@ export default function Produto() {
 
       <section className="pg-section" aria-labelledby="steps-h">
         <h2 id="steps-h" className="pg-h2">{c.stepsTitle}</h2>
+        <p className="pg-p" style={{ marginBottom: 16 }}>
+          <Link href="/como-funciona" className="hw-link">veja a animação passo a passo</Link>
+        </p>
         <ol className="pg-steps">
           {c.steps.map((s, i) => (
             <li key={s.t}>

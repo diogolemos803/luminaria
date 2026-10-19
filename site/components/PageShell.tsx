@@ -2,6 +2,7 @@ import Link from "next/link";
 
 const nav = [
   { label: "produto", href: "/produto" },
+  { label: "como funciona", href: "/como-funciona" },
   { label: "sobre", href: "/sobre" },
   { label: "a ciência do sono", href: "/ciencia-do-sono" },
   { label: "adquira", href: "/comprar" },
