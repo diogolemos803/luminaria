@@ -575,20 +575,19 @@ Developer paga (2026-08-04), **todo desenvolvimento novo acontece só aqui** —
 de apps, o gate de "inútil sem luminária" e o relatório de sono só fazem sentido com
 a entitlement paga mesmo.
 
-### Lâmpada Zleepy em separado + checkpoint `v3` (decisão do usuário, 2026-10-19)
-"Como a luminária ainda não tem essas funcionalidades, mantenha essas novas adições em
-separado. Hoje o app está 100% perfeito pro que ele precisa." Por isso:
-- **`main` continua SEM a lâmpada Bluetooth** — é o app que vai pro TestFlight.
-- **`checkpoint-v3`** — branch fixa no commit `9a0b6be` (o `main` daquele dia: NFC,
-  despertador AlarmKit, bloqueio de apps, foguete com meteoro/canteiro, widgets, amigos).
-  Ponto de retorno; não commitar nela. Foi criada como branch e não como tag (`v1`/`v2`
-  são tags) porque o ambiente da sessão bloqueou o push de tags; dá pra transformar em
-  tag `v3` depois pelo GitHub (Releases → Draft a new release → tag `v3` em
-  `checkpoint-v3`).
-- **`main-features-a162rp`** — a lâmpada (protótipos aprovados + Swift), em cima do
-  `main`. Só entra no `main` quando o usuário pedir (placa fabricada + firmware v2).
-  Pra testar no iPhone antes disso, dá pra escolher esta branch na hora de rodar o build
-  no Codemagic — mas esse build substitui o do TestFlight pros testadores.
+### Checkpoint `v3` (antes da lâmpada Zleepy)
+**`checkpoint-v3`** — branch fixa no commit `9a0b6be`: o `main` em 2026-10-19, ANTES da
+lâmpada Bluetooth (NFC, despertador AlarmKit, bloqueio de apps, foguete com
+meteoro/canteiro, widgets, amigos), que o usuário considerava "100% perfeito pro que ele
+precisa". Ponto de retorno pedido por ele antes de a lâmpada entrar no `main` (no mesmo
+dia, por ordem dele). Não commitar nela. É branch e não tag (`v1`/`v2` são tags) porque o
+ambiente da sessão bloqueou o push de tags; dá pra virar tag `v3` pelo GitHub (Releases →
+Draft a new release → tag `v3`, alvo `checkpoint-v3`).
+
+**Como voltar**: o mais simples é rodar o build do Codemagic escolhendo a branch
+`checkpoint-v3` (o TestFlight recebe o app sem a lâmpada, sem mexer no `main`). Pra
+tirar a lâmpada do `main` de vez: `git revert` dos commits da lâmpada
+(`9a0b6be..` até o merge) num commit novo — nunca reescrever o histórico do `main`.
 
 ### `teste-gratis-sem-nfc` (congelada)
 Branch paralela, criada porque o usuário não queria pagar a Apple Developer Program
