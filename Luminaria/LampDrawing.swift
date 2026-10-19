@@ -41,6 +41,8 @@ struct LampIllustration: View {
     var isNight: Bool
 
     private static let viewBox = CGRect(x: 262, y: 430, width: 756, height: 580)
+    /// Margem extra de desenho pra aura não ser cortada (ver `body`).
+    private static let bleed: CGFloat = 90
     private static let yaw = 29.2 * Double.pi / 180
     private static let k = 0.49
     private static let origin = (x: 436.0, y: 765.0)
@@ -50,10 +52,14 @@ struct LampIllustration: View {
 
     var body: some View {
         Canvas { context, size in
+            // O Canvas corta tudo o que passa da borda dele, e a aura em volta da cúpula é
+            // maior que a luminária: por isso ele é desenhado `bleed` pontos além do espaço
+            // da view (padding negativo lá embaixo) e a luminária encaixa só na parte de dentro.
+            let inner = CGRect(origin: .zero, size: size).insetBy(dx: Self.bleed, dy: Self.bleed)
             let vb = Self.viewBox
-            let s = min(size.width / vb.width, size.height / vb.height)
-            let ox = (size.width - vb.width * s) / 2 - vb.minX * s
-            let oy = (size.height - vb.height * s) / 2 - vb.minY * s
+            let s = min(inner.width / vb.width, inner.height / vb.height)
+            let ox = inner.minX + (inner.width - vb.width * s) / 2 - vb.minX * s
+            let oy = inner.minY + (inner.height - vb.height * s) / 2 - vb.minY * s
             func pt(_ x: Double, _ y: Double) -> CGPoint { CGPoint(x: ox + x * s, y: oy + y * s) }
             func poly(_ points: [(Double, Double)]) -> Path {
                 var path = Path()
@@ -142,6 +148,8 @@ struct LampIllustration: View {
                                              width: 2 * rx * s, height: 2 * ry * s))
             context.stroke(top, with: .color(shadeLine), style: lineStyle)
         }
+        .padding(-Self.bleed)
+        .allowsHitTesting(false)
         .accessibilityHidden(true)
     }
 

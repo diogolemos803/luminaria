@@ -324,21 +324,18 @@ struct ContentView: View {
                     // própria cena a partir de `sceneStartDate` — sem fade por cima.
                     .transition(.identity)
                 }
-                // Fundo acompanha a cor da lâmpada acesa (aprovado no protótipo de integração).
-                if !showsJourney, let glow = lampGlow {
-                    lampBackgroundGlow(color: glow.color, opacity: 0.3 * glow.brightness)
-                        .ignoresSafeArea()
-                        .transition(.opacity)
-                }
             } else {
                 Color.white.ignoresSafeArea()
-                if let glow = lampGlow {
-                    soveeDayGlow.opacity(1 - 0.8 * glow.brightness).ignoresSafeArea()
-                    lampBackgroundGlow(color: glow.color, opacity: 0.45 * glow.brightness)
-                        .ignoresSafeArea()
-                } else {
-                    soveeDayGlow.ignoresSafeArea()
-                }
+                soveeDayGlow.ignoresSafeArea()
+            }
+
+            // Fundo acompanha a cor da lâmpada acesa: halo redondo centrado no botão (no
+            // mesmo ZStack e sem ignorar a área segura, então o centro é o mesmo do botão).
+            // Primeira versão reaproveitava o "nascer do sol" do pé da tela e subia até o
+            // meio da tela, fora do botão — corrigido a pedido do usuário (2026-10-19).
+            if showsRoundButton, let glow = lampGlow {
+                lampHalo(color: glow.color, brightness: glow.brightness, isNight: isNightModeArmed)
+                    .transition(.opacity)
             }
 
             if showsRoundButton {
@@ -413,16 +410,24 @@ struct ContentView: View {
         return (LampDisplayColor.color(mix: color.mix), color.brightness)
     }
 
-    /// Mesmo "nascer do sol" do fundo de dia, na cor da lâmpada.
-    private func lampBackgroundGlow(color: Color, opacity: Double) -> some View {
-        RadialGradient(
-            colors: [color.opacity(opacity), color.opacity(0)],
-            center: .bottom,
+    /// Halo na cor da lâmpada atrás do botão redondo (220 pt): começa forte na borda do
+    /// botão e some uns 120 pt pra fora.
+    private func lampHalo(color: Color, brightness: Double, isNight: Bool) -> some View {
+        let strength = (isNight ? 0.4 : 0.5) * brightness
+        return RadialGradient(
+            stops: [
+                .init(color: color.opacity(strength), location: 0),
+                .init(color: color.opacity(strength), location: 0.42),
+                .init(color: color.opacity(strength * 0.35), location: 0.62),
+                .init(color: color.opacity(0), location: 1),
+            ],
+            center: .center,
             startRadius: 0,
-            endRadius: 260
+            endRadius: 240
         )
-        .scaleEffect(x: 1, y: 2.4, anchor: .bottom)
+        .frame(width: 480, height: 480)
         .allowsHitTesting(false)
+        .accessibilityHidden(true)
     }
 
     private var showsLampBubble: Bool {

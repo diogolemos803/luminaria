@@ -68,6 +68,9 @@ final class LampManager: ObservableObject {
     /// Última cor escolhida à mão (pra ligar de novo na mesma cor).
     @Published private(set) var manualMix: Double
     @Published private(set) var manualBrightness: Double
+    /// Última vez que a pessoa mexeu na cor/brilho: enquanto mexe, a tela mostra o valor do
+    /// controle na hora em vez de esperar a resposta da lâmpada (senão a cor anda aos saltos).
+    @Published private(set) var lastManualEdit = Date.distantPast
 
     var hasLamp: Bool { lampID != nil }
     var isConnected: Bool { link == .connected }
@@ -91,6 +94,8 @@ final class LampManager: ObservableObject {
     /// Desarme pedido com a lâmpada longe: manda na próxima conexão.
     private var pendingEndNight = false
     private var lastColorSend = Date.distantPast
+    /// No máximo ~16 comandos de cor por segundo enquanto a pessoa arrasta o controle.
+    private static let colorSendInterval: TimeInterval = 0.06
     private var trailingColorSend: DispatchWorkItem?
 
     private init() {
@@ -162,14 +167,15 @@ final class LampManager: ObservableObject {
     // MARK: - Controle manual
 
     /// Cor escolhida na tela (mistura + brilho). Enquanto a pessoa arrasta o controle, manda
-    /// no máximo ~8 comandos por segundo, sempre terminando no valor final.
+    /// no máximo ~16 comandos por segundo, sempre terminando no valor final.
     func setManual(mix: Double, brightness: Double) {
         manualMix = mix
         manualBrightness = brightness
+        lastManualEdit = Date()
         UserDefaults.standard.set(mix, forKey: Self.mixKey)
         UserDefaults.standard.set(brightness, forKey: Self.brightnessKey)
         let elapsed = Date().timeIntervalSince(lastColorSend)
-        if elapsed >= 0.12 {
+        if elapsed >= Self.colorSendInterval {
             trailingColorSend?.cancel()
             trailingColorSend = nil
             sendManualColor()
@@ -179,7 +185,7 @@ final class LampManager: ObservableObject {
                 self?.sendManualColor()
             }
             trailingColorSend = work
-            DispatchQueue.main.asyncAfter(deadline: .now() + (0.12 - elapsed), execute: work)
+            DispatchQueue.main.asyncAfter(deadline: .now() + (Self.colorSendInterval - elapsed), execute: work)
         }
     }
 

@@ -161,6 +161,11 @@ struct LampControlView: View {
 
     /// O que a cúpula mostra: a cor que a própria lâmpada informa.
     private var shown: (on: Bool, mix: Double, brightness: Double) {
+        // Mexendo agora (ou há menos de 1,5 s): mostra o valor do controle, sem esperar a
+        // lâmpada responder — a resposta chega aos pedaços e a cor andaria aos saltos.
+        if lamp.isConnected, isEditing {
+            return (true, lamp.manualMix, max(lamp.manualBrightness, 0.01))
+        }
         if lamp.isConnected, let color = lamp.state?.color, !color.isOff {
             return (true, color.mix, color.brightness)
         }
@@ -168,6 +173,8 @@ struct LampControlView: View {
     }
 
     private var usable: Bool { lamp.isConnected }
+
+    private var isEditing: Bool { Date().timeIntervalSince(lamp.lastManualEdit) < 1.5 }
 
     private var control: some View {
         VStack(spacing: 12) {
@@ -256,7 +263,9 @@ struct LampControlView: View {
     }
 
     private var readout: some View {
-        let color = (usable ? lamp.state?.color : nil) ?? .off
+        let color = usable && isEditing
+            ? LampColor(mix: lamp.manualMix, brightness: max(lamp.manualBrightness, 0.01))
+            : (usable ? lamp.state?.color : nil) ?? .off
         return VStack(spacing: 2) {
             Text(shown.on ? LampPreset.name(forMix: shown.mix) : "Desligada")
                 .font(.luminaria(.footnote, weight: .bold))
