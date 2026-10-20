@@ -219,9 +219,14 @@ export default function Experience() {
             <i className="brand-mark" aria-hidden="true" />
             <Wordmark />
           </div>
-          <Link href="/pre-venda" className={`buy-cta ${night ? "" : "is-day"}`} style={{ ["--lc" as string]: lampColor }}>
-            {t.nav.buy}
+          <Link href="/lista" className={`buy-cta ${night ? "" : "is-day"}`} style={{ ["--lc" as string]: lampColor }}>
+            {t.nav.waitlist}
           </Link>
+          <nav className={`home-links ${night ? "" : "is-day"}`} aria-label={t.pagesNav}>
+            <a href="https://instagram.com/the.sovee" target="_blank" rel="noopener noreferrer">{t.nav.instagram}</a>
+            <Link href="/privacidade">{t.nav.privacy}</Link>
+            <Link href="/lista">{t.nav.waitlist}</Link>
+          </nav>
           <Menu
             mode={mode}
             colorIndex={colorIndex}

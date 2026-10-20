@@ -1,19 +1,13 @@
 import Link from "next/link";
 import LangSwitch from "./LangSwitch";
 import Wordmark from "./Wordmark";
+import FooterNav from "./FooterNav";
 import { getLang } from "@/lib/lang";
 import { ui } from "@/lib/i18n";
 
 /** Moldura comum das páginas internas: topo com voltar e logo, conteúdo e rodapé de navegação. */
 export default function PageShell({ children }: { children: React.ReactNode }) {
   const t = ui[getLang()];
-  const nav = [
-    { label: t.nav.product, href: "/produto" },
-    { label: t.nav.how, href: "/como-funciona" },
-    { label: t.nav.about, href: "/sobre" },
-    { label: t.nav.science, href: "/ciencia-do-sono" },
-    { label: t.nav.buy, href: "/pre-venda" },
-  ];
   return (
     <main className="buy pg">
       <header className="buy-top">
@@ -33,13 +27,7 @@ export default function PageShell({ children }: { children: React.ReactNode }) {
       </header>
       <div className="pg-body">{children}</div>
       <footer className="pg-foot">
-        <nav aria-label={t.pagesNav}>
-          {nav.map((n) => (
-            <Link key={n.href} href={n.href}>
-              {n.label}
-            </Link>
-          ))}
-        </nav>
+        <FooterNav nav={t.nav} label={t.pagesNav} />
         <p>{t.tagline}</p>
       </footer>
     </main>

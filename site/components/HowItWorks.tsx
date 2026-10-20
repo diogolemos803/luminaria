@@ -6,6 +6,7 @@ import * as launch from "./scenes/launchScene";
 import * as landing from "./scenes/landingScene";
 import LangSwitch from "./LangSwitch";
 import Wordmark from "./Wordmark";
+import FooterNav from "./FooterNav";
 import { useLang } from "./LangProvider";
 
 /* ---------- matemática de rolagem ---------- */
@@ -369,7 +370,7 @@ export default function HowItWorks() {
           ))}
         </ol>
         <p>{all.tagline}</p>
-        <Link href="/pre-venda">{t.final.buy}</Link>
+        <Link href="/lista">{t.final.buy}</Link>
         <Link href="/produto">{t.final.product}</Link>
       </section>
 
@@ -524,7 +525,7 @@ export default function HowItWorks() {
               <h2>{all.tagline}</h2>
               <p>{t.final.text}</p>
               <div className="hw-actions">
-                <Link href="/pre-venda" className="buy-btn" tabIndex={-1}>
+                <Link href="/lista" className="buy-btn" tabIndex={-1}>
                   {t.final.buy}
                 </Link>
                 <Link href="/produto" className="hw-link" tabIndex={-1}>
@@ -560,12 +561,7 @@ export default function HowItWorks() {
       </div>
 
       <footer className="pg-foot hw-foot">
-        <nav aria-label={all.pagesNav}>
-          <Link href="/produto">{all.nav.product}</Link>
-          <Link href="/sobre">{all.nav.about}</Link>
-          <Link href="/ciencia-do-sono">{all.nav.science}</Link>
-          <Link href="/pre-venda">{all.nav.buy}</Link>
-        </nav>
+        <FooterNav nav={all.nav} label={all.pagesNav} />
         <p>{all.tagline}</p>
       </footer>
     </main>

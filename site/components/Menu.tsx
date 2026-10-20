@@ -78,6 +78,7 @@ export default function Menu({ mode, colorIndex, auto, onPick, onAuto, onMode, o
             </>
           )}
         </div>
+        <a className="glass-link" href="/lista" tabIndex={open ? 0 : -1}>{t.nav.waitlist}</a>
         <LangSwitch className="lang-sw-menu" />
       </nav>
     </>

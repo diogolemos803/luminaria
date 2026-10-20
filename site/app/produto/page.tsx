@@ -5,9 +5,11 @@ import PageShell from "@/components/PageShell";
 import Wordmark from "@/components/Wordmark";
 import { content, ui } from "@/lib/i18n";
 import { getLang } from "@/lib/lang";
+import { pageMeta } from "@/lib/meta";
 
 export function generateMetadata(): Metadata {
-  return ui[getLang()].meta.product;
+  const m = ui[getLang()].meta.product;
+  return pageMeta("/produto", m.title, m.description);
 }
 
 export default function Produto() {
@@ -22,7 +24,7 @@ export default function Produto() {
           <h1 className="buy-title" aria-label={c.title}><Wordmark className="wordmark-title" /></h1>
           <p className="buy-lead">{c.lead}</p>
           <p className="buy-note">{c.note}</p>
-          <Link href="/pre-venda" className="buy-btn pg-cta">
+          <Link href="/lista" className="buy-btn pg-cta">
             {c.cta}
           </Link>
         </div>

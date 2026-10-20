@@ -2,9 +2,11 @@ import type { Metadata } from "next";
 import PageShell from "@/components/PageShell";
 import { content, ui } from "@/lib/i18n";
 import { getLang } from "@/lib/lang";
+import { pageMeta } from "@/lib/meta";
 
 export function generateMetadata(): Metadata {
-  return ui[getLang()].meta.science;
+  const m = ui[getLang()].meta.science;
+  return pageMeta("/ciencia-do-sono", m.title, m.description);
 }
 
 export default function Ciencia() {

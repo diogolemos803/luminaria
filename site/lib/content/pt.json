@@ -12,7 +12,7 @@
     ],
     "featuresTitle": "o que ela faz",
     "features": [
-      { "t": "três cores de luz", "d": "Âmbar, laranja e vermelho, sempre em tons quentes, sem o azul que mantém o cérebro em alerta. Fixe a cor que preferir ou deixe o Day Finisher alternar sozinho." },
+      { "t": "três cores de luz", "d": "Âmbar, laranja e vermelho, sempre em tons quentes. Fixe a cor que preferir ou deixe o Day Finisher alternar sozinho." },
       { "t": "base com nicho", "d": "Um lugar fixo e bonito para o celular dormir, fora do alcance da mão." },
       { "t": "bloqueio de apps", "d": "Os apps que você escolher ficam bloqueados até a hora do despertador. O app nunca sabe quais são: só o seu iPhone guarda essa escolha." },
       { "t": "rotinas de sono", "d": "Crie rotinas com horário, som e apps bloqueados próprios, e deixe a SOVEE escolher a de dias de semana ou de fins de semana." },
@@ -20,7 +20,7 @@
       { "t": "uma noite de cada vez", "d": "Cada noite sem pegar no celular leva o seu foguete mais longe: Lua, Marte, Saturno e Netuno." }
     ],
     "note": "O app SOVEE é para iPhone.",
-    "cta": "adquira"
+    "cta": "lista de espera"
   },
   "sobre": {
     "eyebrow": "sobre a sovee",
@@ -44,7 +44,7 @@
     "lead": "Um resumo do que a pesquisa sobre luz, sono e ritmo circadiano mostra, e do que isso muda na sua noite.",
     "sections": [
       { "t": "a luz e o relógio do corpo", "p": [
-        "O corpo segue um ciclo de cerca de 24 horas, o ritmo circadiano, que regula sono, temperatura e hormônios. A luz é o principal sinal que ajusta esse relógio.",
+        "O corpo segue um ciclo de cerca de 24 horas, o ritmo circadiano, que regula sono, temperatura e hormônios. A luz é o principal estímulo que ajusta esse relógio.",
         "À noite, a luz, principalmente a rica em azul, pode reduzir a melatonina, o hormônio que sinaliza ao corpo que é hora de dormir."
       ] },
       { "t": "por que âmbar e vermelho", "p": [

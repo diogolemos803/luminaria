@@ -3,9 +3,11 @@ import type { Metadata } from "next";
 import PageShell from "@/components/PageShell";
 import { content, ui } from "@/lib/i18n";
 import { getLang } from "@/lib/lang";
+import { pageMeta } from "@/lib/meta";
 
 export function generateMetadata(): Metadata {
-  return ui[getLang()].meta.about;
+  const m = ui[getLang()].meta.about;
+  return pageMeta("/sobre", m.title, m.description);
 }
 
 export default function Sobre() {

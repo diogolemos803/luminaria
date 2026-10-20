@@ -58,7 +58,7 @@ body {
 @media (max-width:700px){.hover-card{left:16px;right:16px;width:auto;top:auto;bottom:calc(88px + env(safe-area-inset-bottom,0px))}}
 .brand-mark{display:block;width:36px;height:40px;background:currentColor;-webkit-mask:url(/logo.png) center/contain no-repeat;mask:url(/logo.png) center/contain no-repeat}
 
-/* botão "adquira": centralizado, logo abaixo do Day Finisher */
+/* botão da lista de espera: centralizado, logo abaixo do Day Finisher */
 .buy-cta{--W:max(100vw,calc(100vh*16/9));position:fixed;z-index:30;left:50%;top:calc(50vh + .0731*var(--W) + 26px);transform:translateX(-50%);padding:13px 36px;border-radius:999px;font-size:16px;font-weight:500;letter-spacing:.04em;text-decoration:none;color:#FDF8C7;
  background:linear-gradient(160deg,rgba(120,98,76,.42),rgba(52,44,38,.5));-webkit-backdrop-filter:blur(30px) saturate(1.2);backdrop-filter:blur(30px) saturate(1.2);
  border:1px solid rgba(253,248,199,.16);box-shadow:0 10px 30px rgba(0,0,0,.28),inset 0 0 22px color-mix(in srgb,var(--lc,#F2B05E) 30%,transparent);transition:box-shadow 1.1s,transform .25s,color .6s,background .6s}
@@ -236,30 +236,39 @@ body {
   .buy-right{gap:10px}
 }
 
-/* pré-venda */
-.pv{max-width:640px}
-.pv-card{display:flex;flex-direction:column;gap:26px;padding:26px;border-radius:26px;background:linear-gradient(160deg,rgba(120,98,76,.28),rgba(52,44,38,.4));border:1px solid rgba(253,248,199,.12);margin-top:8px}
-.pv-closed{align-items:flex-start;gap:14px}
-.pv-closed h2{margin:0;font-size:24px;font-weight:500}
-.pv-closed p{margin:0;line-height:1.5;opacity:.9}
-.pv-step{display:flex;flex-direction:column;gap:8px;min-width:0}
-.pv-step h2{margin:0 0 4px;display:flex;align-items:center;gap:10px;font-size:15px;letter-spacing:.06em;font-weight:500;text-transform:lowercase}
-.pv-step h2 span{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:#F2B05E;color:#2A2A2A;font-size:13px;font-variant-numeric:tabular-nums}
-.pv-p{margin:0;font-size:15px;line-height:1.5;opacity:.85}
-.pv-ig{align-self:flex-start;gap:8px;padding:12px 20px;font-size:16px}
-.pv-check{display:flex;align-items:flex-start;gap:12px;font-size:16px;line-height:1.4;opacity:1;cursor:pointer}
-.buy-form .pv-check{font-size:16px;opacity:1}
-.buy-form .pv-check input:not([type=radio]){width:22px;height:22px;padding:0;margin:1px 0 0;flex:none;border:0;background:transparent;accent-color:#F2B05E}
-.pv-check input:disabled{opacity:.4;cursor:not-allowed}
-.pv-terms{max-height:260px;overflow:auto;padding:16px;border-radius:16px;background:rgba(0,0,0,.22);font-size:14px;line-height:1.55}
-.pv-terms h3{margin:0 0 6px;font-size:14px;font-weight:600}
-.pv-terms p{margin:0 0 10px;opacity:.88}
-.pv-terms section+section{margin-top:14px}
-.pv-trap{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
-.pv-error{margin:0;padding:12px 14px;border-radius:14px;background:rgba(200,64,47,.18);border:1px solid rgba(200,64,47,.5);font-size:15px}
+/* lista de espera */
+.ls{max-width:640px}
+.ls-card{display:flex;flex-direction:column;gap:20px;padding:26px;border-radius:26px;background:linear-gradient(160deg,rgba(120,98,76,.28),rgba(52,44,38,.4));border:1px solid rgba(253,248,199,.12);margin-top:8px}
+.ls-field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.ls-trap{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+.buy-form .ls-check{display:flex;align-items:flex-start;gap:12px;font-size:16px;line-height:1.45;opacity:1;cursor:pointer}
+.ls-check a{color:inherit;text-decoration:underline;text-underline-offset:3px}
+.buy-form .ls-check input:not([type=radio]){width:22px;height:22px;padding:0;margin:1px 0 0;flex:none;border:0;background:transparent;accent-color:#F2B05E}
+.ls-card .buy-btn{align-self:flex-start}
 .buy-btn:disabled{opacity:.45;cursor:not-allowed;filter:none}
-.pv-pay{grid-template-columns:repeat(2,minmax(0,1fr))}
-@media (max-width:420px){.pv-pay{grid-template-columns:1fr}}
-.pv-terms strong{font-weight:600}
-.pv-closed .pv-step{align-self:stretch;width:100%}
-.pv-closed .buy-btn{align-self:flex-start}
+.ls-error{margin:0;padding:12px 14px;border-radius:14px;background:rgba(200,64,47,.18);border:1px solid rgba(200,64,47,.5);font-size:15px}
+.ls-done h2{margin:0;font-size:24px;font-weight:500;line-height:1.3;letter-spacing:0;text-transform:none;opacity:1}
+
+/* privacidade */
+.pg-list{list-style:disc;margin:0;padding-left:22px;display:flex;flex-direction:column;gap:8px;font-size:17px;line-height:1.55;opacity:.92}
+.pg-p a,.pg-list a{color:inherit;text-underline-offset:3px}
+.cookie-reset{align-self:flex-start;border:1px solid rgba(253,248,199,.3);background:transparent;color:inherit;font:inherit;font-size:14px;padding:9px 16px;border-radius:999px;cursor:pointer}
+.cookie-reset:hover{background:rgba(253,248,199,.1)}
+
+/* aviso de cookies */
+.cookie-banner{position:fixed;z-index:80;left:max(16px,env(safe-area-inset-left,0px));right:max(16px,env(safe-area-inset-right,0px));bottom:max(16px,env(safe-area-inset-bottom,0px));max-width:520px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 14px 12px 18px;border-radius:22px;color:#FDF8C7;background:rgba(40,44,54,.9);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);border:1px solid rgba(253,248,199,.16);box-shadow:0 16px 40px rgba(0,0,0,.35);font-size:14px;line-height:1.4}
+.cookie-banner p{margin:0}
+.cookie-banner a{color:inherit;opacity:.75;text-underline-offset:3px;margin-left:4px}
+.cookie-banner div{display:flex;gap:8px;flex:none}
+.cookie-banner button{border:0;font:inherit;font-size:14px;padding:9px 14px;border-radius:999px;cursor:pointer;color:inherit;background:rgba(253,248,199,.14)}
+.cookie-banner button.is-primary{background:#F2B05E;color:#2A2A2A}
+@media (max-width:480px){.cookie-banner{flex-direction:column;align-items:stretch;gap:10px}.cookie-banner div{justify-content:flex-end}}
+
+/* links no pé da tela inicial e no menu */
+.home-links{position:fixed;z-index:30;left:50%;bottom:max(14px,env(safe-area-inset-bottom,0px));transform:translateX(-50%);display:flex;gap:18px;font-size:13px;color:#FDF8C7;white-space:nowrap;text-shadow:0 1px 8px rgba(0,0,0,.45);transition:color .6s}
+.home-links.is-day{color:#444;text-shadow:none}
+.home-links a{color:inherit;text-decoration:none;opacity:.8}
+.home-links a:hover{opacity:1}
+.glass-link{display:block;margin-top:10px;padding:10px 12px;border-radius:999px;text-align:center;color:inherit;text-decoration:none;font-size:15px;background:rgba(253,248,199,.14)}
+.glass-link:hover{background:rgba(253,248,199,.24)}
+.glass-menu.is-day .glass-link{background:rgba(68,68,68,.1)}

@@ -12,7 +12,7 @@
     ],
     "featuresTitle": "qué hace",
     "features": [
-      { "t": "tres colores de luz", "d": "Ámbar, naranja y rojo, siempre tonos cálidos, sin el azul que mantiene el cerebro en alerta. Fija el color que prefieras o deja que el Day Finisher alterne solo." },
+      { "t": "tres colores de luz", "d": "Ámbar, naranja y rojo, siempre tonos cálidos. Fija el color que prefieras o deja que el Day Finisher alterne solo." },
       { "t": "base con nicho", "d": "Un lugar fijo y bonito para que el móvil duerma, fuera del alcance de la mano." },
       { "t": "bloqueo de apps", "d": "Las apps que elijas quedan bloqueadas hasta la hora del despertador. La app nunca sabe cuáles son: solo tu iPhone guarda esa elección." },
       { "t": "rutinas de sueño", "d": "Crea rutinas con su propio horario, sonido y apps bloqueadas, y deja que SOVEE elija la de entre semana o la de fin de semana." },
@@ -20,7 +20,7 @@
       { "t": "una noche cada vez", "d": "Cada noche sin coger el móvil lleva tu cohete más lejos: Luna, Marte, Saturno y Neptuno." }
     ],
     "note": "La app SOVEE es para iPhone.",
-    "cta": "adquiérelo"
+    "cta": "lista de espera"
   },
   "sobre": {
     "eyebrow": "sobre sovee",
