@@ -1,0 +1,272 @@
+<title>Menus SOVEE</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap">
+<style>
+/* Layout: a página é o "quarto escuro" do site; cada celular mostra uma tela do app.
+   A paleta de dentro dos celulares é a do sovee.com.br (dia = creme sobre branco,
+   noite = vidro marrom-quente sobre azul-grafite). */
+:root {
+  --page: #1d1f25;
+  --page-ink: #fdf8c7;
+  --page-muted: rgba(253, 248, 199, .62);
+  --amber: #f2b05e;
+  --amber-ink: #2a2a2a;
+  --font: "DM Sans", system-ui, -apple-system, sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { background: var(--page); color: var(--page-ink); font-family: var(--font); }
+body { padding-block: 28px 56px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 1240px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px; }
+header { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 18px; }
+.eyebrow { font-size: 13px; letter-spacing: .18em; color: var(--page-muted); text-transform: lowercase; margin: 0 0 6px; }
+h1 { margin: 0; font-weight: 500; font-size: clamp(28px, 4vw, 40px); letter-spacing: -.02em; line-height: 1.1; text-wrap: balance; }
+.lede { margin: 10px 0 0; max-width: 62ch; line-height: 1.5; color: var(--page-muted); font-size: 15px; }
+.seg { display: inline-flex; padding: 4px; border-radius: 999px; background: rgba(253,248,199,.1); gap: 4px; }
+.seg button { border: 0; font: inherit; font-size: 15px; padding: 9px 18px; border-radius: 999px; background: transparent; color: var(--page-ink); cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--amber); color: var(--amber-ink); }
+.seg button:focus-visible, .ph button:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+
+.row { display: flex; flex-wrap: wrap; gap: 28px; justify-content: center; }
+figure { margin: 0; display: flex; flex-direction: column; gap: 12px; align-items: center; }
+figcaption { font-size: 13px; letter-spacing: .18em; text-transform: lowercase; color: var(--page-muted); }
+figcaption b { color: var(--page-ink); font-weight: 500; letter-spacing: .1em; }
+
+/* ---------- Celular ---------- */
+.ph {
+  width: 340px; max-width: 100%; height: 700px; border-radius: 46px; overflow: hidden; position: relative;
+  border: 8px solid #0d0e11; box-shadow: 0 30px 70px rgba(0,0,0,.45);
+  display: flex; flex-direction: column; font-family: var(--font);
+}
+.status { height: 40px; flex: none; display: flex; align-items: center; justify-content: space-between; padding: 0 26px; font-size: 14px; font-weight: 500; }
+.scroll { flex: 1; overflow: hidden; padding: 4px 16px 20px; display: flex; flex-direction: column; gap: 18px; }
+
+/* ===== Proposta SOVEE ===== */
+.sv { --bg: #fff; --ink: #444; --muted: rgba(68,68,68,.62); --card: linear-gradient(160deg, hsla(54,93%,89%,.62), hsla(38,70%,80%,.42));
+      --edge: rgba(68,68,68,.12); --chip: rgba(68,68,68,.09); --chip-on: rgba(68,68,68,.14); --line: rgba(68,68,68,.14);
+      --glow: radial-gradient(ellipse 90% 46% at 50% 100%, hsla(54,93%,89%,.9) 0, hsla(54,93%,89%,0) 100%);
+      --danger: #b4513a; --shadow: 0 18px 40px rgba(80,50,20,.12);
+      background: var(--glow), var(--bg); color: var(--ink); }
+.night .sv { --bg: #23252c; --ink: #fdf8c7; --muted: rgba(253,248,199,.6); --card: linear-gradient(160deg, rgba(120,98,76,.42), rgba(52,44,38,.5));
+      --edge: hsla(54,93%,89%,.14); --chip: hsla(54,93%,89%,.13); --chip-on: hsla(54,93%,89%,.2); --line: hsla(54,93%,89%,.16);
+      --glow: radial-gradient(ellipse 90% 40% at 50% 100%, rgba(242,176,94,.22) 0, rgba(242,176,94,0) 100%);
+      --danger: #e59a82; --shadow: 0 24px 50px rgba(0,0,0,.35); }
+.nav { display: flex; align-items: center; justify-content: space-between; padding: 6px 16px 0; height: 54px; flex: none; }
+.fab { width: 42px; height: 42px; border-radius: 50%; border: 0; display: grid; place-items: center; background: var(--chip); color: var(--ink); }
+.fab svg { width: 18px; height: 18px; }
+.ttl { margin: 2px 4px 0; font-size: 30px; font-weight: 500; letter-spacing: -.02em; line-height: 1.1; }
+.sub { margin: 4px 4px 0; font-size: 14px; color: var(--muted); line-height: 1.4; }
+.lbl { margin: 0 0 8px 6px; font-size: 12px; letter-spacing: .18em; text-transform: lowercase; color: var(--muted); font-weight: 500; }
+.card { background: var(--card); border: 1px solid var(--edge); border-radius: 26px; padding: 6px; box-shadow: var(--shadow); }
+.it { display: flex; align-items: center; gap: 12px; padding: 9px 10px; border-radius: 999px; }
+.it + .it { margin-top: 2px; }
+.it.on { background: var(--chip-on); }
+.ic { width: 38px; height: 38px; flex: none; border-radius: 50%; display: grid; place-items: center; background: var(--chip); }
+.ic svg { width: 17px; height: 17px; }
+.tx { min-width: 0; flex: 1; }
+.tx b { display: block; font-size: 16px; font-weight: 500; }
+.tx span { display: block; font-size: 13px; color: var(--muted); margin-top: 1px; }
+.chev { width: 14px; height: 14px; opacity: .45; flex: none; }
+.dot { width: 10px; height: 10px; border-radius: 50%; background: var(--amber); flex: none; }
+.danger .tx b { color: var(--danger); }
+.danger .ic { color: var(--danger); }
+.note { margin: 8px 8px 0; font-size: 12.5px; line-height: 1.45; color: var(--muted); }
+.pill { display: flex; align-items: center; justify-content: center; border: 0; width: 100%; padding: 15px 20px; border-radius: 999px; font: inherit; font-size: 16px; font-weight: 500; background: var(--amber); color: var(--amber-ink); }
+.ghost { display: flex; justify-content: center; width: 100%; padding: 13px; border-radius: 999px; font: inherit; font-size: 15px; background: transparent; color: var(--danger); border: 1px solid var(--line); }
+.field { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; font-size: 16px; }
+.field + .field { border-top: 1px solid var(--line); }
+.field em { font-style: normal; font-variant-numeric: tabular-nums; padding: 6px 13px; border-radius: 999px; background: var(--chip); font-size: 15px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px; }
+.chp { padding: 8px 14px; border-radius: 999px; background: var(--chip); font-size: 14px; display: inline-flex; gap: 6px; align-items: center; }
+.chp.on { background: var(--amber); color: var(--amber-ink); }
+.tog { width: 46px; height: 28px; border-radius: 999px; background: var(--chip-on); position: relative; flex: none; }
+.tog::after { content: ""; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: var(--bg); box-shadow: 0 1px 3px rgba(0,0,0,.2); }
+.tog.on { background: var(--amber); }
+.tog.on::after { left: 21px; background: #fff; }
+.rank { font-variant-numeric: tabular-nums; width: 22px; text-align: center; font-size: 15px; color: var(--muted); flex: none; }
+.num { font-variant-numeric: tabular-nums; font-size: 15px; font-weight: 500; }
+.code { margin: 6px 10px 10px; display: flex; gap: 6px; }
+.code span { flex: 1; text-align: center; padding: 11px 0; border-radius: 14px; background: var(--chip); font-size: 18px; font-weight: 500; letter-spacing: .04em; }
+
+/* ===== Hoje (como está no app) ===== */
+.old { --bg: #fff; --card: #f3f3f4; --ink: #444; --muted: #8c8a80; --acc: #db8149; --wash: rgba(219,129,73,.14); --hair: rgba(0,0,0,.07);
+       background: var(--bg); color: var(--ink); }
+.night .old { --bg: #444; --card: #525252; --ink: #fdf8c7; --muted: #a6a399; --acc: #84a1c8; --wash: rgba(132,161,200,.16); --hair: rgba(255,255,255,.08); }
+.old .bar { height: 44px; display: flex; align-items: center; justify-content: center; position: relative; font-weight: 700; font-size: 17px; flex: none; }
+.old .bar i { position: absolute; right: 18px; font-style: normal; color: var(--acc); font-weight: 700; font-size: 16px; }
+.old .lbl2 { margin: 0 0 6px 10px; font-size: 11px; letter-spacing: .07em; text-transform: uppercase; font-weight: 700; color: var(--muted); }
+.old .card2 { background: var(--card); border-radius: 22px; padding: 4px; }
+.old .it2 { display: flex; align-items: center; gap: 12px; padding: 11px 10px; }
+.old .it2 + .it2 { border-top: 1px solid var(--hair); }
+.old .bd { width: 32px; height: 32px; border-radius: 50%; background: var(--wash); color: var(--acc); display: grid; place-items: center; flex: none; }
+.old .bd svg { width: 15px; height: 15px; }
+.old .t2 b { display: block; font-size: 15px; font-weight: 700; }
+.old .t2 span { display: block; font-size: 12px; color: var(--muted); }
+.old .chev { margin-left: auto; }
+
+@media (prefers-reduced-motion: no-preference) { .sv, .old, .seg button { transition: background .4s, color .4s; } }
+.notes { max-width: 860px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+.notes div { padding: 18px 20px; border-radius: 22px; background: linear-gradient(160deg, rgba(120,98,76,.3), rgba(52,44,38,.4)); border: 1px solid hsla(54,93%,89%,.12); min-width: 0; }
+.notes h2 { margin: 0 0 6px; font-size: 13px; letter-spacing: .18em; text-transform: lowercase; color: var(--page-muted); font-weight: 500; }
+.notes p { margin: 0; font-size: 14.5px; line-height: 1.5; }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-nfc" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M8 8.5a5 5 0 0 1 0 7M11.5 6a8.5 8.5 0 0 1 0 12M15 3.5a12 12 0 0 1 0 17"/><circle cx="4.5" cy="12" r="1.5" fill="currentColor"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" d="M19.5 14.5A8 8 0 0 1 9.5 4.5a8 8 0 1 0 10 10z"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 7.5V12l3 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M5 7h14M5 12h14M5 17h9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+  <symbol id="i-people" viewBox="0 0 24 24"><circle cx="9" cy="8.5" r="3.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0M15.5 5.6a3.2 3.2 0 0 1 0 6M17 13.6A5.5 5.5 0 0 1 20.5 19" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+  <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M9.6 9.6a2.5 2.5 0 1 1 3.4 2.3c-.6.3-1 .8-1 1.5v.4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="16.8" r="1.1" fill="currentColor"/></symbol>
+  <symbol id="i-lamp" viewBox="0 0 24 24"><path d="M7 4h10l2.5 8h-15z M12 12v6 M8 20h8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M14.5 5.5L8 12l6.5 6.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 5.5l6.5 6.5L9 18.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5.5 12.5l4.2 4.2 8.8-9.4" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-bird" viewBox="0 0 24 24"><path d="M4 14c3 0 5-2 6-5 1.5 3 4 4 7 4l3-2-1 4c-2 3-6 4-9 3l-3 2v-3c-2-.5-3-1.5-3-3z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></symbol>
+  <symbol id="i-app" viewBox="0 0 24 24"><rect x="4.5" y="4.5" width="6" height="6" rx="1.8" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="13.5" y="4.5" width="6" height="6" rx="1.8" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="4.5" y="13.5" width="6" height="6" rx="1.8" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="13.5" y="13.5" width="6" height="6" rx="1.8" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+  <symbol id="i-share" viewBox="0 0 24 24"><path d="M12 15V4M8 8l4-4 4 4M6 12v6.5h12V12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+</svg>
+
+<div class="wrap" id="root">
+  <header>
+    <div>
+      <p class="eyebrow">protótipo · menus do app</p>
+      <h1>menus no jeito do sovee.com.br</h1>
+      <p class="lede">A tela do botão e a da luminária não mudam. Muda tudo que abre pelo menu ☰: configurações, rotinas, editor de rotina, relatório, amigos, ajuda e o cartão da lâmpada.</p>
+    </div>
+    <div class="seg" role="group" aria-label="Modo">
+      <button type="button" id="b-day" aria-pressed="true">dia</button>
+      <button type="button" id="b-night" aria-pressed="false">noite</button>
+    </div>
+  </header>
+
+  <div class="row">
+    <!-- HOJE -->
+    <figure>
+      <div class="ph old" aria-label="Configurações como estão hoje">
+        <div class="status"><span>22:41</span><span>●●●</span></div>
+        <div class="bar">Configurações<i>OK</i></div>
+        <div class="scroll" style="gap:16px;padding-top:10px">
+          <div><p class="lbl2">Luminária</p>
+            <div class="card2">
+              <div class="it2"><span class="bd"><svg><use href="#i-check"/></svg></span><span class="t2"><b>Vinculada</b><span>Testar leitura da tag</span></span></div>
+              <div class="it2"><span class="bd" style="color:#b8573d;background:rgba(184,87,61,.1)"><svg><use href="#i-x"/></svg></span><span class="t2"><b style="color:#b8573d">Desvincular luminária</b></span></div>
+            </div></div>
+          <div><p class="lbl2">Lâmpada</p>
+            <div class="card2"><div class="it2"><span class="bd"><svg><use href="#i-lamp"/></svg></span><span class="t2"><b>Lâmpada Zleepy</b><span>Conectada · Laranja 60%</span></span><svg class="chev"><use href="#i-chev"/></svg></div></div></div>
+          <div><p class="lbl2">Rotina de sono</p>
+            <div class="card2">
+              <div class="it2"><span class="bd"><svg><use href="#i-clock"/></svg></span><span class="t2"><b>Semana</b><span>07:00 · Sabiá-laranjeira</span></span></div>
+              <div class="it2"><span class="bd"><svg><use href="#i-list"/></svg></span><span class="t2"><b>Gerenciar rotinas de sono</b></span><svg class="chev"><use href="#i-chev"/></svg></div>
+            </div></div>
+          <div><p class="lbl2">Relatório</p>
+            <div class="card2"><div class="it2"><span class="bd"><svg><use href="#i-moon"/></svg></span><span class="t2"><b>Relatório de sono</b><span>23 noites registradas</span></span><svg class="chev"><use href="#i-chev"/></svg></div></div></div>
+        </div>
+      </div>
+      <figcaption><b>hoje</b> · configurações</figcaption>
+    </figure>
+
+    <!-- PROPOSTA: CONFIGURAÇÕES -->
+    <figure>
+      <div class="ph sv" aria-label="Configurações na proposta">
+        <div class="status"><span>22:41</span><span>●●●</span></div>
+        <div class="nav"><span></span><button class="fab" type="button" aria-label="Fechar"><svg><use href="#i-x"/></svg></button></div>
+        <div class="scroll">
+          <div><h2 class="ttl">configurações</h2></div>
+          <div><p class="lbl">luminária</p>
+            <div class="card">
+              <div class="it"><span class="ic"><svg><use href="#i-nfc"/></svg></span><span class="tx"><b>Vinculada</b><span>Testar leitura da tag</span></span><svg class="chev"><use href="#i-chev"/></svg></div>
+              <div class="it danger"><span class="ic"><svg><use href="#i-x"/></svg></span><span class="tx"><b>Desvincular</b></span></div>
+            </div></div>
+          <div><p class="lbl">lâmpada</p>
+            <div class="card"><div class="it"><span class="ic" style="background:rgba(242,150,80,.35)"><svg><use href="#i-lamp"/></svg></span><span class="tx"><b>Lâmpada Zleepy</b><span>Conectada · laranja 60%</span></span><svg class="chev"><use href="#i-chev"/></svg></div></div></div>
+          <div><p class="lbl">rotina de sono</p>
+            <div class="card">
+              <div class="it on"><span class="ic"><svg><use href="#i-clock"/></svg></span><span class="tx"><b>Semana</b><span>07:00 · sabiá-laranjeira</span></span><span class="dot" aria-label="ativa"></span></div>
+              <div class="it"><span class="ic"><svg><use href="#i-list"/></svg></span><span class="tx"><b>Todas as rotinas</b></span><svg class="chev"><use href="#i-chev"/></svg></div>
+            </div></div>
+          <div class="card">
+            <div class="it"><span class="ic"><svg><use href="#i-moon"/></svg></span><span class="tx"><b>Relatório de sono</b><span>23 noites</span></span><svg class="chev"><use href="#i-chev"/></svg></div>
+            <div class="it"><span class="ic"><svg><use href="#i-people"/></svg></span><span class="tx"><b>Amigos e ranking</b></span><svg class="chev"><use href="#i-chev"/></svg></div>
+            <div class="it"><span class="ic"><svg><use href="#i-help"/></svg></span><span class="tx"><b>Ajuda</b></span><svg class="chev"><use href="#i-chev"/></svg></div>
+          </div>
+        </div>
+      </div>
+      <figcaption><b>proposta</b> · configurações</figcaption>
+    </figure>
+
+    <!-- PROPOSTA: EDITOR DE ROTINA -->
+    <figure>
+      <div class="ph sv" aria-label="Editor de rotina na proposta">
+        <div class="status"><span>22:41</span><span>●●●</span></div>
+        <div class="nav"><button class="fab" type="button" aria-label="Voltar"><svg><use href="#i-back"/></svg></button><span style="font-size:15px;opacity:.7">rotina ativa</span></div>
+        <div class="scroll">
+          <div><h2 class="ttl">semana</h2><p class="sub">Toca às 07:00 na manhã depois de encostar na luminária.</p></div>
+          <div><p class="lbl">horários</p>
+            <div class="card">
+              <div class="field"><span>Despertador</span><em>07:00</em></div>
+              <div class="field"><span>Desligar Modo Noturno</span><em>07:30</em></div>
+            </div></div>
+          <div><p class="lbl">som · pássaros</p>
+            <div class="card"><div class="chips">
+              <span class="chp on"><svg width="14" height="14"><use href="#i-check"/></svg>Sabiá-laranjeira</span>
+              <span class="chp">Bem-te-vi</span><span class="chp">Amanhecer</span><span class="chp">Canário</span>
+            </div></div></div>
+          <div><p class="lbl">ativar sozinha quando</p>
+            <div class="card">
+              <div class="it"><span class="tx"><b>Dia de semana</b></span><span class="tog on" role="img" aria-label="ligado"></span></div>
+              <div class="it"><span class="tx"><b>Fim de semana</b></span><span class="tog" role="img" aria-label="desligado"></span></div>
+            </div></div>
+          <div class="card"><div class="it"><span class="ic"><svg><use href="#i-app"/></svg></span><span class="tx"><b>Apps bloqueados</b><span>4 apps</span></span><svg class="chev"><use href="#i-chev"/></svg></div></div>
+          <button class="pill" type="button">salvar</button>
+          <button class="ghost" type="button">excluir rotina</button>
+        </div>
+      </div>
+      <figcaption><b>proposta</b> · editar rotina</figcaption>
+    </figure>
+
+    <!-- PROPOSTA: AMIGOS -->
+    <figure>
+      <div class="ph sv" aria-label="Amigos na proposta">
+        <div class="status"><span>22:41</span><span>●●●</span></div>
+        <div class="nav"><button class="fab" type="button" aria-label="Voltar"><svg><use href="#i-back"/></svg></button><button class="fab" type="button" aria-label="Convidar"><svg><use href="#i-share"/></svg></button></div>
+        <div class="scroll">
+          <div><h2 class="ttl">amigos</h2><p class="sub">Quem fica mais noites longe do celular.</p></div>
+          <div><p class="lbl">ranking · noites seguidas</p>
+            <div class="card">
+              <div class="it"><span class="rank">1</span><span class="tx"><b>Marina</b><span>recorde 31</span></span><span class="num">18</span></div>
+              <div class="it on"><span class="rank">2</span><span class="tx"><b>Você</b><span>recorde 12</span></span><span class="num">12</span></div>
+              <div class="it"><span class="rank">3</span><span class="tx"><b>Pedro</b><span>recorde 9</span></span><span class="num">4</span></div>
+              <div class="it"><span class="rank">4</span><span class="tx"><b>Lu</b><span>recorde 6</span></span><span class="num">0</span></div>
+            </div></div>
+          <div><p class="lbl">seu código</p>
+            <div class="card"><div class="code"><span>K</span><span>7</span><span>M</span><span>Q</span><span>2</span><span>X</span></div>
+              <p class="note" style="margin:0 12px 10px">Quem digitar esse código passa a ver a sua sequência.</p></div></div>
+          <button class="pill" type="button">adicionar amigo</button>
+        </div>
+      </div>
+      <figcaption><b>proposta</b> · amigos</figcaption>
+    </figure>
+  </div>
+
+  <section class="notes" aria-label="O que muda">
+    <div><h2>cores</h2><p>Âmbar do site (#f2b05e) vira a cor de ação nos dois modos, no lugar do terracota de dia e do azul à noite. Cartões de vidro creme-âmbar de dia; à noite, vidro marrom-quente sobre grafite-azulado, como o menu do site.</p></div>
+    <div><h2>tipografia</h2><p>DM Sans, que já está no app. Títulos em peso médio e minúsculas, rótulos pequenos e espaçados em minúsculas, igual ao site. A Neue Machina aparece no site só na marca e no título grande da compra; ela precisa de licença comercial pra entrar no app.</p></div>
+    <div><h2>forma</h2><p>Tudo em pílula: linhas selecionadas, botões, chips e campos de hora. Ícones em círculos neutros (sem cor de destaque), botão de fechar/voltar redondo como o ☰ do site, título grande no topo em vez da barra do iOS.</p></div>
+  </section>
+</div>
+
+<script>
+(function () {
+  var root = document.getElementById('root');
+  var d = document.getElementById('b-day'), n = document.getElementById('b-night');
+  function set(night) {
+    root.classList.toggle('night', night);
+    d.setAttribute('aria-pressed', String(!night));
+    n.setAttribute('aria-pressed', String(night));
+  }
+  d.addEventListener('click', function () { set(false); });
+  n.addEventListener('click', function () { set(true); });
+})();
+</script>
