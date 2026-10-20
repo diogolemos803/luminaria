@@ -224,7 +224,6 @@ export default function Experience() {
           </Link>
           <nav className={`home-links ${night ? "" : "is-day"}`} aria-label={t.pagesNav}>
             <a href="https://instagram.com/the.sovee" target="_blank" rel="noopener noreferrer">{t.nav.instagram}</a>
-            <Link href="/privacidade">{t.nav.privacy}</Link>
             <Link href="/lista">{t.nav.waitlist}</Link>
           </nav>
           <Menu

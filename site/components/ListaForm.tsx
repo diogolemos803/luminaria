@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { readAttribution } from "@/lib/attribution";
 import { getConsent } from "@/lib/cookies";
@@ -70,11 +69,7 @@ export default function ListaForm() {
       <label className="ls-check">
         <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
         <span>
-          Concordo em receber{" "}
-          <Link href="/privacidade" target="_blank">
-            e-mails
-          </Link>{" "}
-          da SOVEE sobre o lançamento. Posso sair da lista quando quiser.
+          Concordo em receber e-mails da SOVEE sobre o lançamento. Posso sair da lista quando quiser.
         </span>
       </label>
       <button type="submit" className="buy-btn" disabled={!ready}>

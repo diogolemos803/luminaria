@@ -21,7 +21,7 @@ export default function Privacidade() {
 
         <section className="pg-sec">
           <h2 className="pg-h2">quem somos</h2>
-          <p className="pg-p">A SOVEE é um projeto de Porto Alegre/RS. O responsável pelos seus dados é Diogo Lemos. Para falar sobre privacidade: {contact}.</p>
+          <p className="pg-p">A SOVEE é um projeto de Porto Alegre/RS. Para falar sobre privacidade: {contact}.</p>
         </section>
 
         <section className="pg-sec">

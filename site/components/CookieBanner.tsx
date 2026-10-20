@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { setConsent, useConsent } from "@/lib/cookies";
 
 /** Aviso de cookies discreto. Nada de rastreamento carrega antes do aceite. */
@@ -10,7 +9,7 @@ export default function CookieBanner() {
   return (
     <div className="cookie-banner" role="region" aria-label="cookies">
       <p>
-        usamos cookies para entender o que funciona nos anúncios. <Link href="/privacidade">privacidade</Link>
+        usamos cookies para entender o que funciona nos anúncios.
       </p>
       <div>
         <button type="button" onClick={() => setConsent("declined")}>recusar</button>

@@ -15,7 +15,7 @@ const ptUi = {
   tagline: "hora de desligar.",
   back: "voltar ao quarto",
   pagesNav: "páginas",
-  nav: { product: "produto", how: "como funciona", about: "sobre", science: "a ciência do sono", waitlist: "lista de espera", privacy: "privacidade", instagram: "instagram" },
+  nav: { product: "produto", how: "como funciona", about: "sobre", science: "a ciência do sono", waitlist: "lista de espera", instagram: "instagram" },
   langLabel: "idioma",
   meta: {
     home: { title: "SOVEE — durma sem pegar no celular.", description: "O Day Finisher que transforma a hora de dormir em ritual." },
@@ -78,7 +78,7 @@ const enUi: UI = {
   tagline: "time to switch off.",
   back: "back to the room",
   pagesNav: "pages",
-  nav: { product: "product", how: "how it works", about: "about", science: "the science of sleep", waitlist: "waitlist", privacy: "privacy", instagram: "instagram" },
+  nav: { product: "product", how: "how it works", about: "about", science: "the science of sleep", waitlist: "waitlist", instagram: "instagram" },
   langLabel: "language",
   meta: {
     home: { title: "SOVEE — sleep without picking up your phone.", description: "The Day Finisher that turns bedtime into a ritual." },
@@ -139,7 +139,7 @@ const esUi: UI = {
   tagline: "hora de desconectar.",
   back: "volver al cuarto",
   pagesNav: "páginas",
-  nav: { product: "producto", how: "cómo funciona", about: "sobre nosotros", science: "la ciencia del sueño", waitlist: "lista de espera", privacy: "privacidad", instagram: "instagram" },
+  nav: { product: "producto", how: "cómo funciona", about: "sobre nosotros", science: "la ciencia del sueño", waitlist: "lista de espera", instagram: "instagram" },
   langLabel: "idioma",
   meta: {
     home: { title: "SOVEE — duerme sin coger el móvil.", description: "El Day Finisher que convierte la hora de dormir en un ritual." },

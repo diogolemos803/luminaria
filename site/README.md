@@ -16,7 +16,7 @@ npm run build    # build de produção
 - `/produto`, `/sobre`, `/ciencia-do-sono` textos em `lib/content/` (pt, en e es)
 - `/como-funciona` animação que avança com a rolagem (celular encaixando no nicho, luz do Day Finisher, foguete, meteoro e pouso); cenas geradas dos protótipos em `components/scenes/` e `public/como-funciona/`
 - `/lista` lista de espera (nome, e-mail e consentimento). `/pre-venda` e `/comprar` redirecionam para ela. Nada no site cobra ou vende.
-- `/privacidade` política de privacidade (LGPD)
+- política de privacidade (LGPD): escondida por enquanto em `app/_privacidade-oculta` (a pasta com `_` não vira rota). Para publicar, renomeie para `app/privacidade` e religue os links.
 
 ## Lista de espera
 
