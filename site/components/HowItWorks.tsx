@@ -382,8 +382,8 @@ export default function HowItWorks() {
 
               <image href="/produto/lampada_apagada.webp" x="0" y="0" width="1080" height="1350" />
 
-              {/* luz do Day Finisher */}
-              <ellipse ref={glow} cx="337" cy="590" rx="520" ry="430" fill="url(#hw-glow)" style={{ opacity: 0, mixBlendMode: "screen" }} />
+              {/* luz do Day Finisher: mistura normal (sem screen), igual dentro e fora da foto, senão aparece uma borda onde a imagem termina */}
+              <ellipse ref={glow} cx="337" cy="590" rx="520" ry="430" fill="url(#hw-glow)" style={{ opacity: 0 }} />
               <g ref={lampFill} style={{ opacity: 0, mixBlendMode: "screen" }}>
                 <path d={LAMP_PATH} fill="url(#hw-body)" />
                 <ellipse cx="336.5" cy="467" rx="117" ry="58" fill="var(--lc)" style={{ opacity: 0.55 }} />
