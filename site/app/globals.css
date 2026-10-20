@@ -214,3 +214,9 @@ body {
 .lang-sw-menu{display:flex;justify-content:center;margin-top:10px;padding-top:10px;border-top:1px solid rgba(253,248,199,.22)}
 .glass-menu.is-day .lang-sw button[aria-pressed=true]{background:rgba(68,68,68,.14)}
 .glass-menu.is-day .lang-sw-menu{border-color:rgba(68,68,68,.2)}
+
+/* escrita da marca (arte oficial em máscara): a cor vem de currentColor */
+.wordmark{display:inline-block;height:12px;aspect-ratio:1377/273;background:currentColor;-webkit-mask:url(/wordmark.png) center/contain no-repeat;mask:url(/wordmark.png) center/contain no-repeat;vertical-align:middle}
+.brand-logo .wordmark{height:14px}
+.wordmark-lg{height:16px}
+.wordmark-title{height:clamp(26px,3.6vw,40px)}

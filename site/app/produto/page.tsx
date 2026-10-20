@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import LampDrawing from "@/components/LampDrawing";
 import PageShell from "@/components/PageShell";
+import Wordmark from "@/components/Wordmark";
 import { content, ui } from "@/lib/i18n";
 import { getLang } from "@/lib/lang";
 
@@ -18,7 +19,7 @@ export default function Produto() {
         <LampDrawing />
         <div className="buy-col">
           <p className="buy-eyebrow">{c.eyebrow}</p>
-          <h1 className="buy-title">{c.title}</h1>
+          <h1 className="buy-title" aria-label={c.title}><Wordmark className="wordmark-title" /></h1>
           <p className="buy-lead">{c.lead}</p>
           <p className="buy-note">{c.note}</p>
           <Link href="/comprar" className="buy-btn pg-cta">

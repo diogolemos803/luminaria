@@ -1,5 +1,6 @@
 import Link from "next/link";
 import LangSwitch from "./LangSwitch";
+import Wordmark from "./Wordmark";
 import { getLang } from "@/lib/lang";
 import { ui } from "@/lib/i18n";
 
@@ -26,7 +27,7 @@ export default function PageShell({ children }: { children: React.ReactNode }) {
           <LangSwitch />
           <div className="buy-brand" aria-label="sovee">
             <i className="brand-mark" aria-hidden="true" />
-            <span>sovee</span>
+            <Wordmark />
           </div>
         </div>
       </header>

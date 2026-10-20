@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { useLang } from "./LangProvider";
+import Wordmark from "./Wordmark";
 
 /** Logo SOVEE: a carinha dormindo, recolorida pela cor do texto. */
 export function Logo({ size = 120, color = "#FDF8C7" }: { size?: number; color?: string }) {
@@ -37,7 +38,7 @@ export default function Loading({ reduced }: { reduced: boolean }) {
       >
         <Logo />
       </motion.div>
-      <span className="text-sm tracking-[0.4em] text-creme">sovee</span>
+      <span className="text-creme"><Wordmark className="wordmark-lg" /></span>
     </motion.div>
   );
 }

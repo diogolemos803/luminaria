@@ -4,6 +4,7 @@ import Link from "next/link";
 import { FormEvent, useState } from "react";
 import LampDrawing from "@/components/LampDrawing";
 import LangSwitch from "@/components/LangSwitch";
+import Wordmark from "@/components/Wordmark";
 import { useLang } from "@/components/LangProvider";
 import { money, price } from "@/lib/i18n";
 
@@ -37,7 +38,7 @@ export default function Comprar() {
           <LangSwitch />
           <div className="buy-brand" aria-label="sovee">
             <i className="brand-mark" aria-hidden="true" />
-            <span>sovee</span>
+            <Wordmark />
           </div>
         </div>
       </header>
@@ -47,7 +48,7 @@ export default function Comprar() {
 
         <div className="buy-col">
           <p className="buy-eyebrow">Day Finisher</p>
-          <h1 className="buy-title">sovee</h1>
+          <h1 className="buy-title"><Wordmark className="wordmark-title" /></h1>
           <p className="buy-lead">{t.lead}</p>
           <p className="buy-price">
             {brl(PRICE)} <small>{t.perUnit}</small>

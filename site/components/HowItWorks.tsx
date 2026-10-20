@@ -5,6 +5,7 @@ import { useEffect, useRef } from "react";
 import * as launch from "./scenes/launchScene";
 import * as landing from "./scenes/landingScene";
 import LangSwitch from "./LangSwitch";
+import Wordmark from "./Wordmark";
 import { useLang } from "./LangProvider";
 
 /* ---------- matemática de rolagem ---------- */
@@ -352,7 +353,7 @@ export default function HowItWorks() {
           <LangSwitch />
           <div className="buy-brand" aria-label="sovee">
             <i className="brand-mark" aria-hidden="true" />
-            <span>sovee</span>
+            <Wordmark />
           </div>
         </div>
       </header>

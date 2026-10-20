@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import Loading from "./Loading";
 import Menu from "./Menu";
+import Wordmark from "./Wordmark";
 import { useLang } from "./LangProvider";
 import { lampColors, rooms, type Mode } from "./palette";
 
@@ -216,7 +217,7 @@ export default function Experience() {
         <>
           <div className={`brand-logo ${night ? "" : "is-day"}`} aria-label="sovee">
             <i className="brand-mark" aria-hidden="true" />
-            <span>sovee</span>
+            <Wordmark />
           </div>
           <Link href="/comprar" className={`buy-cta ${night ? "" : "is-day"}`} style={{ ["--lc" as string]: lampColor }}>
             {t.nav.buy}
