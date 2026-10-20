@@ -6,6 +6,8 @@
  * e quando os links de pagamento e o destino dos cadastros estiverem configurados.
  * Ao mudar o texto, mude TERMS_VERSION: ela é gravada junto com o aceite de cada pessoa.
  */
+import { leadsBackend } from "./leads";
+
 export const TERMS_VERSION = "2026-10-20";
 
 export const SINAL = 100; // R$, à vista (não parcelável)
@@ -53,11 +55,11 @@ export function preVendaConfigured() {
     PLACEHOLDERS.length === 0 &&
     !!process.env.PREVENDA_PAYMENT_URL_PIX &&
     !!process.env.PREVENDA_PAYMENT_URL_CARTAO &&
-    !!process.env.PREVENDA_WEBHOOK_URL
+    leadsBackend() !== null
   );
 }
 
-/** A lista de espera (e-mail antes da abertura) só precisa do destino dos cadastros. */
+/** A lista de espera (e-mail antes da abertura) só precisa de um lugar para guardar os cadastros. */
 export function waitlistConfigured() {
-  return !!process.env.PREVENDA_WEBHOOK_URL;
+  return leadsBackend() !== null;
 }

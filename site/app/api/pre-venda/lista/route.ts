@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { waitlistConfigured } from "@/lib/pre-venda";
+import { saveLead } from "@/lib/leads";
 
 export const dynamic = "force-dynamic";
 
@@ -23,13 +24,7 @@ export async function POST(req: Request) {
   if (!EMAIL.test(email) || email.length > 254) return NextResponse.json({ error: "email" }, { status: 400 });
 
   try {
-    const res = await fetch(process.env.PREVENDA_WEBHOOK_URL as string, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Accept: "application/json" },
-      body: JSON.stringify({ email, name, source: "lista-de-espera", createdAt: new Date().toISOString() }),
-      signal: AbortSignal.timeout(8000),
-    });
-    if (!res.ok) throw new Error(String(res.status));
+    await saveLead({ email, name, source: "lista-de-espera", createdAt: new Date().toISOString() });
   } catch {
     return NextResponse.json({ error: "storage" }, { status: 502 });
   }
