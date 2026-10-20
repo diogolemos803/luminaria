@@ -22,7 +22,7 @@ export default function Produto() {
           <h1 className="buy-title" aria-label={c.title}><Wordmark className="wordmark-title" /></h1>
           <p className="buy-lead">{c.lead}</p>
           <p className="buy-note">{c.note}</p>
-          <Link href="/comprar" className="buy-btn pg-cta">
+          <Link href="/pre-venda" className="buy-btn pg-cta">
             {c.cta}
           </Link>
         </div>

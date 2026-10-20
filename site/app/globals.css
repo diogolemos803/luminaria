@@ -235,3 +235,26 @@ body {
   .hw-hint{font-size:12px}
   .buy-right{gap:10px}
 }
+
+/* pré-venda */
+.pv{max-width:640px}
+.pv-card{display:flex;flex-direction:column;gap:26px;padding:26px;border-radius:26px;background:linear-gradient(160deg,rgba(120,98,76,.28),rgba(52,44,38,.4));border:1px solid rgba(253,248,199,.12);margin-top:8px}
+.pv-closed{align-items:flex-start;gap:14px}
+.pv-closed h2{margin:0;font-size:24px;font-weight:500}
+.pv-closed p{margin:0;line-height:1.5;opacity:.9}
+.pv-step{display:flex;flex-direction:column;gap:8px;min-width:0}
+.pv-step h2{margin:0 0 4px;display:flex;align-items:center;gap:10px;font-size:15px;letter-spacing:.06em;font-weight:500;text-transform:lowercase}
+.pv-step h2 span{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:#F2B05E;color:#2A2A2A;font-size:13px;font-variant-numeric:tabular-nums}
+.pv-p{margin:0;font-size:15px;line-height:1.5;opacity:.85}
+.pv-ig{align-self:flex-start;gap:8px;padding:12px 20px;font-size:16px}
+.pv-check{display:flex;align-items:flex-start;gap:12px;font-size:16px;line-height:1.4;opacity:1;cursor:pointer}
+.buy-form .pv-check{font-size:16px;opacity:1}
+.buy-form .pv-check input:not([type=radio]){width:22px;height:22px;padding:0;margin:1px 0 0;flex:none;border:0;background:transparent;accent-color:#F2B05E}
+.pv-check input:disabled{opacity:.4;cursor:not-allowed}
+.pv-terms{max-height:260px;overflow:auto;padding:16px;border-radius:16px;background:rgba(0,0,0,.22);font-size:14px;line-height:1.55}
+.pv-terms h3{margin:0 0 6px;font-size:14px;font-weight:600}
+.pv-terms p{margin:0 0 10px;opacity:.88}
+.pv-terms section+section{margin-top:14px}
+.pv-trap{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+.pv-error{margin:0;padding:12px 14px;border-radius:14px;background:rgba(200,64,47,.18);border:1px solid rgba(200,64,47,.5);font-size:15px}
+.buy-btn:disabled{opacity:.45;cursor:not-allowed;filter:none}

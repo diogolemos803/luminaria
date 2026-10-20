@@ -369,7 +369,7 @@ export default function HowItWorks() {
           ))}
         </ol>
         <p>{all.tagline}</p>
-        <Link href="/comprar">{t.final.buy}</Link>
+        <Link href="/pre-venda">{t.final.buy}</Link>
         <Link href="/produto">{t.final.product}</Link>
       </section>
 
@@ -524,7 +524,7 @@ export default function HowItWorks() {
               <h2>{all.tagline}</h2>
               <p>{t.final.text}</p>
               <div className="hw-actions">
-                <Link href="/comprar" className="buy-btn" tabIndex={-1}>
+                <Link href="/pre-venda" className="buy-btn" tabIndex={-1}>
                   {t.final.buy}
                 </Link>
                 <Link href="/produto" className="hw-link" tabIndex={-1}>
@@ -564,7 +564,7 @@ export default function HowItWorks() {
           <Link href="/produto">{all.nav.product}</Link>
           <Link href="/sobre">{all.nav.about}</Link>
           <Link href="/ciencia-do-sono">{all.nav.science}</Link>
-          <Link href="/comprar">{all.nav.buy}</Link>
+          <Link href="/pre-venda">{all.nav.buy}</Link>
         </nav>
         <p>{all.tagline}</p>
       </footer>

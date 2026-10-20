@@ -12,7 +12,7 @@ export default function PageShell({ children }: { children: React.ReactNode }) {
     { label: t.nav.how, href: "/como-funciona" },
     { label: t.nav.about, href: "/sobre" },
     { label: t.nav.science, href: "/ciencia-do-sono" },
-    { label: t.nav.buy, href: "/comprar" },
+    { label: t.nav.buy, href: "/pre-venda" },
   ];
   return (
     <main className="buy pg">

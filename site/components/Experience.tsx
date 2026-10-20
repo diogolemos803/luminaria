@@ -219,7 +219,7 @@ export default function Experience() {
             <i className="brand-mark" aria-hidden="true" />
             <Wordmark />
           </div>
-          <Link href="/comprar" className={`buy-cta ${night ? "" : "is-day"}`} style={{ ["--lc" as string]: lampColor }}>
+          <Link href="/pre-venda" className={`buy-cta ${night ? "" : "is-day"}`} style={{ ["--lc" as string]: lampColor }}>
             {t.nav.buy}
           </Link>
           <Menu
