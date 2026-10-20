@@ -16,13 +16,14 @@ struct FriendsView: View {
 
     private enum Field { case name, code }
 
-    private var theme: ModeTheme { .current(armed: isNightModeArmed) }
+    private var theme: ModeTheme { .menu(armed: isNightModeArmed) }
 
     var body: some View {
         ZStack {
-            theme.stage.ignoresSafeArea()
+            theme.stageBackground
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
+                    MenuHeader(title: "Amigos", subtitle: "Quem fica mais noites longe do celular.", theme: theme)
                     switch store.status {
                     case .idle, .loading:
                         if store.me == nil {
@@ -51,12 +52,7 @@ struct FriendsView: View {
             }
             .refreshable { await store.refresh() }
         }
-        .navigationTitle("Amigos")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbarBackground(theme.stage, for: .navigationBar)
-        .toolbarBackground(.visible, for: .navigationBar)
-        .toolbarColorScheme(isNightModeArmed ? .dark : .light, for: .navigationBar)
-        .tint(theme.accent)
+        .menuChrome(title: "Amigos", theme: theme, isNight: isNightModeArmed)
         .task {
             nameDraft = store.displayName
             await store.refresh()

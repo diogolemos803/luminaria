@@ -9,16 +9,18 @@ struct HelpView: View {
     @Environment(\.isNightModeArmed) private var isNightModeArmed
     @ObservedObject private var alarmManager = AlarmManager.shared
 
-    private var theme: ModeTheme { .current(armed: isNightModeArmed) }
+    private var theme: ModeTheme { .menu(armed: isNightModeArmed) }
 
     var body: some View {
         NavigationStack {
             ZStack {
-                theme.stage.ignoresSafeArea()
+                theme.stageBackground
                 ScrollView {
                     VStack(alignment: .leading, spacing: 20) {
+                        MenuHeader(title: "Ajuda", theme: theme)
+
                         Text("Configuração única")
-                            .font(.luminaria(.title2, weight: .bold))
+                            .font(.luminaria(.title3, weight: .medium))
                             .foregroundStyle(theme.ink)
 
                         Text("Crie um Atalho chamado \"\(ShortcutManager.shortcutName)\" no app Atalhos com as ações abaixo, nessa ordem. Depois disso, toque no botão pra armar o modo noite e, em seguida, encoste o iPhone na luminária — este atalho será executado automaticamente.")
@@ -113,14 +115,10 @@ struct HelpView: View {
                     .padding(.top, 4)
                 }
             }
-            .navigationTitle("Ajuda")
-            .toolbarBackground(theme.stage, for: .navigationBar)
-            .toolbarBackground(.visible, for: .navigationBar)
-            .toolbarColorScheme(isNightModeArmed ? .dark : .light, for: .navigationBar)
-            .tint(theme.accent)
+            .menuChrome(title: "Ajuda", theme: theme, isNight: isNightModeArmed)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Fechar") { dismiss() }
+                ToolbarItem(placement: .topBarTrailing) {
+                    MenuRoundButton(systemName: "xmark", label: "Fechar", theme: theme) { dismiss() }
                 }
             }
         }
@@ -180,7 +178,7 @@ struct HelpView: View {
 
     private func sectionHeading(_ text: String) -> some View {
         Text(text)
-            .font(.luminaria(.headline, weight: .bold))
+            .font(.luminaria(.title3, weight: .medium))
             .foregroundStyle(theme.ink)
             .padding(.top, 4)
     }
@@ -188,10 +186,10 @@ struct HelpView: View {
     private func stepRow(_ number: Int, _ text: String) -> some View {
         HStack(alignment: .top, spacing: 10) {
             Text("\(number)")
-                .font(.luminaria(.caption, weight: .heavy))
-                .foregroundStyle(theme.accent)
-                .frame(width: 20, height: 20)
-                .background(theme.accentWash)
+                .font(.luminaria(.caption, weight: .medium))
+                .foregroundStyle(theme.chipInk ?? theme.accent)
+                .frame(width: 22, height: 22)
+                .background(theme.chip ?? theme.accentWash)
                 .clipShape(Circle())
                 .padding(.top, 1)
             Text(text)

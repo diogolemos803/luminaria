@@ -10,13 +10,14 @@ struct AppBlockingView: View {
     @Environment(\.isNightModeArmed) private var isNightModeArmed
     @State private var isPickerPresented = false
 
-    private var theme: ModeTheme { .current(armed: isNightModeArmed) }
+    private var theme: ModeTheme { .menu(armed: isNightModeArmed) }
 
     var body: some View {
         ZStack {
-            theme.stage.ignoresSafeArea()
+            theme.stageBackground
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
+                    MenuHeader(title: "Bloqueio de apps", theme: theme)
                     ThemedCard(title: "Autorização", theme: theme) {
                         ThemedRow(
                             theme: theme,
@@ -64,12 +65,7 @@ struct AppBlockingView: View {
                 .padding(.top, 4)
             }
         }
-        .navigationTitle("Bloqueio de apps")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbarBackground(theme.stage, for: .navigationBar)
-        .toolbarBackground(.visible, for: .navigationBar)
-        .toolbarColorScheme(isNightModeArmed ? .dark : .light, for: .navigationBar)
-        .tint(theme.accent)
+        .menuChrome(title: "Bloqueio de apps", theme: theme, isNight: isNightModeArmed)
         .familyActivityPicker(isPresented: $isPickerPresented, selection: $selection)
         .onAppear {
             screenTimeManager.refreshAuthorizationStatus()

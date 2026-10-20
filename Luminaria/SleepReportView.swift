@@ -33,7 +33,7 @@ struct SleepReportView: View {
     @Environment(\.isNightModeArmed) private var isNightModeArmed
     @State private var filter: ReportDateFilter = .all
 
-    private var theme: ModeTheme { .current(armed: isNightModeArmed) }
+    private var theme: ModeTheme { .menu(armed: isNightModeArmed) }
 
     private var filteredEntries: [SleepReportEntry] {
         guard let cutoff = filter.cutoffDate else { return store.entries }
@@ -42,9 +42,10 @@ struct SleepReportView: View {
 
     var body: some View {
         ZStack {
-            theme.stage.ignoresSafeArea()
+            theme.stageBackground
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
+                    MenuHeader(title: "Relatório de sono", theme: theme)
                     filterSelector
 
                     if filteredEntries.isEmpty {
@@ -81,12 +82,7 @@ struct SleepReportView: View {
                 .padding(.top, 4)
             }
         }
-        .navigationTitle("Relatório de sono")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbarBackground(theme.stage, for: .navigationBar)
-        .toolbarBackground(.visible, for: .navigationBar)
-        .toolbarColorScheme(isNightModeArmed ? .dark : .light, for: .navigationBar)
-        .tint(theme.accent)
+        .menuChrome(title: "Relatório de sono", theme: theme, isNight: isNightModeArmed)
     }
 
     private var filterSelector: some View {
@@ -103,7 +99,7 @@ struct SleepReportView: View {
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 9)
                         .foregroundStyle(isSelected ? theme.accentForeground : theme.inkMuted)
-                        .background(isSelected ? theme.accent : theme.card)
+                        .background(isSelected ? theme.accent : (theme.chip ?? theme.card))
                         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                 }
                 .buttonStyle(.plain)

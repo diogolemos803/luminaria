@@ -17,6 +17,14 @@ enum SoveeColor {
     /// depois de ver o protótipo ("a sombra do modo noite ficou exemplar, só mude o
     /// verde [sage] pra um azul"). Um azul de luar suave, acento único do modo noite.
     static let noiteAzul = Color(red: 0.518, green: 0.631, blue: 0.784)
+
+    /// Cores do site sovee.com.br usadas nos menus (2026-10-20): âmbar dos botões
+    /// (#F2B05E) e o texto escuro sobre ele (#2A2A2A), grafite-azulado do menu ☰
+    /// (#23252C) e o cinza quente claro do modo dia (#E9E7E2).
+    static let ambar = Color(red: 0.949, green: 0.690, blue: 0.369)
+    static let ambarInk = Color(red: 0.165, green: 0.165, blue: 0.165)
+    static let grafite = Color(red: 0.137, green: 0.145, blue: 0.173)
+    static let pedra = Color(red: 0.914, green: 0.906, blue: 0.886)
 }
 
 /// Paleta compartilhada das telas secundárias (Configurações, Rotinas, Ajuda) e, desde
@@ -41,6 +49,21 @@ struct ModeTheme {
     let accentForeground: Color
     let danger: Color
     let dangerWash: Color
+
+    // Campos do visual dos menus no estilo do site sovee.com.br (2026-10-20). Têm valor
+    // padrão pra `.living`/`.zleepy` (tela do botão, lâmpada, despertador) continuarem
+    // exatamente como estavam — só `.menuDay`/`.menuNight` preenchem.
+    /// Cartão de "vidro": gradiente diagonal no lugar da cor chapada de `card`.
+    var cardGradient: [Color]? = nil
+    var cardEdge: Color = .clear
+    var cardShadow: Color = .clear
+    /// Fundo do círculo dos ícones (nil = `accentWash`) e cor do ícone (nil = `accent`).
+    var chip: Color? = nil
+    var chipInk: Color? = nil
+    /// Brilho âmbar suave na base da tela.
+    var stageGlow: Color = .clear
+    /// Títulos e rótulos em minúsculas, rótulos espaçados, botões em pílula.
+    var isSoveeMenu: Bool = false
 
     /// Fundo branco (era creme — o usuário não gostou do menu "amarelo" no modo dia,
     /// 2026-09-25); com isso os cartões viram um cinza bem claro, senão sumiriam no
@@ -99,7 +122,68 @@ struct ModeTheme {
         dangerWash: Color(red: 0.820, green: 0.541, blue: 0.463).opacity(0.12)
     )
 
+    /// Menus (Configurações, Rotinas, Ajuda, Relatório, Amigos, Bloqueio, Lâmpada) no
+    /// estilo do site sovee.com.br — protótipo aprovado em `design/menus_sovee_prototipo.html`.
+    /// Noite = vidro marrom-quente sobre grafite-azulado (o menu ☰ do site); dia = o
+    /// inverso (pedido do usuário): texto grafite-azulado sobre cinza quente claro, vidro
+    /// claro. Âmbar do site (#F2B05E) é a cor de ação nos dois modos.
+    static let menuDay = ModeTheme(
+        stage: SoveeColor.pedra,
+        card: Color.white.opacity(0.75),
+        ink: SoveeColor.grafite,
+        inkMuted: SoveeColor.grafite.opacity(0.58),
+        hairline: SoveeColor.grafite.opacity(0.10),
+        accent: SoveeColor.ambar,
+        accentWash: SoveeColor.ambar.opacity(0.22),
+        accentForeground: SoveeColor.ambarInk,
+        danger: Color(red: 0.706, green: 0.318, blue: 0.227),
+        dangerWash: Color(red: 0.706, green: 0.318, blue: 0.227).opacity(0.10),
+        cardGradient: [Color.white.opacity(0.82), Color(red: 0.980, green: 0.961, blue: 0.925).opacity(0.60)],
+        cardEdge: SoveeColor.grafite.opacity(0.08),
+        cardShadow: SoveeColor.grafite.opacity(0.10),
+        chip: SoveeColor.grafite.opacity(0.07),
+        chipInk: SoveeColor.grafite,
+        stageGlow: SoveeColor.ambar.opacity(0.20),
+        isSoveeMenu: true
+    )
+
+    static let menuNight = ModeTheme(
+        stage: SoveeColor.grafite,
+        card: Color(red: 0.310, green: 0.278, blue: 0.251),
+        ink: SoveeColor.creme,
+        inkMuted: SoveeColor.creme.opacity(0.60),
+        hairline: SoveeColor.creme.opacity(0.16),
+        accent: SoveeColor.ambar,
+        accentWash: SoveeColor.ambar.opacity(0.20),
+        accentForeground: SoveeColor.ambarInk,
+        danger: Color(red: 0.898, green: 0.604, blue: 0.510),
+        dangerWash: Color(red: 0.898, green: 0.604, blue: 0.510).opacity(0.12),
+        cardGradient: [Color(red: 0.471, green: 0.384, blue: 0.298).opacity(0.42),
+                       Color(red: 0.204, green: 0.173, blue: 0.149).opacity(0.50)],
+        cardEdge: SoveeColor.creme.opacity(0.14),
+        cardShadow: Color.black.opacity(0.35),
+        chip: SoveeColor.creme.opacity(0.13),
+        chipInk: SoveeColor.creme,
+        stageGlow: SoveeColor.ambar.opacity(0.22),
+        isSoveeMenu: true
+    )
+
     static func current(armed: Bool) -> ModeTheme { armed ? .zleepy : .living }
+
+    /// Tema das telas de menu. Pra voltar ao visual anterior dos menus, trocar por
+    /// `current(armed:)`.
+    static func menu(armed: Bool) -> ModeTheme { armed ? .menuNight : .menuDay }
+
+    /// Fundo das telas de menu: cor de palco + brilho âmbar na base.
+    var stageBackground: some View {
+        ZStack {
+            stage
+            RadialGradient(colors: [stageGlow, stageGlow.opacity(0)],
+                           center: .bottom, startRadius: 0, endRadius: 460)
+                .scaleEffect(x: 1.4, y: 1, anchor: .bottom)
+        }
+        .ignoresSafeArea()
+    }
 }
 
 private struct NightModeArmedKey: EnvironmentKey {
@@ -192,11 +276,12 @@ struct IconBadge: View {
     let theme: ModeTheme
 
     var body: some View {
+        let size: CGFloat = theme.isSoveeMenu ? 36 : 32
         Image(systemName: systemName)
-            .font(.system(size: 14, weight: .semibold))
-            .foregroundStyle(isDanger ? theme.danger : theme.accent)
-            .frame(width: 32, height: 32)
-            .background(isDanger ? theme.dangerWash : theme.accentWash)
+            .font(.system(size: theme.isSoveeMenu ? 15 : 14, weight: theme.isSoveeMenu ? .medium : .semibold))
+            .foregroundStyle(isDanger ? theme.danger : (theme.chipInk ?? theme.accent))
+            .frame(width: size, height: size)
+            .background(isDanger ? theme.dangerWash : (theme.chip ?? theme.accentWash))
             .clipShape(Circle())
     }
 }
@@ -217,14 +302,14 @@ struct FullPillButton: View {
 
     var body: some View {
         Button(action: action) {
-            Text(title)
-                .font(.luminaria(.body, weight: .bold))
+            Text(theme.isSoveeMenu ? title.lowercased() : title)
+                .font(.luminaria(.body, weight: theme.isSoveeMenu ? .medium : .bold))
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 14)
+                .padding(.vertical, theme.isSoveeMenu ? 15 : 14)
         }
         .foregroundStyle(theme.accentForeground)
         .background(theme.accent)
-        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: theme.isSoveeMenu ? 999 : 18, style: .continuous))
     }
 }
 
@@ -237,14 +322,19 @@ struct GhostDangerButton: View {
 
     var body: some View {
         Button(action: action) {
-            Text(title)
-                .font(.luminaria(.body, weight: .semibold))
+            Text(theme.isSoveeMenu ? title.lowercased() : title)
+                .font(.luminaria(.body, weight: theme.isSoveeMenu ? .regular : .semibold))
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 13)
         }
         .foregroundStyle(theme.danger)
-        .background(theme.dangerWash)
-        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .background(theme.isSoveeMenu ? Color.clear : theme.dangerWash)
+        .clipShape(RoundedRectangle(cornerRadius: theme.isSoveeMenu ? 999 : 18, style: .continuous))
+        .overlay {
+            if theme.isSoveeMenu {
+                Capsule().strokeBorder(theme.hairline, lineWidth: 1)
+            }
+        }
     }
 }
 
@@ -256,18 +346,40 @@ struct ThemedCard<Content: View>: View {
     @ViewBuilder var content: () -> Content
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: theme.isSoveeMenu ? 8 : 6) {
             if let title {
-                Text(title.uppercased())
-                    .font(.luminaria(.caption2, weight: .bold))
-                    .tracking(0.8)
-                    .foregroundStyle(theme.inkMuted)
-                    .padding(.horizontal, 10)
+                if theme.isSoveeMenu {
+                    // Rótulo do site: minúsculas, pequeno e espaçado (letter-spacing .18em).
+                    Text(title.lowercased())
+                        .font(.luminaria(.caption, weight: .medium))
+                        .tracking(2.1)
+                        .foregroundStyle(theme.inkMuted)
+                        .padding(.horizontal, 8)
+                } else {
+                    Text(title.uppercased())
+                        .font(.luminaria(.caption2, weight: .bold))
+                        .tracking(0.8)
+                        .foregroundStyle(theme.inkMuted)
+                        .padding(.horizontal, 10)
+                }
             }
-            VStack(spacing: 0) { content() }
-                .padding(4)
-                .background(theme.card)
-                .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+            if theme.isSoveeMenu {
+                let shape = RoundedRectangle(cornerRadius: 26, style: .continuous)
+                VStack(spacing: 0) { content() }
+                    .padding(6)
+                    .background(
+                        LinearGradient(colors: theme.cardGradient ?? [theme.card],
+                                       startPoint: .topLeading, endPoint: .bottomTrailing),
+                        in: shape
+                    )
+                    .overlay(shape.strokeBorder(theme.cardEdge, lineWidth: 1))
+                    .shadow(color: theme.cardShadow, radius: 20, x: 0, y: 10)
+            } else {
+                VStack(spacing: 0) { content() }
+                    .padding(4)
+                    .background(theme.card)
+                    .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+            }
         }
     }
 }
@@ -309,13 +421,15 @@ struct ThemedRow<Leading: View, Accessory: View>: View {
                 Rectangle()
                     .fill(theme.hairline)
                     .frame(height: 1)
-                    .padding(.leading, 46)
+                    .padding(.leading, theme.isSoveeMenu ? 58 : 46)
             }
             HStack(spacing: 12) {
                 leading()
                 VStack(alignment: .leading, spacing: 1) {
                     Text(title)
-                        .font(.luminaria(.subheadline, weight: .semibold))
+                        .font(theme.isSoveeMenu
+                              ? .luminaria(.body, weight: .medium)
+                              : .luminaria(.subheadline, weight: .semibold))
                         .foregroundStyle(theme.ink)
                         .lineLimit(1)
                     if let subtitle {
@@ -330,5 +444,85 @@ struct ThemedRow<Leading: View, Accessory: View>: View {
             .padding(.horizontal, 10)
             .padding(.vertical, 11)
         }
+    }
+}
+
+/// Título grande no topo das telas de menu, no lugar do título da barra do iOS — como
+/// os títulos do site (minúsculas, peso médio, espaçamento -0.02em).
+struct MenuHeader: View {
+    let title: String
+    var subtitle: String? = nil
+    let theme: ModeTheme
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title.lowercased())
+                .font(.soveeDisplay(size: 30, weight: .medium))
+                .tracking(-0.6)
+                .foregroundStyle(theme.ink)
+            if let subtitle {
+                Text(subtitle)
+                    .font(.luminaria(.subheadline))
+                    .foregroundStyle(theme.inkMuted)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 4)
+        .padding(.top, 2)
+    }
+}
+
+/// Botão redondo da barra (fechar), igual ao botão ☰ do site.
+struct MenuRoundButton: View {
+    let systemName: String
+    let label: String
+    let theme: ModeTheme
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: systemName)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(theme.ink)
+                .frame(width: 34, height: 34)
+                .background(theme.chip ?? theme.accentWash, in: Circle())
+        }
+        .accessibilityLabel(label)
+    }
+}
+
+extension View {
+    /// Fundo de cartão do tema: vidro com borda e sombra nos menus SOVEE, cor chapada nos
+    /// outros temas. Pra linhas soltas que não estão dentro de um `ThemedCard`.
+    @ViewBuilder
+    func themedCardSurface(_ theme: ModeTheme, cornerRadius: CGFloat = 26) -> some View {
+        let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+        if theme.isSoveeMenu {
+            self
+                .background(LinearGradient(colors: theme.cardGradient ?? [theme.card],
+                                           startPoint: .topLeading, endPoint: .bottomTrailing),
+                            in: shape)
+                .overlay(shape.strokeBorder(theme.cardEdge, lineWidth: 1))
+                .shadow(color: theme.cardShadow, radius: 20, x: 0, y: 10)
+        } else {
+            self.background(theme.card).clipShape(shape)
+        }
+    }
+
+    /// Barra de navegação das telas de menu: título do sistema escondido (o título grande
+    /// fica no conteúdo, ver `MenuHeader`), mas mantido pra servir de rótulo do "voltar"
+    /// e pra acessibilidade; fundo na cor do palco; botões na cor do texto.
+    func menuChrome(title: String, theme: ModeTheme, isNight: Bool) -> some View {
+        self
+            .navigationTitle(title)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .principal) { Color.clear.frame(width: 1, height: 1) }
+            }
+            .toolbarBackground(theme.stage, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
+            .toolbarColorScheme(isNight ? .dark : .light, for: .navigationBar)
+            .tint(theme.ink)
     }
 }

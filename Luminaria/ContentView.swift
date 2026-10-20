@@ -724,14 +724,16 @@ struct SettingsView: View {
     @Environment(\.isNightModeArmed) private var isNightModeArmed
     @State private var showHelp = false
 
-    private var theme: ModeTheme { .current(armed: isNightModeArmed) }
+    private var theme: ModeTheme { .menu(armed: isNightModeArmed) }
 
     var body: some View {
         NavigationStack {
             ZStack {
-                theme.stage.ignoresSafeArea()
+                theme.stageBackground
                 ScrollView {
                     VStack(alignment: .leading, spacing: 20) {
+                        MenuHeader(title: "Configurações", theme: theme)
+
                         ThemedCard(title: "Luminária", theme: theme) {
                             if nfcManager.isLinked {
                                 Button {
@@ -741,7 +743,7 @@ struct SettingsView: View {
                                         theme: theme,
                                         title: "Vinculada",
                                         subtitle: "Testar leitura da tag",
-                                        leading: { IconBadge(systemName: "checkmark", theme: theme) },
+                                        leading: { IconBadge(systemName: "wave.3.right", theme: theme) },
                                         accessory: { chevron }
                                     )
                                 }
@@ -752,7 +754,7 @@ struct SettingsView: View {
                                     ThemedRow(
                                         theme: theme,
                                         showsDivider: true,
-                                        title: "Desvincular luminária",
+                                        title: "Desvincular",
                                         leading: { IconBadge(systemName: "xmark", isDanger: true, theme: theme) },
                                         accessory: { EmptyView() }
                                     )
@@ -791,21 +793,22 @@ struct SettingsView: View {
                                         theme: theme,
                                         title: routine.name,
                                         subtitle: String(format: "%02d:%02d · %@", routine.alarmHour, routine.alarmMinute, routine.soundOption.displayName),
-                                        leading: { ActiveDot(theme: theme) },
-                                        accessory: { chevron }
+                                        leading: { IconBadge(systemName: "alarm", theme: theme) },
+                                        accessory: { HStack(spacing: 10) { ActiveDot(theme: theme); chevron } }
                                     )
                                 } else {
                                     ThemedRow(
                                         theme: theme,
                                         title: "Gerenciar rotinas de sono",
-                                        leading: { ActiveDot(theme: theme) },
+                                        leading: { IconBadge(systemName: "list.bullet", theme: theme) },
                                         accessory: { chevron }
                                     )
                                 }
                             }
                         }
 
-                        ThemedCard(title: "Relatório", theme: theme) {
+                        // Relatório, amigos e ajuda num cartão só, sem rótulo (protótipo aprovado).
+                        ThemedCard(theme: theme) {
                             NavigationLink {
                                 SleepReportView(store: sleepReportStore)
                             } label: {
@@ -817,29 +820,26 @@ struct SettingsView: View {
                                     accessory: { chevron }
                                 )
                             }
-                        }
-
-                        ThemedCard(title: "Amigos", theme: theme) {
                             NavigationLink {
                                 FriendsView()
                             } label: {
                                 ThemedRow(
                                     theme: theme,
+                                    showsDivider: true,
                                     title: "Amigos e ranking",
                                     subtitle: "Quem fica mais noites longe do celular",
-                                    leading: { IconBadge(systemName: "person.2.fill", theme: theme) },
+                                    leading: { IconBadge(systemName: "person.2", theme: theme) },
                                     accessory: { chevron }
                                 )
                             }
-                        }
-
-                        ThemedCard(title: "Ajuda", theme: theme) {
                             Button {
                                 showHelp = true
                             } label: {
                                 ThemedRow(
                                     theme: theme,
-                                    title: "Como configurar o Atalho",
+                                    showsDivider: true,
+                                    title: "Ajuda",
+                                    subtitle: "Como configurar o Atalho",
                                     leading: { IconBadge(systemName: "questionmark", theme: theme) },
                                     accessory: { chevron }
                                 )
@@ -865,14 +865,10 @@ struct SettingsView: View {
                     .padding(.top, 4)
                 }
             }
-            .navigationTitle("Configurações")
-            .toolbarBackground(theme.stage, for: .navigationBar)
-            .toolbarBackground(.visible, for: .navigationBar)
-            .toolbarColorScheme(isNightModeArmed ? .dark : .light, for: .navigationBar)
-            .tint(theme.accent)
+            .menuChrome(title: "Configurações", theme: theme, isNight: isNightModeArmed)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Fechar") { dismiss() }
+                ToolbarItem(placement: .topBarTrailing) {
+                    MenuRoundButton(systemName: "xmark", label: "Fechar", theme: theme) { dismiss() }
                 }
             }
             .sheet(isPresented: $showHelp) {

@@ -6,11 +6,15 @@ struct SleepRoutinesView: View {
     @State private var routineToEdit: SleepRoutine?
     @State private var newRoutine: SleepRoutine?
 
-    private var theme: ModeTheme { .current(armed: isNightModeArmed) }
+    private var theme: ModeTheme { .menu(armed: isNightModeArmed) }
 
     var body: some View {
         List {
             Section {
+                MenuHeader(title: "Rotinas de sono", subtitle: "Deslize pra direita pra ativar, pra esquerda pra excluir.", theme: theme)
+                    .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 8, trailing: 16))
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
                 calendarAutoActivateCard
                     .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
                     .listRowSeparator(.hidden)
@@ -40,9 +44,8 @@ struct SleepRoutinesView: View {
                     )
                 }
                 .buttonStyle(.plain)
-                .padding(4)
-                .background(theme.card)
-                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .padding(6)
+                .themedCardSurface(theme, cornerRadius: 26)
                 .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
                 .listRowSeparator(.hidden)
                 .listRowBackground(Color.clear)
@@ -65,18 +68,12 @@ struct SleepRoutinesView: View {
         }
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
-        .background(theme.stage.ignoresSafeArea())
-        .navigationTitle("Rotinas de sono")
-        .toolbarBackground(theme.stage, for: .navigationBar)
-        .toolbarBackground(.visible, for: .navigationBar)
-        .toolbarColorScheme(isNightModeArmed ? .dark : .light, for: .navigationBar)
-        .tint(theme.accent)
+        .background(theme.stageBackground)
+        .menuChrome(title: "Rotinas de sono", theme: theme, isNight: isNightModeArmed)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                Button {
+                MenuRoundButton(systemName: "plus", label: "Nova rotina", theme: theme) {
                     newRoutine = SleepRoutine(name: "Nova rotina")
-                } label: {
-                    Image(systemName: "plus")
                 }
             }
         }
@@ -148,7 +145,7 @@ struct RoutineEditView: View {
     @ObservedObject private var lampManager = LampManager.shared
     var isNew: Bool = false
 
-    private var theme: ModeTheme { .current(armed: isNightModeArmed) }
+    private var theme: ModeTheme { .menu(armed: isNightModeArmed) }
 
     init(store: SleepRoutineStore, routine: SleepRoutine, isNew: Bool = false) {
         self.store = store
@@ -197,9 +194,15 @@ struct RoutineEditView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                theme.stage.ignoresSafeArea()
+                theme.stageBackground
                 ScrollView {
                     VStack(alignment: .leading, spacing: 20) {
+                        MenuHeader(
+                            title: isNew ? "Nova rotina" : "Editar rotina",
+                            subtitle: String(format: "Toca às %02d:%02d na manhã depois de encostar na luminária.", routine.alarmHour, routine.alarmMinute),
+                            theme: theme
+                        )
+
                         ThemedCard(title: "Nome", theme: theme) {
                             TextField("Nome da rotina", text: $routine.name)
                                 .font(.luminaria(.body, weight: .medium))
@@ -345,25 +348,20 @@ struct RoutineEditView: View {
                     .padding(.top, 4)
                 }
             }
-            .navigationTitle(isNew ? "Nova rotina" : "Editar rotina")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(theme.stage, for: .navigationBar)
-            .toolbarBackground(.visible, for: .navigationBar)
-            .toolbarColorScheme(isNightModeArmed ? .dark : .light, for: .navigationBar)
-            .tint(theme.accent)
+            .menuChrome(title: isNew ? "Nova rotina" : "Editar rotina", theme: theme, isNight: isNightModeArmed)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancelar") { dismiss() }
+                    MenuRoundButton(systemName: "xmark", label: "Cancelar", theme: theme) { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button {
                         store.upsert(routine)
                         dismiss()
                     } label: {
-                        Text("Salvar")
-                            .font(.luminaria(.subheadline, weight: .bold))
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 6)
+                        Text("salvar")
+                            .font(.luminaria(.subheadline, weight: .medium))
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 7)
                             .background(theme.accent)
                             .foregroundStyle(theme.accentForeground)
                             .clipShape(Capsule())
@@ -404,7 +402,7 @@ struct RoutineEditView: View {
                     if containsSelection && !isExpanded {
                         Text("· \(routine.soundOption.displayName)")
                             .font(.luminaria(.caption, weight: .medium))
-                            .foregroundStyle(theme.accent)
+                            .foregroundStyle(theme.isSoveeMenu ? theme.inkMuted : theme.accent)
                             .lineLimit(1)
                     }
                     Spacer(minLength: 8)
@@ -435,6 +433,18 @@ struct RoutineEditView: View {
         }
     }
 
+    // Nos menus SOVEE o som escolhido fica preenchido de âmbar (como os chips do site);
+    // âmbar como cor de texto some no fundo claro do modo dia.
+    private func soundSwatchInk(_ isSelected: Bool) -> Color {
+        if theme.isSoveeMenu { return isSelected ? theme.accentForeground : theme.inkMuted }
+        return isSelected ? theme.accent : theme.inkMuted
+    }
+
+    private func soundSwatchFill(_ isSelected: Bool) -> Color {
+        if theme.isSoveeMenu { return isSelected ? theme.accent : (theme.chip ?? theme.ink.opacity(0.05)) }
+        return isSelected ? theme.accentWash : theme.ink.opacity(0.05)
+    }
+
     private var soundGridColumns: [GridItem] {
         Array(repeating: GridItem(.flexible(), spacing: 10, alignment: .top), count: 3)
     }
@@ -459,13 +469,13 @@ struct RoutineEditView: View {
             .padding(.vertical, 10)
             .padding(.horizontal, 4)
             .frame(maxWidth: .infinity)
-            .foregroundStyle(isSelected ? theme.accent : theme.inkMuted)
-            .background(isSelected ? theme.accentWash : theme.ink.opacity(0.05))
+            .foregroundStyle(soundSwatchInk(isSelected))
+            .background(soundSwatchFill(isSelected))
             .overlay(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .stroke(isSelected ? theme.accent : Color.clear, lineWidth: 2)
+                RoundedRectangle(cornerRadius: theme.isSoveeMenu ? 18 : 14, style: .continuous)
+                    .stroke(isSelected && !theme.isSoveeMenu ? theme.accent : Color.clear, lineWidth: 2)
             )
-            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: theme.isSoveeMenu ? 18 : 14, style: .continuous))
         }
         .buttonStyle(.plain)
         .accessibilityLabel(option.displayName)

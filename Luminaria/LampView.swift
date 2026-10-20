@@ -96,13 +96,13 @@ private struct LampGhostButton: View {
     var body: some View {
         Button(action: action) {
             Text(title)
-                .font(.luminaria(.subheadline, weight: .bold))
+                .font(.luminaria(.subheadline, weight: theme.isSoveeMenu ? .medium : .bold))
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 11)
         }
         .buttonStyle(.plain)
-        .foregroundStyle(isDanger ? theme.danger : theme.accent)
-        .background(isDanger ? theme.dangerWash : theme.accentWash)
+        .foregroundStyle(isDanger ? theme.danger : (theme.chipInk ?? theme.accent))
+        .background(isDanger ? theme.dangerWash : (theme.chip ?? theme.accentWash))
         .clipShape(Capsule())
     }
 }
@@ -524,10 +524,10 @@ struct LampPairingContent: View {
     private func step(_ number: Int, _ text: String) -> some View {
         HStack(alignment: .top, spacing: 12) {
             Text("\(number)")
-                .font(.luminaria(.caption, weight: .bold))
-                .foregroundStyle(theme.accent)
+                .font(.luminaria(.caption, weight: theme.isSoveeMenu ? .medium : .bold))
+                .foregroundStyle(theme.chipInk ?? theme.accent)
                 .frame(width: 24, height: 24)
-                .background(theme.accentWash)
+                .background(theme.chip ?? theme.accentWash)
                 .clipShape(Circle())
             Text(text)
                 .font(.luminaria(.subheadline))
@@ -586,8 +586,7 @@ struct LampPairingContent: View {
             Spacer(minLength: 0)
         }
         .padding(14)
-        .background(theme.card)
-        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .themedCardSurface(theme, cornerRadius: 22)
     }
 }
 
@@ -597,16 +596,18 @@ struct LampPairingScreen: View {
     @Environment(\.isNightModeArmed) private var isNightModeArmed
 
     var body: some View {
-        let theme = ModeTheme.current(armed: isNightModeArmed)
+        let theme = ModeTheme.menu(armed: isNightModeArmed)
         ZStack {
-            theme.stage.ignoresSafeArea()
+            theme.stageBackground
             ScrollView {
-                LampPairingContent(lamp: lamp, theme: theme)
-                    .padding(16)
+                VStack(alignment: .leading, spacing: 20) {
+                    MenuHeader(title: "Lâmpada", subtitle: "Zleepy Lamp, por Bluetooth.", theme: theme)
+                    LampPairingContent(lamp: lamp, theme: theme)
+                }
+                .padding(16)
             }
         }
-        .navigationTitle("Lâmpada")
-        .navigationBarTitleDisplayMode(.inline)
+        .menuChrome(title: "Lâmpada", theme: theme, isNight: isNightModeArmed)
     }
 }
 
