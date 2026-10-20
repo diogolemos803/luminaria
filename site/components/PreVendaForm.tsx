@@ -5,6 +5,7 @@ import type { LegalDoc } from "@/lib/pre-venda";
 
 type Props = {
   open: boolean;
+  waitlist: boolean;
   docs: LegalDoc[];
   termsVersion: string;
   sinal: number;
@@ -14,7 +15,7 @@ type Props = {
 };
 
 /** Pré-venda em 4 passos: e-mail, Instagram, termos e sinal. O link de pagamento só vem depois de gravar o aceite. */
-export default function PreVendaForm({ open, docs, termsVersion, sinal, sinalPix, vagas, instagram }: Props) {
+export default function PreVendaForm({ open, waitlist, docs, termsVersion, sinal, sinalPix, vagas, instagram }: Props) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [website, setWebsite] = useState(""); // isca anti-robô
@@ -69,13 +70,7 @@ export default function PreVendaForm({ open, docs, termsVersion, sinal, sinalPix
   );
 
   if (!open) {
-    return (
-      <section className="pv-card pv-closed" role="status">
-        <h2>A pré-venda abre em breve</h2>
-        <p>Estamos finalizando os termos e o pagamento. Siga a SOVEE no Instagram para ser avisado quando abrir.</p>
-        <IgLink className="buy-btn" />
-      </section>
-    );
+    return <Waitlist waitlist={waitlist} ig={<IgLink className="buy-btn pv-ig" />} />;
   }
 
   return (
@@ -148,6 +143,81 @@ export default function PreVendaForm({ open, docs, termsVersion, sinal, sinalPix
         {error && <p className="pv-error" role="alert">{error}</p>}
         <p className="buy-note">Você será levado ao pagamento seguro. Seus dados só são gravados depois que você aceitar os termos.</p>
       </section>
+    </form>
+  );
+}
+
+/** Antes da abertura: pede o e-mail para avisar quando a pré-venda abrir. */
+function Waitlist({ waitlist, ig }: { waitlist: boolean; ig: React.ReactNode }) {
+  const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
+  const [website, setWebsite] = useState("");
+  const [state, setState] = useState<"idle" | "busy" | "done">("idle");
+  const [error, setError] = useState("");
+
+  async function onSubmit(e: FormEvent) {
+    e.preventDefault();
+    if (state === "busy") return;
+    setState("busy");
+    setError("");
+    try {
+      const res = await fetch("/api/pre-venda/lista", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, name, website }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        setState("done");
+        return;
+      }
+      setError(data.error === "email" ? "Confira o e-mail digitado." : "Não foi possível registrar agora. Tente de novo em instantes.");
+    } catch {
+      setError("Sem conexão. Tente de novo.");
+    }
+    setState("idle");
+  }
+
+  if (!waitlist) {
+    return (
+      <section className="pv-card pv-closed" role="status">
+        <h2>A pré-venda abre em breve</h2>
+        <p>Estamos finalizando os termos e o pagamento. Siga a SOVEE no Instagram para ser avisado quando abrir.</p>
+        {ig}
+      </section>
+    );
+  }
+
+  if (state === "done") {
+    return (
+      <section className="pv-card pv-closed" role="status">
+        <h2>Anotado!</h2>
+        <p>Avisaremos por e-mail assim que a pré-venda abrir. Enquanto isso, siga a SOVEE no Instagram.</p>
+        {ig}
+      </section>
+    );
+  }
+
+  return (
+    <form className="pv-card buy-form pv-closed" onSubmit={onSubmit} noValidate>
+      <h2>A pré-venda abre em breve</h2>
+      <p className="pv-p">Deixe seu e-mail e avisamos assim que as 50 primeiras vagas abrirem.</p>
+      <div className="pv-step">
+        <label htmlFor="wl-name">nome</label>
+        <input id="wl-name" name="name" autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} />
+        <label htmlFor="wl-email">e-mail</label>
+        <input id="wl-email" name="email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+        <div className="pv-trap" aria-hidden="true">
+          <label htmlFor="wl-site">não preencha</label>
+          <input id="wl-site" name="website" tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)} />
+        </div>
+      </div>
+      <button type="submit" className="buy-btn" disabled={!email.includes("@") || state === "busy"}>
+        {state === "busy" ? "registrando..." : "avise-me quando abrir"}
+      </button>
+      {error && <p className="pv-error" role="alert">{error}</p>}
+      <p className="buy-note">Usamos seu e-mail só para avisar quando a pré-venda abrir.</p>
+      {ig}
     </form>
   );
 }

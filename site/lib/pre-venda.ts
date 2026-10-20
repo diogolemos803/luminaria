@@ -56,3 +56,8 @@ export function preVendaConfigured() {
     !!process.env.PREVENDA_WEBHOOK_URL
   );
 }
+
+/** A lista de espera (e-mail antes da abertura) só precisa do destino dos cadastros. */
+export function waitlistConfigured() {
+  return !!process.env.PREVENDA_WEBHOOK_URL;
+}

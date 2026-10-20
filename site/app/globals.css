@@ -261,3 +261,5 @@ body {
 .pv-pay{grid-template-columns:repeat(2,minmax(0,1fr))}
 @media (max-width:420px){.pv-pay{grid-template-columns:1fr}}
 .pv-terms strong{font-weight:600}
+.pv-closed .pv-step{align-self:stretch;width:100%}
+.pv-closed .buy-btn{align-self:flex-start}

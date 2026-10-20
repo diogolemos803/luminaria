@@ -46,7 +46,7 @@ export async function POST(req: Request) {
   try {
     const res = await fetch(process.env.PREVENDA_WEBHOOK_URL as string, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
       body: JSON.stringify(record),
       signal: AbortSignal.timeout(8000),
     });
