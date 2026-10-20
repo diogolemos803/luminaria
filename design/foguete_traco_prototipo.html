@@ -1,0 +1,438 @@
+<title>Foguete em Traço</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap">
+<style>
+/* Layout: as três cenas lado a lado, cada uma num celular, com o que mudou embaixo.
+   Linguagem das cenas = a do logo e do desenho da luminária: traço creme fino, sem
+   preenchimento; só o que é luz tem cor (chama, visor, escotilha, bandeira). */
+:root {
+  --page: #1d1f25;
+  --ink: #fdf8c7;
+  --muted: rgba(253, 248, 199, .62);
+  --amber: #f2b05e;
+  --amber-ink: #2a2a2a;
+  --glass: linear-gradient(160deg, rgba(120,98,76,.3), rgba(52,44,38,.4));
+  --edge: hsla(54,93%,89%,.12);
+  --font: "DM Sans", system-ui, -apple-system, sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { background: var(--page); color: var(--ink); font-family: var(--font); }
+body { padding-block: 28px 56px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 1180px; margin: 0 auto; display: flex; flex-direction: column; gap: 32px; }
+.eyebrow, figcaption, h2 { font-size: 13px; letter-spacing: .18em; text-transform: lowercase; color: var(--muted); font-weight: 500; margin: 0; }
+h1 { margin: 6px 0 0; font-weight: 500; font-size: clamp(28px, 4vw, 40px); letter-spacing: -.02em; line-height: 1.1; text-wrap: balance; }
+.lede { margin: 10px 0 0; max-width: 64ch; line-height: 1.5; color: var(--muted); font-size: 15px; }
+.row { display: flex; flex-wrap: wrap; gap: 26px; justify-content: center; }
+figure { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.phone { width: 300px; max-width: 100%; aspect-ratio: 390 / 844; border-radius: 40px; overflow: hidden; border: 7px solid #0d0e11; box-shadow: 0 26px 60px rgba(0,0,0,.45); background: #23252c; }
+.phone canvas { width: 100%; height: 100%; display: block; }
+.ctl { display: flex; gap: 8px; }
+.ctl button { border: 0; font: inherit; font-size: 14px; padding: 8px 16px; border-radius: 999px; background: hsla(54,93%,89%,.12); color: var(--ink); cursor: pointer; }
+.ctl button.primary { background: var(--amber); color: var(--amber-ink); }
+.ctl button:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+.notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; }
+.notes div { padding: 18px 20px; border-radius: 22px; background: var(--glass); border: 1px solid var(--edge); min-width: 0; }
+.notes p { margin: 6px 0 0; font-size: 14.5px; line-height: 1.5; }
+.compare { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; justify-content: center; padding: 18px; border-radius: 26px; background: var(--glass); border: 1px solid var(--edge); }
+.compare img { height: 120px; width: auto; max-width: 100%; display: block; }
+.compare .lamp { height: 120px; border-radius: 18px; }
+.compare span { font-size: 13px; color: var(--muted); letter-spacing: .1em; }
+</style>
+
+<div class="wrap">
+  <header>
+    <p class="eyebrow">protótipo · cenas do foguete, redesenho</p>
+    <h1>foguete no traço da sovee</h1>
+    <p class="lede">O foguete passa a ser desenhado do mesmo jeito que o logo e a luminária: uma linha creme fina, cantos redondos e quase nada preenchido. Só o que é luz ganha cor: a chama, o visor, a escotilha acesa e a bandeira. As três cenas seguem a mesma ordem de antes.</p>
+  </header>
+
+  <div class="row">
+    <figure>
+      <div class="phone"><canvas id="c-launch" width="390" height="844" aria-label="Decolagem desenhada em traço"></canvas></div>
+      <figcaption>decolagem</figcaption>
+      <div class="ctl"><button type="button" class="primary" data-replay="launch">repetir</button><button type="button" data-pause="launch">pausar</button></div>
+    </figure>
+    <figure>
+      <div class="phone"><canvas id="c-meteor" width="390" height="844" aria-label="Meteoro, explosão e canteiro de obras em traço"></canvas></div>
+      <figcaption>meteoro e obras</figcaption>
+      <div class="ctl"><button type="button" class="primary" data-replay="meteor">repetir</button><button type="button" data-pause="meteor">pausar</button></div>
+    </figure>
+    <figure>
+      <div class="phone"><canvas id="c-land" width="390" height="844" aria-label="Pouso na Lua em traço"></canvas></div>
+      <figcaption>pouso</figcaption>
+      <div class="ctl"><button type="button" class="primary" data-replay="land">repetir</button><button type="button" data-pause="land">pausar</button></div>
+    </figure>
+  </div>
+
+  <div class="compare" aria-label="Referências da marca">
+    <img src="logo_sono.png" alt="Logo de rosto dormindo em traço">
+    <img class="lamp" src="referencia_luminaria.png" alt="Desenho da luminária em traço creme">
+    <span>mesma espessura de linha, mesmas formas redondas, luz só onde acende</span>
+  </div>
+
+  <section class="notes" aria-label="O que muda">
+    <div><h2>foguete</h2><p>Cápsula com bico redondo e duas linhas curvas no casco, como as elipses da luminária. Visor redondo aceso em âmbar. Ele sai de uma base em pílula, a mesma forma da base da luminária.</p></div>
+    <div><h2>cenário</h2><p>A Terra e a Lua viram um arco grande desenhado com a mesma linha. Fumaça, poeira e explosão viram bolhas e anéis em traço. Estrelas são pontos e brilhos em cruz, sem céu colorido.</p></div>
+    <div><h2>obras e pouso</h2><p>Andaime, guindaste e bonequinhos em linha, com capacete âmbar. A metade de cima do foguete fica tracejada até a noite acabar. No pouso a escotilha acende, o astronauta desce e crava uma bandeira âmbar com "7 noites".</p></div>
+  </section>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var COL = { bg: '#23252c', ground: '#292b33', line: '#fdf8c7', amber: '#f2b05e', terra: '#db8149', sage: '#80a68e', luar: '#84a1c8' };
+  var W = 390, H = 844, CX = 195, CY = 422, LW = 2;
+  var FONT = '"DM Sans", system-ui, sans-serif';
+
+  // ---------- utilidades ----------
+  function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+  function seg(t, a, b) { return clamp((t - a) / (b - a), 0, 1); }
+  function lerp(a, b, k) { return a + (b - a) * k; }
+  function eOut(k) { return 1 - Math.pow(1 - k, 3); }
+  function eIn(k) { return k * k * k; }
+  function eInOut(k) { return k < .5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2; }
+  function rnd(seed) { return function () { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; }; }
+  function cream(a) { return 'rgba(253,248,199,' + a + ')'; }
+  function amber(a) { return 'rgba(242,176,94,' + a + ')'; }
+
+  function setup(id) {
+    var cv = document.getElementById(id), dpr = Math.min(window.devicePixelRatio || 1, 2);
+    cv.width = W * dpr; cv.height = H * dpr;
+    var c = cv.getContext('2d'); c.setTransform(dpr, 0, 0, dpr, 0, 0);
+    c.lineCap = 'round'; c.lineJoin = 'round';
+    return c;
+  }
+
+  // ---------- céu ----------
+  var STARS = (function () { var r = rnd(7), a = []; for (var i = 0; i < 70; i++) a.push({ x: r() * W, y: r() * H, s: r(), d: .35 + r() * .65, p: r() * 6.28 }); return a; })();
+  function sky(c, t, scroll) {
+    c.fillStyle = COL.bg; c.fillRect(0, 0, W, H);
+    var g = c.createRadialGradient(CX, H + 80, 0, CX, H + 80, 520);
+    g.addColorStop(0, amber(.12)); g.addColorStop(1, amber(0));
+    c.fillStyle = g; c.fillRect(0, 0, W, H);
+    for (var i = 0; i < STARS.length; i++) {
+      var s = STARS[i], y = ((s.y + scroll * s.d) % H + H) % H;
+      var tw = .45 + .35 * Math.sin(t * 1.6 + s.p);
+      if (s.s > .9) { // brilho em cruz, como um "✦" em traço
+        var L = 4 + s.s * 2;
+        c.strokeStyle = cream(tw); c.lineWidth = 1.2;
+        c.beginPath(); c.moveTo(s.x - L, y); c.lineTo(s.x + L, y); c.moveTo(s.x, y - L); c.lineTo(s.x, y + L); c.stroke();
+      } else {
+        c.fillStyle = cream(tw * (.4 + s.s * .6));
+        c.beginPath(); c.arc(s.x, y, .8 + s.s * .9, 0, 6.283); c.fill();
+      }
+    }
+  }
+
+  // ---------- foguete (coordenadas locais, centro = 0,0) ----------
+  function pNose(c) { c.moveTo(0, -76); c.bezierCurveTo(14, -66, 20, -53, 21, -40); c.quadraticCurveTo(0, -33, -21, -40); c.bezierCurveTo(-20, -53, -14, -66, 0, -76); c.closePath(); }
+  function pBody(c) { c.moveTo(-21, -40); c.quadraticCurveTo(0, -33, 21, -40); c.bezierCurveTo(23, -32, 24, -24, 24, -18); c.lineTo(24, 40); c.quadraticCurveTo(24, 48, 16, 48); c.lineTo(-16, 48); c.quadraticCurveTo(-24, 48, -24, 40); c.lineTo(-24, -18); c.bezierCurveTo(-24, -24, -23, -32, -21, -40); c.closePath(); }
+  function pFin(c, s) { c.moveTo(s * 24, 12); c.bezierCurveTo(s * 38, 20, s * 43, 38, s * 41, 58); c.quadraticCurveTo(s * 33, 50, s * 24, 46); }
+  function pNozzle(c) { c.moveTo(-10, 48); c.lineTo(-13, 57); c.lineTo(13, 57); c.lineTo(10, 48); }
+
+  function strokeFill(c, path, alpha) { c.beginPath(); path(c); c.fillStyle = COL.bg; c.fill(); c.strokeStyle = cream(alpha == null ? 1 : alpha); c.lineWidth = LW; c.stroke(); }
+  function windowLit(c, glow) {
+    c.save(); c.shadowColor = amber(.8); c.shadowBlur = 10 * glow;
+    c.beginPath(); c.arc(0, -12, 8.5, 0, 6.283); c.fillStyle = amber(.25 + .55 * glow); c.fill(); c.restore();
+    c.beginPath(); c.arc(0, -12, 8.5, 0, 6.283); c.strokeStyle = cream(1); c.lineWidth = LW; c.stroke();
+  }
+  function rocketBody(c, opt) {
+    opt = opt || {};
+    c.save(); c.translate(opt.x == null ? CX : opt.x, opt.y == null ? CY : opt.y);
+    [-1, 1].forEach(function (s) { c.beginPath(); pFin(c, s); c.closePath(); c.fillStyle = COL.bg; c.fill(); c.beginPath(); pFin(c, s); c.strokeStyle = cream(1); c.lineWidth = LW; c.stroke(); });
+    strokeFill(c, pBody); strokeFill(c, pNose);
+    c.beginPath(); c.moveTo(-24, 24); c.quadraticCurveTo(0, 31, 24, 24); c.strokeStyle = cream(.55); c.lineWidth = 1.5; c.stroke();
+    c.beginPath(); pNozzle(c); c.strokeStyle = cream(1); c.lineWidth = LW; c.stroke();
+    windowLit(c, opt.glow == null ? 1 : opt.glow);
+    if (opt.hatch) hatch(c, opt.hatch);
+    c.restore();
+  }
+  function hatch(c, k) { // escotilha que acende
+    c.save(); c.shadowColor = amber(.9); c.shadowBlur = 14 * k;
+    c.beginPath(); c.roundRect(-7, 4, 14, 22, 6); c.fillStyle = amber(.85 * k); c.fill(); c.restore();
+    c.beginPath(); c.roundRect(-7, 4, 14, 22, 6); c.strokeStyle = cream(1); c.lineWidth = 1.6; c.stroke();
+  }
+  function flame(c, t, power, x, y) {
+    if (power <= .01) return;
+    x = x == null ? CX : x; y = y == null ? CY + 57 : y;
+    var f = 1 + .07 * Math.sin(t * 31) + .05 * Math.sin(t * 17.3), L = (30 + 18 * power) * f * power, Wd = 10 * Math.min(1, power + .3);
+    c.save(); c.translate(x, y + 1);
+    c.shadowColor = amber(.9); c.shadowBlur = 26;
+    c.beginPath(); c.moveTo(-Wd, 0); c.bezierCurveTo(-Wd, L * .45, -2, L * .8, 0, L); c.bezierCurveTo(2, L * .8, Wd, L * .45, Wd, 0); c.closePath();
+    c.fillStyle = amber(.95); c.fill();
+    c.shadowBlur = 0;
+    var l2 = L * .55, w2 = Wd * .5;
+    c.beginPath(); c.moveTo(-w2, 0); c.bezierCurveTo(-w2, l2 * .5, -1, l2 * .85, 0, l2); c.bezierCurveTo(1, l2 * .85, w2, l2 * .5, w2, 0); c.closePath();
+    c.fillStyle = cream(.95); c.fill();
+    c.restore();
+  }
+  function bubble(c, x, y, r, a) {
+    if (r <= .3 || a <= .01) return;
+    c.beginPath(); c.arc(x, y, r, 0, 6.283); c.fillStyle = COL.bg; c.fill(); c.strokeStyle = cream(a); c.lineWidth = 1.6; c.stroke();
+  }
+
+  // ---------- chão (arco grande, como a borda da base da luminária) ----------
+  function ground(c, y, R) {
+    R = R || 1500;
+    c.beginPath(); c.arc(CX, y + R, R, 0, 6.283); c.fillStyle = COL.ground; c.fill();
+    c.strokeStyle = cream(.9); c.lineWidth = LW; c.stroke();
+    c.beginPath(); c.arc(CX, y + R + 14, R, Math.PI * 1.36, Math.PI * 1.64); c.strokeStyle = cream(.22); c.lineWidth = 1.3; c.stroke();
+  }
+  function pad(c, y) { // base em pílula, igual à base da luminária
+    c.beginPath(); c.roundRect(CX - 62, y - 14, 124, 14, 7); c.fillStyle = COL.ground; c.fill(); c.strokeStyle = cream(1); c.lineWidth = LW; c.stroke();
+    c.beginPath(); c.roundRect(CX - 54, y - 11, 108, 7, 3.5); c.strokeStyle = cream(.35); c.lineWidth = 1.2; c.stroke();
+  }
+  function tower(c, gy, t, armK) {
+    var x1 = 118, x2 = 132, top = gy - 170;
+    c.strokeStyle = cream(.8); c.lineWidth = 1.6;
+    c.beginPath(); c.moveTo(x1, gy - 14); c.lineTo(x1, top); c.moveTo(x2, gy - 14); c.lineTo(x2, top); c.stroke();
+    c.strokeStyle = cream(.35); c.lineWidth = 1.2; c.beginPath();
+    for (var y = gy - 14; y > top + 10; y -= 22) { c.moveTo(x1, y); c.lineTo(x2, y - 22); c.moveTo(x2, y); c.lineTo(x1, y - 22); }
+    c.stroke();
+    c.save(); c.translate(x2, top + 40); c.rotate(-armK * 1.1);
+    c.beginPath(); c.moveTo(0, 0); c.lineTo(39, 0); c.strokeStyle = cream(.8); c.lineWidth = 1.6; c.stroke(); c.restore();
+    var blink = .5 + .5 * Math.sin(t * 4);
+    c.save(); c.shadowColor = amber(1); c.shadowBlur = 10 * blink;
+    c.beginPath(); c.arc((x1 + x2) / 2, top - 6, 3, 0, 6.283); c.fillStyle = amber(.35 + .65 * blink); c.fill(); c.restore();
+  }
+
+  // ================= CENA 1: decolagem =================
+  var BASE = (function () { var r = rnd(21), a = []; for (var i = 0; i < 16; i++) { var s = r() < .5 ? -1 : 1; a.push({ dx: s * (18 + r() * 120), dy: -6 - r() * 26, r: 9 + r() * 15, d: r() * .9 }); } return a; })();
+  var GY0 = CY + 57 + 15; // chão logo abaixo da base em pílula
+  function launchOffset(t) { var k = Math.max(0, t - 2.6); return 0.5 * 150 * k * k; }
+  function drawLaunch(c, t) {
+    var off = launchOffset(t), gy = GY0 + off;
+    sky(c, t, off * .18 + t * 2);
+    if (gy < H + 200) {
+      ground(c, gy);
+      tower(c, gy, t, eInOut(seg(t, 1.0, 1.7)));
+      pad(c, gy);
+    }
+    // nuvem da base, presa ao chão
+    var ign = seg(t, 1.4, 3.4);
+    for (var i = 0; i < BASE.length; i++) {
+      var b = BASE[i], k = eOut(clamp((ign - b.d * .4) / .6, 0, 1));
+      bubble(c, CX + b.dx * (0.4 + .6 * k), gy + b.dy - 6, b.r * k, .7 * (1 - seg(off, 300, 700)));
+    }
+    // coluna de fumaça: bolhas presas ao chão, deixadas pelo bocal
+    for (var j = 0; j < 60; j++) {
+      var h = j * 13; if (h > off) break;
+      var age = (off - h), r = 7 + Math.min(age * .03, 16), a = .7 * (1 - seg(age, 120, 520));
+      bubble(c, CX + Math.sin(j * 1.9) * 3 * (1 + age * .004), gy - 20 - h, r, a);
+    }
+    flame(c, t, eOut(seg(t, 1.3, 2.2)) * (1 + .15 * seg(t, 2.6, 4)));
+    rocketBody(c);
+  }
+
+  // ================= CENA 2: meteoro + obras =================
+  var SHARDS = [
+    { path: pNose, vx: -40, vy: -120, vr: -2.4 },
+    { path: pBody, vx: 30, vy: 40, vr: 1.2 },
+    { path: function (c) { pFin(c, -1); c.closePath(); }, vx: -110, vy: 60, vr: -3 },
+    { path: function (c) { pFin(c, 1); c.closePath(); }, vx: 120, vy: 30, vr: 2.8 },
+    { path: function (c) { pNozzle(c); c.closePath(); }, vx: 20, vy: 140, vr: 4 }
+  ];
+  var ROCK = (function () { var r = rnd(5), a = []; for (var i = 0; i < 9; i++) a.push(15 + r() * 6); return a; })();
+  var SPARKS = (function () { var r = rnd(11), a = []; for (var i = 0; i < 18; i++) a.push({ a: r() * 6.283, v: 90 + r() * 140, l: 6 + r() * 10 }); return a; })();
+  var T_IMPACT = 2.6, G_SITE = 600;
+  function meteor(c, x, y, rot, dir) {
+    c.save(); c.translate(x, y);
+    for (var k = 0; k < 3; k++) { // rastro em três linhas âmbar
+      var off = (k - 1) * 7, len = [70, 95, 60][k];
+      var gx = -Math.cos(dir) * len, gy = -Math.sin(dir) * len, px = -Math.sin(dir) * off, py = Math.cos(dir) * off;
+      var g = c.createLinearGradient(px, py, px + gx, py + gy); g.addColorStop(0, amber(.95)); g.addColorStop(1, amber(0));
+      c.strokeStyle = g; c.lineWidth = k === 1 ? 3 : 2; c.beginPath(); c.moveTo(px, py); c.lineTo(px + gx, py + gy); c.stroke();
+    }
+    c.rotate(rot); c.beginPath();
+    for (var i = 0; i < ROCK.length; i++) { var a = i / ROCK.length * 6.283, r = ROCK[i]; i ? c.lineTo(Math.cos(a) * r, Math.sin(a) * r) : c.moveTo(Math.cos(a) * r, Math.sin(a) * r); }
+    c.closePath(); c.fillStyle = COL.bg; c.fill(); c.strokeStyle = cream(1); c.lineWidth = LW; c.stroke();
+    c.strokeStyle = cream(.5); c.lineWidth = 1.3;
+    c.beginPath(); c.arc(-5, -3, 4, 0, 6.283); c.moveTo(9, 5); c.arc(6, 5, 2.6, 0, 6.283); c.stroke();
+    c.restore();
+  }
+  function worker(c, x, y, t, kind) {
+    var head = y - 30;
+    c.strokeStyle = cream(.95); c.lineWidth = 1.7;
+    // pernas e corpo
+    c.beginPath(); c.moveTo(x, y - 12); c.lineTo(x - 4, y); c.moveTo(x, y - 12); c.lineTo(x + 4, y); c.moveTo(x, y - 12); c.lineTo(x, head + 6); c.stroke();
+    // braços
+    c.beginPath();
+    if (kind === 'hammer') { var a = -1.1 + .9 * Math.abs(Math.sin(t * 5)); c.moveTo(x, head + 10); c.lineTo(x + Math.cos(a) * 11, head + 10 + Math.sin(a) * 11); c.moveTo(x, head + 10); c.lineTo(x - 6, head + 18); }
+    else if (kind === 'wave') { var b = -2.2 + .5 * Math.sin(t * 3); c.moveTo(x, head + 10); c.lineTo(x + Math.cos(b) * 12, head + 10 + Math.sin(b) * 12); c.moveTo(x, head + 10); c.lineTo(x - 6, head + 18); }
+    else { c.moveTo(x, head + 10); c.lineTo(x - 11, head + 12); c.moveTo(x, head + 10); c.lineTo(x - 9, head + 16); }
+    c.stroke();
+    if (kind === 'hammer') { var a2 = -1.1 + .9 * Math.abs(Math.sin(t * 5)), hx = x + Math.cos(a2) * 11, hy = head + 10 + Math.sin(a2) * 11; c.beginPath(); c.moveTo(hx - 3, hy - 2); c.lineTo(hx + 3, hy + 2); c.strokeStyle = cream(.95); c.lineWidth = 3; c.stroke(); }
+    if (kind === 'weld') { for (var i = 0; i < 5; i++) { var p = (t * 3 + i * .23) % 1, ang = -2.6 + i * .35; c.fillStyle = amber(1 - p); c.beginPath(); c.arc(x - 12 + Math.cos(ang) * p * 14, head + 13 + Math.sin(ang) * p * 14 + p * p * 10, 1.2, 0, 6.283); c.fill(); } }
+    // cabeça + capacete âmbar
+    c.beginPath(); c.arc(x, head, 5, 0, 6.283); c.fillStyle = COL.bg; c.fill(); c.strokeStyle = cream(.95); c.lineWidth = 1.6; c.stroke();
+    c.beginPath(); c.arc(x, head - 1, 5.6, Math.PI, 0); c.closePath(); c.fillStyle = COL.amber; c.fill();
+  }
+  function site(c, t, G) {
+    ground(c, G, 2400);
+    pad(c, G);
+    var rc = G - 14 - 57; // centro do foguete em obras
+    // metade de baixo pronta (traço cheio), metade de cima tracejada
+    c.save(); c.beginPath(); c.rect(0, rc + 8, W, H); c.clip(); rocketBody(c, { y: rc, glow: 0 }); c.restore();
+    c.save(); c.translate(CX, rc); c.beginPath(); c.rect(-60, -90, 120, 98); c.clip();
+    c.setLineDash([4, 6]); c.beginPath(); pBody(c); c.strokeStyle = cream(.45); c.lineWidth = 1.6; c.stroke(); c.restore();
+    // andaime
+    var L = CX - 44, R = CX + 44, top = G - 150;
+    c.strokeStyle = cream(.75); c.lineWidth = 1.5; c.beginPath();
+    c.moveTo(L, G - 14); c.lineTo(L, top); c.moveTo(R, G - 14); c.lineTo(R, top);
+    for (var y = G - 54; y >= top; y -= 40) { c.moveTo(L - 6, y); c.lineTo(L + 14, y); c.moveTo(R - 14, y); c.lineTo(R + 6, y); }
+    c.stroke();
+    c.strokeStyle = cream(.25); c.lineWidth = 1.1; c.beginPath();
+    for (var y2 = G - 14; y2 > top + 40; y2 -= 40) { c.moveTo(L - 6, y2); c.lineTo(L - 6, y2 - 40); c.moveTo(R + 6, y2); c.lineTo(R + 6, y2 - 40); c.moveTo(L - 6, y2); c.lineTo(L, y2 - 40); c.moveTo(R + 6, y2); c.lineTo(R, y2 - 40); }
+    c.stroke();
+    // holofotes nos topos
+    [L, R].forEach(function (x) { c.save(); c.shadowColor = amber(1); c.shadowBlur = 12; c.beginPath(); c.arc(x, top - 4, 3, 0, 6.283); c.fillStyle = COL.amber; c.fill(); c.restore();
+      var g = c.createRadialGradient(x, top - 4, 0, x, top - 4, 90); g.addColorStop(0, amber(.12)); g.addColorStop(1, amber(0)); c.fillStyle = g; c.beginPath(); c.arc(x, top - 4, 90, 0, 6.283); c.fill(); });
+    // guindaste
+    var mx = 330, jy = G - 250;
+    c.strokeStyle = cream(.85); c.lineWidth = 1.6; c.beginPath();
+    c.moveTo(mx, G - 2); c.lineTo(mx, jy - 18); c.moveTo(mx - 8, G - 2); c.lineTo(mx - 8, jy);
+    c.moveTo(140, jy); c.lineTo(mx + 30, jy); c.moveTo(mx - 4, jy - 18); c.lineTo(160, jy); c.moveTo(mx - 4, jy - 18); c.lineTo(mx + 30, jy);
+    c.stroke();
+    c.strokeStyle = cream(.3); c.lineWidth = 1.1; c.beginPath(); for (var yy = G - 2; yy > jy; yy -= 16) { c.moveTo(mx, yy); c.lineTo(mx - 8, yy - 16); } c.stroke();
+    var hookY = jy + 70 + 16 * Math.sin(t * .9);
+    c.strokeStyle = cream(.7); c.lineWidth = 1.2; c.beginPath(); c.moveTo(CX, jy); c.lineTo(CX, hookY - 30); c.stroke();
+    c.save(); c.translate(CX, hookY + 46); strokeFill(c, pNose); c.restore();
+    var bl = .5 + .5 * Math.sin(t * 4.2);
+    c.save(); c.shadowColor = amber(1); c.shadowBlur = 10 * bl; c.beginPath(); c.arc(mx - 4, jy - 22, 3, 0, 6.283); c.fillStyle = amber(.35 + .65 * bl); c.fill(); c.restore();
+    // bonequinhos
+    worker(c, 92, G - 1, t, 'hammer');
+    c.strokeStyle = cream(.8); c.lineWidth = 1.4; c.beginPath(); c.roundRect(100, G - 13, 16, 12, 2); c.stroke();
+    c.strokeStyle = cream(.75); c.lineWidth = 1.5; c.beginPath(); c.moveTo(R - 14, G - 94); c.lineTo(R + 34, G - 94); c.stroke();
+    worker(c, R + 22, G - 95, t, 'weld');
+    worker(c, 285, G - 1, t, 'wave');
+    // placa "em obras" em pílula
+    c.strokeStyle = cream(.6); c.lineWidth = 1.4; c.beginPath(); c.moveTo(40, G - 2); c.lineTo(40, G - 26); c.moveTo(74, G - 2); c.lineTo(74, G - 26); c.stroke();
+    c.beginPath(); c.roundRect(24, G - 46, 66, 22, 11); c.fillStyle = COL.amber; c.fill();
+    c.fillStyle = '#2a2a2a'; c.font = '500 11px ' + FONT; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('em obras', 57, G - 35);
+  }
+  function drawMeteor(c, t) {
+    var groundK = eOut(seg(t, T_IMPACT + 1.6, T_IMPACT + 3.2));
+    var G = lerp(H + 160, G_SITE, groundK);
+    sky(c, t, t * 22 * (1 - seg(t, T_IMPACT, T_IMPACT + 1)) + T_IMPACT * 22 * seg(t, T_IMPACT, T_IMPACT + 1));
+    if (groundK > 0) site(c, t, G);
+    if (t < T_IMPACT) {
+      flame(c, t, 1);
+      rocketBody(c);
+      var mk = seg(t, 1.0, T_IMPACT), e = eIn(mk);
+      if (mk > 0) { var x0 = 440, y0 = -70, x1 = CX + 10, y1 = CY - 18; meteor(c, lerp(x0, x1, e), lerp(y0, y1, e), t * 3, Math.atan2(y1 - y0, x1 - x0)); }
+    } else {
+      var d = t - T_IMPACT;
+      // pedaços do foguete girando e caindo
+      if (d < 2.2) SHARDS.forEach(function (s) {
+        c.save(); c.translate(CX + s.vx * d, CY + s.vy * d + 60 * d * d); c.rotate(s.vr * d);
+        c.globalAlpha = 1 - seg(d, 1.2, 2.2); strokeFill(c, s.path); c.restore();
+      });
+      // anéis de choque
+      [0, .25].forEach(function (lag) { var k = seg(d, lag, lag + 1.1); if (k > 0 && k < 1) { c.beginPath(); c.arc(CX, CY, 20 + 170 * eOut(k), 0, 6.283); c.strokeStyle = amber(1 - k); c.lineWidth = 2.4 * (1 - k) + .6; c.stroke(); } });
+      // fumaça em bolhas
+      for (var i = 0; i < 9; i++) { var a = i * .7, k2 = seg(d, .05, 1.8); bubble(c, CX + Math.cos(a) * 40 * eOut(k2), CY + Math.sin(a) * 30 * eOut(k2) - 20 * k2, (10 + i % 3 * 5) * (1 - .4 * k2) * Math.min(1, d * 6), .6 * (1 - seg(d, 1.2, 2.2))); }
+      // fagulhas
+      SPARKS.forEach(function (s) { var p = seg(d, 0, 1.3); if (p >= 1) return; var r = s.v * eOut(p); c.strokeStyle = amber(1 - p); c.lineWidth = 1.6; c.beginPath(); c.moveTo(CX + Math.cos(s.a) * r, CY + Math.sin(s.a) * r); c.lineTo(CX + Math.cos(s.a) * (r + s.l), CY + Math.sin(s.a) * (r + s.l)); c.stroke(); });
+      // bola de fogo
+      var fk = seg(d, 0, .7); if (fk < 1) { c.save(); c.shadowColor = amber(1); c.shadowBlur = 40; c.beginPath(); c.arc(CX, CY, 18 + 30 * eOut(fk), 0, 6.283); c.fillStyle = amber(.85 * (1 - fk)); c.fill(); c.restore(); }
+      // clarão
+      var fl = 1 - seg(d, 0, .35); if (fl > 0) { c.fillStyle = cream(.22 * fl); c.fillRect(0, 0, W, H); }
+    }
+  }
+
+  // ================= CENA 3: pouso =================
+  var CRATERS = [[-150, 30, 26], [-60, 90, 34], [70, 40, 20], [140, 120, 30], [-120, 190, 22], [30, 220, 40], [150, 250, 18]];
+  var S_LAND = CY + 57 + 3;
+  function surfaceY(t) { return t < 1 ? H + 120 : lerp(H + 120, S_LAND, eOut(seg(t, 1, 4.6))); }
+  function astronaut(c, x, y, t, walking, waveK) {
+    var ph = walking ? Math.sin(t * 7) : 0;
+    c.strokeStyle = cream(.95); c.lineWidth = 1.6;
+    c.beginPath(); c.moveTo(x - 2, y - 9); c.lineTo(x - 2 + ph * 3, y); c.moveTo(x + 2, y - 9); c.lineTo(x + 2 - ph * 3, y); c.stroke();
+    c.beginPath(); c.roundRect(x - 6.5, y - 21, 13, 13, 4); c.fillStyle = COL.bg; c.fill(); c.stroke();
+    c.beginPath(); c.roundRect(x - 10, y - 19, 4, 9, 2); c.stroke(); // mochila
+    var wa = waveK > 0 ? -2.3 + .45 * Math.sin(t * 5) : 0.9;
+    c.beginPath(); c.moveTo(x + 5, y - 18); c.lineTo(x + 5 + Math.cos(wa) * 9, y - 18 + Math.sin(wa) * 9); c.stroke();
+    c.beginPath(); c.arc(x, y - 28, 7, 0, 6.283); c.fillStyle = COL.bg; c.fill(); c.stroke();
+    c.save(); c.shadowColor = amber(.8); c.shadowBlur = 6; c.beginPath(); c.roundRect(x - 2, y - 31, 7, 5, 2.5); c.fillStyle = COL.amber; c.fill(); c.restore();
+  }
+  function earthIcon(c) {
+    var x = 72, y = 118, r = 20;
+    c.beginPath(); c.arc(x, y, r, 0, 6.283); c.fillStyle = 'rgba(132,161,200,.28)'; c.fill(); c.strokeStyle = cream(.9); c.lineWidth = 1.6; c.stroke();
+    c.save(); c.beginPath(); c.arc(x, y, r - 1, 0, 6.283); c.clip();
+    c.beginPath(); c.moveTo(x - 14, y - 6); c.bezierCurveTo(x - 6, y - 14, x + 2, y - 4, x - 2, y + 2); c.bezierCurveTo(x - 6, y + 8, x - 14, y + 4, x - 14, y - 6);
+    c.moveTo(x + 6, y + 6); c.bezierCurveTo(x + 12, y + 2, x + 18, y + 8, x + 12, y + 14); c.bezierCurveTo(x + 8, y + 16, x + 4, y + 12, x + 6, y + 6);
+    c.fillStyle = 'rgba(128,166,142,.75)'; c.fill(); c.restore();
+  }
+  function drawLand(c, t) {
+    var S = surfaceY(t), descending = 1 - seg(t, 1, 4.6);
+    sky(c, t, -(t * 30 * descending + Math.min(t, 1) * 0));
+    earthIcon(c);
+    if (S < H + 100) {
+      ground(c, S, 1800);
+      c.strokeStyle = cream(.3); c.lineWidth = 1.3;
+      CRATERS.forEach(function (k) { c.beginPath(); c.ellipse(CX + k[0], S + k[1], k[2], k[2] * .24, 0, 0, 6.283); c.stroke(); });
+    }
+    // poeira no toque
+    var dk = seg(t, 4.3, 6.2);
+    if (dk > 0 && dk < 1) for (var i = 0; i < 10; i++) { var s = i % 2 ? 1 : -1, n = Math.floor(i / 2); bubble(c, CX + s * (30 + n * 16 + 60 * eOut(dk)), S - 6 - n * 2, (7 + n * 2) * (1 - dk * .5), .7 * (1 - dk)); }
+    flame(c, t, 1 - seg(t, 3.4, 4.8));
+    var hk = seg(t, 5.2, 5.8);
+    rocketBody(c, { hatch: hk });
+    // rampa
+    var rk = eOut(seg(t, 5.8, 6.4)), hx = CX + 7, hy = CY + 26;
+    if (rk > 0) { c.beginPath(); c.moveTo(hx, hy); c.lineTo(lerp(hx, CX + 44, rk), lerp(hy, S, rk)); c.strokeStyle = cream(.9); c.lineWidth = LW; c.stroke(); }
+    // astronauta
+    var at = t - 6.5;
+    var flagX = 316;
+    if (at > 0) {
+      var x, y, walking = true;
+      if (at < .9) { var k = at / .9; x = lerp(hx, CX + 44, k); y = lerp(hy, S, k); }
+      else { var k2 = clamp((at - .9) / 2.9, 0, 1); x = lerp(CX + 44, flagX - 16, eInOut(k2)); y = S - Math.abs(Math.sin(k2 * Math.PI * 5)) * 9 * (1 - (k2 >= 1)); walking = k2 < 1; }
+      // pegadas
+      c.strokeStyle = cream(.4); c.lineWidth = 1.4;
+      for (var px = CX + 52; px < x - 6; px += 12) { c.beginPath(); c.moveTo(px, S + 3); c.lineTo(px + 4, S + 3); c.stroke(); }
+      // bandeira
+      var fk = seg(t, 10.3, 10.8), ck = eOut(seg(t, 10.8, 11.3));
+      if (fk > 0) {
+        var poleTop = S - 64 * eOut(fk);
+        c.beginPath(); c.moveTo(flagX, S); c.lineTo(flagX, poleTop); c.strokeStyle = cream(.95); c.lineWidth = LW; c.stroke();
+        if (ck > 0) {
+          var fw = 60 * ck, wave = Math.sin(t * 3) * 1.5;
+          c.save(); c.shadowColor = amber(.6); c.shadowBlur = 12;
+          c.beginPath(); c.moveTo(flagX, poleTop + 2); c.quadraticCurveTo(flagX + fw / 2, poleTop + 2 + wave, flagX + fw, poleTop + 2);
+          c.lineTo(flagX + fw, poleTop + 38); c.quadraticCurveTo(flagX + fw / 2, poleTop + 38 + wave, flagX, poleTop + 38); c.closePath();
+          c.fillStyle = COL.amber; c.fill(); c.restore();
+          if (ck > .9) { c.fillStyle = '#2a2a2a'; c.textAlign = 'center'; c.textBaseline = 'alphabetic'; c.font = '700 20px ' + FONT; c.fillText('7', flagX + 30, poleTop + 24); c.font = '500 9px ' + FONT; c.fillText('noites', flagX + 30, poleTop + 34); }
+        }
+      }
+      astronaut(c, x, y, t, walking, seg(t, 11.4, 11.5));
+    }
+  }
+
+  // ---------- relógios ----------
+  var scenes = {
+    launch: { c: setup('c-launch'), draw: drawLaunch, len: 9.5, still: 3.6 },
+    meteor: { c: setup('c-meteor'), draw: drawMeteor, len: 12, still: 8 },
+    land:   { c: setup('c-land'),   draw: drawLand,   len: 14.5, still: 12.5 }
+  };
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  Object.keys(scenes).forEach(function (k) { var s = scenes[k]; s.t = reduce ? s.still : 0; s.playing = !reduce; });
+  var last = null;
+  function frame(now) {
+    var dt = last == null ? 0 : Math.min(.05, (now - last) / 1000); last = now;
+    Object.keys(scenes).forEach(function (k) {
+      var s = scenes[k];
+      if (s.playing) { s.t += dt; if (s.t > s.len) s.t = 0; }
+      s.draw(s.c, s.t);
+    });
+    requestAnimationFrame(frame);
+  }
+  function syncButtons() { document.querySelectorAll('[data-pause]').forEach(function (b) { b.textContent = scenes[b.dataset.pause].playing ? 'pausar' : 'tocar'; }); }
+  document.querySelectorAll('[data-replay]').forEach(function (b) { b.addEventListener('click', function () { var s = scenes[b.dataset.replay]; s.t = 0; s.playing = true; syncButtons(); }); });
+  document.querySelectorAll('[data-pause]').forEach(function (b) { b.addEventListener('click', function () { var s = scenes[b.dataset.pause]; s.playing = !s.playing; syncButtons(); }); });
+  syncButtons();
+  window.__seek = function (name, t) { scenes[name].t = t; scenes[name].playing = false; syncButtons(); };
+  (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(function () { requestAnimationFrame(frame); });
+})();
+</script>
