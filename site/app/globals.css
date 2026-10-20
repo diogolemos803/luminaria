@@ -188,7 +188,7 @@ body {
 .hw-dots{position:absolute;left:max(14px,2.2vw);top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:12px}
 .hw-dots button{width:10px;height:10px;padding:0;border:0;border-radius:50%;background:rgba(253,248,199,.28);cursor:pointer;transition:background .3s,transform .3s}
 .hw-dots button[aria-current=step]{background:#F2B05E;transform:scale(1.5)}
-.hw-hint{position:absolute;left:50%;bottom:max(20px,env(safe-area-inset-bottom,0px));transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:4px;font-size:14px;opacity:.85;pointer-events:none}
+.hw-hint{white-space:nowrap;text-align:center;position:absolute;left:50%;bottom:max(20px,env(safe-area-inset-bottom,0px));transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:4px;font-size:14px;opacity:.85;pointer-events:none}
 .hw-foot{margin-top:0;padding:24px max(16px,env(safe-area-inset-right,0px)) 48px max(16px,env(safe-area-inset-left,0px))}
 @media (max-width:800px){.hw-cards{align-items:end;justify-items:stretch;padding:0 16px max(16px,env(safe-area-inset-bottom,0px)) 16px}.hw-cards .hw-card{width:auto;min-width:0}.hw-dots{display:none}}
 
@@ -205,18 +205,33 @@ body {
 .hw-sw span[data-on=true]{opacity:1;background:rgba(253,248,199,.18)}
 .hw-sw i{display:block;width:10px;height:10px;border-radius:50%}
 
-/* troca de idioma */
-.buy-right{display:flex;align-items:center;gap:18px}
-.lang-sw{display:inline-flex;gap:2px;align-items:center}
-.lang-sw button{border:0;background:transparent;color:inherit;font:inherit;font-size:12px;letter-spacing:.12em;padding:6px 7px;border-radius:999px;cursor:pointer;opacity:.5;transition:opacity .2s,background .2s}
-.lang-sw button:hover{opacity:.85}
-.lang-sw button[aria-pressed=true]{opacity:1;background:rgba(253,248,199,.16)}
-.lang-sw-menu{display:flex;justify-content:center;margin-top:10px;padding-top:10px;border-top:1px solid rgba(253,248,199,.22)}
-.glass-menu.is-day .lang-sw button[aria-pressed=true]{background:rgba(68,68,68,.14)}
+/* troca de idioma: só o selecionado aparece; ao tocar, abrem os outros */
+.buy-right{display:flex;align-items:center;gap:14px}
+.lang-sw{position:relative;display:inline-block}
+.lang-cur{display:inline-flex;align-items:center;gap:5px;border:0;color:inherit;font:inherit;font-size:12px;letter-spacing:.12em;padding:7px 10px;border-radius:999px;cursor:pointer;background:rgba(253,248,199,.16)}
+.lang-cur svg{opacity:.7;transition:transform .2s}
+.lang-cur[aria-expanded=true] svg{transform:rotate(180deg)}
+.lang-pop{position:absolute;top:calc(100% + 8px);right:0;min-width:128px;display:flex;flex-direction:column;gap:2px;padding:6px;border-radius:18px;color:#FDF8C7;background:rgba(40,44,54,.94);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);border:1px solid rgba(253,248,199,.16);box-shadow:0 16px 40px rgba(0,0,0,.35);z-index:60}
+.lang-pop button{border:0;background:transparent;color:inherit;font:inherit;font-size:14px;text-align:left;padding:9px 12px;border-radius:12px;cursor:pointer}
+.lang-pop button:hover,.lang-pop button:focus-visible{background:rgba(253,248,199,.14)}
+.lang-sw-menu{display:flex;flex-direction:column;align-items:center;margin-top:10px;padding-top:10px;border-top:1px solid rgba(253,248,199,.22)}
+.lang-sw-menu .lang-pop{position:static;margin-top:8px;width:100%;box-shadow:none;background:rgba(253,248,199,.08)}
 .glass-menu.is-day .lang-sw-menu{border-color:rgba(68,68,68,.2)}
+.glass-menu.is-day .lang-cur{background:rgba(68,68,68,.12)}
+.glass-menu.is-day .lang-sw-menu .lang-pop{color:#444;background:rgba(68,68,68,.08)}
 
 /* escrita da marca (arte oficial em máscara): a cor vem de currentColor */
 .wordmark{display:inline-block;height:12px;aspect-ratio:1377/273;background:currentColor;-webkit-mask:url(/wordmark.png) center/contain no-repeat;mask:url(/wordmark.png) center/contain no-repeat;vertical-align:middle}
 .brand-logo .wordmark{height:14px}
 .wordmark-lg{height:16px}
 .wordmark-title{height:clamp(26px,3.6vw,40px)}
+
+/* celular: escrita, voltar e dica menores */
+@media (max-width:480px){
+  .wordmark{height:10px}
+  .brand-logo .wordmark{height:11px}
+  .wordmark-title{height:24px}
+  .buy-back,.hw-top .buy-back{font-size:14px}
+  .hw-hint{font-size:12px}
+  .buy-right{gap:10px}
+}
