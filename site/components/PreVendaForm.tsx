@@ -1,25 +1,28 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import type { TermsSection } from "@/lib/pre-venda";
+import type { LegalDoc } from "@/lib/pre-venda";
 
 type Props = {
   open: boolean;
-  terms: TermsSection[];
+  docs: LegalDoc[];
   termsVersion: string;
   sinal: number;
+  sinalPix: number;
   vagas: number;
   instagram: { handle: string; url: string };
 };
 
 /** Pré-venda em 4 passos: e-mail, Instagram, termos e sinal. O link de pagamento só vem depois de gravar o aceite. */
-export default function PreVendaForm({ open, terms, termsVersion, sinal, vagas, instagram }: Props) {
+export default function PreVendaForm({ open, docs, termsVersion, sinal, sinalPix, vagas, instagram }: Props) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [website, setWebsite] = useState(""); // isca anti-robô
   const [igOpened, setIgOpened] = useState(false);
   const [follows, setFollows] = useState(false);
   const [accepted, setAccepted] = useState(false);
+  const [marketing, setMarketing] = useState(false);
+  const [method, setMethod] = useState<"pix" | "cartao">("pix");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -34,7 +37,7 @@ export default function PreVendaForm({ open, terms, termsVersion, sinal, vagas, 
       const res = await fetch("/api/pre-venda", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, website, acceptedTerms: accepted, termsVersion, followsInstagram: follows }),
+        body: JSON.stringify({ name, email, website, acceptedTerms: accepted, termsVersion, followsInstagram: follows, marketingOptIn: marketing, paymentMethod: method }),
       });
       const data = await res.json().catch(() => ({}));
       if (res.ok && data.paymentUrl) {
@@ -102,29 +105,45 @@ export default function PreVendaForm({ open, terms, termsVersion, sinal, vagas, 
 
       <section className="pv-step" aria-labelledby="pv3">
         <h2 id="pv3"><span>3</span> termos da pré-venda</h2>
-        <div className="pv-terms" tabIndex={0} role="region" aria-label="termos da pré-venda">
-          {terms.map((s) => (
-            <section key={s.title}>
-              <h3>{s.title}</h3>
-              {s.body.map((p) => (
-                <p key={p}>{p}</p>
+        <div className="pv-terms" tabIndex={0} role="region" aria-label="termos de pré-venda e política de privacidade">
+          {docs.map((d) => (
+            <section key={d.heading}>
+              <h3>{d.heading}</h3>
+              {d.clauses.map((c) => (
+                <p key={c.n}>
+                  <strong>{c.n}. {c.title}.</strong> {c.text}
+                </p>
               ))}
             </section>
           ))}
         </div>
         <label className="pv-check">
           <input type="checkbox" checked={accepted} onChange={(e) => setAccepted(e.target.checked)} />
-          <span>Li e aceito os termos da pré-venda.</span>
+          <span>Li e aceito os Termos de pré-venda e li a Política de Privacidade.</span>
+        </label>
+        <label className="pv-check">
+          <input type="checkbox" checked={marketing} onChange={(e) => setMarketing(e.target.checked)} />
+          <span>Quero receber novidades e comunicações de marketing da SOVEE por e-mail (opcional; você pode revogar quando quiser).</span>
         </label>
       </section>
 
       <section className="pv-step" aria-labelledby="pv4">
-        <h2 id="pv4"><span>4</span> sinal de R$ {sinal}</h2>
+        <h2 id="pv4"><span>4</span> sinal da reserva</h2>
         <p className="pv-p">
-          Garante seu lugar entre as {vagas} primeiras unidades. O valor é abatido do preço final do Day Finisher.
+          Garante seu lugar entre as {vagas} primeiras unidades. O restante só é cobrado no envio, antes do despacho (veja os termos).
         </p>
+        <div className="buy-pay pv-pay" role="radiogroup" aria-label="forma de pagamento do sinal">
+          <label className={method === "pix" ? "is-on" : ""}>
+            <input type="radio" name="metodo" value="pix" checked={method === "pix"} onChange={() => setMethod("pix")} />
+            Pix · R$ {sinalPix}
+          </label>
+          <label className={method === "cartao" ? "is-on" : ""}>
+            <input type="radio" name="metodo" value="cartao" checked={method === "cartao"} onChange={() => setMethod("cartao")} />
+            Cartão à vista · R$ {sinal}
+          </label>
+        </div>
         <button type="submit" className="buy-btn" disabled={!ready}>
-          {busy ? "registrando..." : `garantir minha vaga por R$ ${sinal}`}
+          {busy ? "registrando..." : `garantir minha vaga por R$ ${method === "pix" ? sinalPix : sinal}`}
         </button>
         {error && <p className="pv-error" role="alert">{error}</p>}
         <p className="buy-note">Você será levado ao pagamento seguro. Seus dados só são gravados depois que você aceitar os termos.</p>

@@ -28,6 +28,8 @@ export async function POST(req: Request) {
   if (!EMAIL.test(email) || email.length > 254) return NextResponse.json({ error: "email" }, { status: 400 });
   if (b.acceptedTerms !== true || b.termsVersion !== TERMS_VERSION) return NextResponse.json({ error: "terms" }, { status: 400 });
   if (b.followsInstagram !== true) return NextResponse.json({ error: "instagram" }, { status: 400 });
+  const paymentMethod = b.paymentMethod === "pix" || b.paymentMethod === "cartao" ? b.paymentMethod : "";
+  if (!paymentMethod) return NextResponse.json({ error: "payment" }, { status: 400 });
 
   const record = {
     email,
@@ -36,6 +38,8 @@ export async function POST(req: Request) {
     termsVersion: TERMS_VERSION,
     acceptedAt: new Date().toISOString(),
     followsInstagram: true, // declarado pela pessoa; o Instagram não permite verificar
+    marketingOptIn: b.marketingOptIn === true, // consentimento separado, opcional (LGPD)
+    paymentMethod,
     source: "pre-venda",
   };
 
@@ -51,5 +55,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "storage" }, { status: 502 });
   }
 
-  return NextResponse.json({ paymentUrl: process.env.PREVENDA_PAYMENT_URL });
+  return NextResponse.json({
+    paymentUrl: paymentMethod === "pix" ? process.env.PREVENDA_PAYMENT_URL_PIX : process.env.PREVENDA_PAYMENT_URL_CARTAO,
+  });
 }

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import PageShell from "@/components/PageShell";
 import PreVendaForm from "@/components/PreVendaForm";
-import { INSTAGRAM, SINAL, TERMS, TERMS_VERSION, VAGAS, preVendaConfigured } from "@/lib/pre-venda";
+import { DOCS, INSTAGRAM, SINAL, SINAL_PIX, TERMS_VERSION, VAGAS, preVendaConfigured } from "@/lib/pre-venda";
 
 export const dynamic = "force-dynamic";
 
@@ -18,9 +18,9 @@ export default function PreVenda() {
         <p className="buy-eyebrow">pré-venda · primeiras {VAGAS} unidades</p>
         <h1 className="pg-h1">Quer descansar de verdade?</h1>
         <p className="buy-lead">
-          Garanta seu lugar na fila das {VAGAS} primeiras unidades do Day Finisher SOVEE com um sinal de R$ {SINAL}, que é abatido do preço final.
+          Garanta seu lugar na fila das {VAGAS} primeiras unidades do Day Finisher SOVEE com um sinal de R$ {SINAL} (R$ {SINAL_PIX} no Pix). O restante só é cobrado no envio.
         </p>
-        <PreVendaForm open={preVendaConfigured()} terms={TERMS} termsVersion={TERMS_VERSION} sinal={SINAL} vagas={VAGAS} instagram={INSTAGRAM} />
+        <PreVendaForm open={preVendaConfigured()} docs={DOCS} termsVersion={TERMS_VERSION} sinal={SINAL} sinalPix={SINAL_PIX} vagas={VAGAS} instagram={INSTAGRAM} />
       </article>
     </PageShell>
   );

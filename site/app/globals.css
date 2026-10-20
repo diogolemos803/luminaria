@@ -258,3 +258,6 @@ body {
 .pv-trap{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
 .pv-error{margin:0;padding:12px 14px;border-radius:14px;background:rgba(200,64,47,.18);border:1px solid rgba(200,64,47,.5);font-size:15px}
 .buy-btn:disabled{opacity:.45;cursor:not-allowed;filter:none}
+.pv-pay{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media (max-width:420px){.pv-pay{grid-template-columns:1fr}}
+.pv-terms strong{font-weight:600}
