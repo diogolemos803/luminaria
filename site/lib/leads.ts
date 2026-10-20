@@ -6,8 +6,22 @@
  */
 export type LeadRecord = Record<string, string | boolean>;
 
-const redisUrl = () => process.env.KV_REST_API_URL ?? process.env.UPSTASH_REDIS_REST_URL;
-const redisToken = () => process.env.KV_REST_API_TOKEN ?? process.env.UPSTASH_REDIS_REST_TOKEN;
+/**
+ * Acha o Redis nas variáveis do ambiente, qualquer que seja o prefixo escolhido ao conectar o banco
+ * (ex.: KV_REST_API_URL, UPSTASH_REDIS_REST_URL, STORAGE_KV_REST_API_URL).
+ */
+function redisEnv(): { url: string; token: string } | null {
+  const env = process.env;
+  for (const key of Object.keys(env)) {
+    const m = key.match(/^(.*)(KV_REST_API_URL|UPSTASH_REDIS_REST_URL)$/);
+    if (!m || !env[key]) continue;
+    const tokenKey = `${m[1]}${m[2].replace("URL", "TOKEN")}`;
+    if (env[tokenKey]) return { url: env[key] as string, token: env[tokenKey] as string };
+  }
+  return null;
+}
+const redisUrl = () => redisEnv()?.url;
+const redisToken = () => redisEnv()?.token;
 const HASH = "sovee:leads";
 
 export function leadsBackend(): "redis" | "webhook" | null {
