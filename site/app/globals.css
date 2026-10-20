@@ -68,7 +68,7 @@ body {
 /* página de compra: rolagem própria (o body do site não rola) */
 .buy{--cr:#FDF8C7;position:fixed;inset:0;overflow-y:auto;background:#2A2A2A;color:var(--cr);padding:0 max(16px,env(safe-area-inset-right,0px)) 64px max(16px,env(safe-area-inset-left,0px))}
 .buy-top{max-width:1120px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;padding:max(16px,env(safe-area-inset-top,0px)) 0 16px}
-.buy-back{display:inline-flex;align-items:center;gap:6px;color:inherit;text-decoration:none;font-size:15px;opacity:.85}
+.buy-back{white-space:nowrap;display:inline-flex;align-items:center;gap:6px;color:inherit;text-decoration:none;font-size:15px;opacity:.85}
 .buy-back:hover{opacity:1}
 .buy-brand{display:flex;align-items:center;gap:10px}
 .buy-brand .brand-mark{width:28px;height:31px}
@@ -204,3 +204,13 @@ body {
 .hw-sw span{display:inline-flex;align-items:center;gap:7px;padding:6px 12px;border-radius:999px;font-size:13px;background:rgba(253,248,199,.07);opacity:.5;transition:opacity .3s,background .3s}
 .hw-sw span[data-on=true]{opacity:1;background:rgba(253,248,199,.18)}
 .hw-sw i{display:block;width:10px;height:10px;border-radius:50%}
+
+/* troca de idioma */
+.buy-right{display:flex;align-items:center;gap:18px}
+.lang-sw{display:inline-flex;gap:2px;align-items:center}
+.lang-sw button{border:0;background:transparent;color:inherit;font:inherit;font-size:12px;letter-spacing:.12em;padding:6px 7px;border-radius:999px;cursor:pointer;opacity:.5;transition:opacity .2s,background .2s}
+.lang-sw button:hover{opacity:.85}
+.lang-sw button[aria-pressed=true]{opacity:1;background:rgba(253,248,199,.16)}
+.lang-sw-menu{display:flex;justify-content:center;margin-top:10px;padding-top:10px;border-top:1px solid rgba(253,248,199,.22)}
+.glass-menu.is-day .lang-sw button[aria-pressed=true]{background:rgba(68,68,68,.14)}
+.glass-menu.is-day .lang-sw-menu{border-color:rgba(68,68,68,.2)}

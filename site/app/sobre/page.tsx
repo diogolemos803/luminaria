@@ -1,15 +1,16 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import PageShell from "@/components/PageShell";
-import content from "@/lib/content.json";
+import { content, ui } from "@/lib/i18n";
+import { getLang } from "@/lib/lang";
 
-export const metadata: Metadata = {
-  title: "Sobre a SOVEE",
-  description: "O Day Finisher que transforma a hora de dormir em ritual.",
-};
+export function generateMetadata(): Metadata {
+  return ui[getLang()].meta.about;
+}
 
 export default function Sobre() {
-  const c = content.sobre;
+  const lang = getLang();
+  const c = content[lang].sobre;
   return (
     <PageShell>
       <article className="pg-article">
@@ -29,7 +30,7 @@ export default function Sobre() {
           ))}
         </ul>
         <p className="pg-closing">{c.closing}</p>
-        <Link href="/produto" className="buy-btn pg-cta">conheça o Day Finisher</Link>
+        <Link href="/produto" className="buy-btn pg-cta">{ui[lang].about.cta}</Link>
       </article>
     </PageShell>
   );

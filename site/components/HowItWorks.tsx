@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useEffect, useRef } from "react";
 import * as launch from "./scenes/launchScene";
 import * as landing from "./scenes/landingScene";
+import LangSwitch from "./LangSwitch";
+import { useLang } from "./LangProvider";
 
 /* ---------- matemática de rolagem ---------- */
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
@@ -23,13 +25,13 @@ const RED = "#C8402F";
 
 /* Capítulos: janela de rolagem (0 a 1) em que cada card aparece e some. */
 const chapters = [
-  { id: "arme", from: 0.0, to: 0.13, title: "arme o modo noite", text: "No app SOVEE, um toque no botão redondo prepara a noite." },
-  { id: "encoste", from: 0.13, to: 0.27, title: "encoste o celular", text: "A etiqueta NFC do Day Finisher reconhece o seu iPhone, e o rostinho do botão fica verde." },
-  { id: "encaixe", from: 0.27, to: 0.4, title: "encaixe no nicho", text: "O celular descansa no nicho de madeira da base, à vista e longe da cama. A luz acende e os apps que você escolheu ficam bloqueados." },
-  { id: "noite", from: 0.4, to: 0.55, title: "três cores de luz", text: "Âmbar, laranja e vermelho, sempre em tons quentes, sem o azul que mantém o cérebro em alerta. Fixe a cor que preferir ou deixe o Day Finisher alternar sozinho." },
-  { id: "foguete", from: 0.55, to: 0.67, title: "o foguete decola", text: "No app, o foguete parte assim que o celular é reconhecido e segue viagem enquanto você dorme." },
-  { id: "meteoro", from: 0.67, to: 0.78, title: "se você pegar o celular", text: "Um meteoro atinge o foguete e ele fica em obras até de manhã. Aquela noite não conta na sua sequência." },
-  { id: "manha", from: 0.78, to: 0.91, title: "o despertador toca", text: "No horário da rotina, o despertador toca com um som calmo, os apps voltam e o foguete pousa na Lua. Quanto mais noites seguidas, mais longe ele chega." },
+  { id: "arme", from: 0.0, to: 0.13 },
+  { id: "encoste", from: 0.13, to: 0.27 },
+  { id: "encaixe", from: 0.27, to: 0.4 },
+  { id: "noite", from: 0.4, to: 0.55 },
+  { id: "foguete", from: 0.55, to: 0.67 },
+  { id: "meteoro", from: 0.67, to: 0.78 },
+  { id: "manha", from: 0.78, to: 0.91 },
 ] as const;
 const FINAL = { from: 0.91, to: 1.01 };
 
@@ -46,6 +48,10 @@ const MATRIX = `matrix(${U[0]} ${U[1]} ${V[0]} ${V[1]} ${T[0]} ${T[1]})`;
 type Anim = Animation[];
 
 export default function HowItWorks() {
+  const { lang, t: all } = useLang();
+  const t = all.how;
+  const tRef = useRef(all);
+  tRef.current = all;
   const scroller = useRef<HTMLElement>(null);
   const track = useRef<HTMLDivElement>(null);
   const stage = useRef<HTMLDivElement>(null);
@@ -245,7 +251,7 @@ export default function HowItWorks() {
       const ci = p < 0.47 ? 0 : p < 0.53 ? 1 : 2;
       swatches.current.forEach((el, i) => el?.setAttribute("data-on", String(i === ci)));
       if (colorName.current) {
-        colorName.current.textContent = ["luz âmbar", "luz laranja", "luz vermelha"][ci];
+        colorName.current.textContent = tRef.current.how.colorNames[ci];
         colorName.current.style.color = color;
         colorName.current.style.opacity = String(I * (1 - seg(p, 0.545, 0.575)));
         colorName.current.style.left = `${L.objCx}px`;
@@ -313,6 +319,15 @@ export default function HowItWorks() {
     };
   }, []);
 
+  // "DIAS" da bandeira do pouso: troca só o texto, sem recriar o SVG (as animações pausadas ficam)
+  useEffect(() => {
+    landEl.current?.querySelectorAll("text").forEach((el) => {
+      const orig = el.getAttribute("data-orig") ?? el.textContent ?? "";
+      if (!el.hasAttribute("data-orig")) el.setAttribute("data-orig", orig);
+      if (orig === "DIAS") el.textContent = t.days;
+    });
+  }, [t.days]);
+
   const goTo = (from: number) => {
     const sc = scroller.current;
     const tr = track.current;
@@ -327,31 +342,34 @@ export default function HowItWorks() {
       <style>{landing.css}</style>
 
       <header className="hw-top">
-        <Link href="/" className="buy-back" aria-label="voltar ao quarto">
+        <Link href="/" className="buy-back" aria-label={all.back}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M15 5l-7 7 7 7" />
           </svg>
-          <span>voltar ao quarto</span>
+          <span>{all.back}</span>
         </Link>
-        <div className="buy-brand" aria-label="sovee">
-          <i className="brand-mark" aria-hidden="true" />
-          <span>sovee</span>
+        <div className="buy-right">
+          <LangSwitch />
+          <div className="buy-brand" aria-label="sovee">
+            <i className="brand-mark" aria-hidden="true" />
+            <span>sovee</span>
+          </div>
         </div>
       </header>
 
       {/* texto para leitores de tela: a animação abaixo é decorativa */}
-      <section className="sr-only" aria-label="como funciona">
-        <h1>como funciona o Day Finisher</h1>
+      <section className="sr-only" aria-label={t.srLabel}>
+        <h1>{t.srTitle}</h1>
         <ol>
-          {chapters.map((c) => (
+          {chapters.map((c, i) => (
             <li key={c.id}>
-              <strong>{c.title}.</strong> {c.text}
+              <strong>{t.chapters[i].title}.</strong> {t.chapters[i].text}
             </li>
           ))}
         </ol>
-        <p>hora de desligar.</p>
-        <Link href="/comprar">adquira</Link>
-        <Link href="/produto">conheça o produto</Link>
+        <p>{all.tagline}</p>
+        <Link href="/comprar">{t.final.buy}</Link>
+        <Link href="/produto">{t.final.product}</Link>
       </section>
 
       <div className="hw-track" ref={track}>
@@ -424,7 +442,7 @@ export default function HowItWorks() {
               <rect x="5" y="11" width="14" height="9" rx="2.5" />
               <path d="M8 11V8a4 4 0 0 1 8 0v3" />
             </svg>
-            apps bloqueados até o despertador
+            {t.chip}
           </div>
 
           {/* o celular, com a tela do app */}
@@ -450,17 +468,17 @@ export default function HowItWorks() {
                   <div className="hw-btn">
                     <i className="hw-face" style={{ color: "#849FC8", WebkitMaskImage: "url(/como-funciona/logo_sono.png)", maskImage: "url(/como-funciona/logo_sono.png)" }} />
                   </div>
-                  <p>hora de desligar.</p>
+                  <p>{all.tagline}</p>
                 </div>
                 <div className="hw-app hw-night" ref={okLayer} style={{ opacity: 0 }}>
                   <div className="hw-hamb" aria-hidden="true"><i /><i /><i /></div>
                   <div className="hw-btn hw-ok">
                     <i className="hw-face" style={{ color: "#80A68E", WebkitMaskImage: "url(/como-funciona/logo_sono.png)", maskImage: "url(/como-funciona/logo_sono.png)" }} />
                   </div>
-                  <p>hora de desligar.</p>
+                  <p>{all.tagline}</p>
                 </div>
                 <div className="hw-layer sc-dl" ref={launchEl} style={{ opacity: 0 }} dangerouslySetInnerHTML={{ __html: launch.svg }} />
-                <iframe className="hw-layer" ref={meteorEl} src="/como-funciona/meteoro.html" title="" aria-hidden="true" tabIndex={-1} style={{ opacity: 0 }} />
+                <iframe className="hw-layer" ref={meteorEl} src={`/como-funciona/meteoro.html?l=${lang}`} title="" aria-hidden="true" tabIndex={-1} style={{ opacity: 0 }} />
                 <div className="hw-layer sc-ld" ref={landEl} style={{ opacity: 0 }} dangerouslySetInnerHTML={{ __html: landing.svg }} />
                 <div className="hw-black" ref={blackLayer} style={{ opacity: 0 }} />
                 <div className="hw-notch" />
@@ -479,25 +497,21 @@ export default function HowItWorks() {
                   cards.current[i] = el;
                 }}
               >
-                <span className="hw-step">etapa {i + 1} de {chapters.length}</span>
-                <h2>{c.title}</h2>
-                <p>{c.text}</p>
+                <span className="hw-step">{t.step(i + 1, chapters.length)}</span>
+                <h2>{t.chapters[i].title}</h2>
+                <p>{t.chapters[i].text}</p>
                 {c.id === "noite" && (
                   <div className="hw-sw">
-                    {[
-                      ["âmbar", AMBER],
-                      ["laranja", ORANGE],
-                      ["vermelho", RED],
-                    ].map(([name, col], i) => (
+                    {[AMBER, ORANGE, RED].map((col, i) => (
                       <span
-                        key={name}
+                        key={col}
                         data-on="false"
                         ref={(el) => {
                           swatches.current[i] = el;
                         }}
                       >
                         <i style={{ background: col }} />
-                        {name}
+                        {t.swatches[i]}
                       </span>
                     ))}
                   </div>
@@ -505,15 +519,15 @@ export default function HowItWorks() {
               </div>
             ))}
             <div className="hover-card hw-card hw-final" style={{ opacity: 0, pointerEvents: "none" }} ref={finalCard}>
-              <span className="hw-step">pronto</span>
-              <h2>hora de desligar.</h2>
-              <p>Um gesto, uma luz e uma noite sem o celular.</p>
+              <span className="hw-step">{t.final.step}</span>
+              <h2>{all.tagline}</h2>
+              <p>{t.final.text}</p>
               <div className="hw-actions">
                 <Link href="/comprar" className="buy-btn" tabIndex={-1}>
-                  adquira
+                  {t.final.buy}
                 </Link>
                 <Link href="/produto" className="hw-link" tabIndex={-1}>
-                  conheça o produto
+                  {t.final.product}
                 </Link>
               </div>
             </div>
@@ -529,14 +543,14 @@ export default function HowItWorks() {
                   dots.current[i] = el;
                 }}
                 onClick={() => goTo(c.from)}
-                aria-label={c.title}
-                title={c.title}
+                aria-label={t.chapters[i].title}
+                title={t.chapters[i].title}
               />
             ))}
           </nav>
 
           <div className="hw-hint" ref={hint}>
-            <span>role para ver como funciona</span>
+            <span>{t.hint}</span>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M6 9l6 6 6-6" />
             </svg>
@@ -545,13 +559,13 @@ export default function HowItWorks() {
       </div>
 
       <footer className="pg-foot hw-foot">
-        <nav aria-label="páginas">
-          <Link href="/produto">produto</Link>
-          <Link href="/sobre">sobre</Link>
-          <Link href="/ciencia-do-sono">a ciência do sono</Link>
-          <Link href="/comprar">adquira</Link>
+        <nav aria-label={all.pagesNav}>
+          <Link href="/produto">{all.nav.product}</Link>
+          <Link href="/sobre">{all.nav.about}</Link>
+          <Link href="/ciencia-do-sono">{all.nav.science}</Link>
+          <Link href="/comprar">{all.nav.buy}</Link>
         </nav>
-        <p>hora de desligar.</p>
+        <p>{all.tagline}</p>
       </footer>
     </main>
   );

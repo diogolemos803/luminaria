@@ -1,0 +1,68 @@
+{
+  "produto": {
+    "eyebrow": "Day Finisher",
+    "title": "sovee",
+    "lead": "time to switch off. A light that follows your sleep, from amber to red, and a simple ritual to put your phone away and go to sleep.",
+    "stepsTitle": "how it works",
+    "steps": [
+      { "t": "arm night mode", "d": "In the SOVEE app, tap the round button. It gets ready to recognize the Day Finisher." },
+      { "t": "touch your phone to it", "d": "The Day Finisher's NFC tag tells the app the night has begun. The rocket lifts off, the alarm is set and the apps you chose are blocked." },
+      { "t": "leave it in the niche and sleep", "d": "Your phone rests in the wooden niche on the base, in sight and away from the bed, while the warm light follows the end of your day." },
+      { "t": "wake up gently", "d": "At your routine's time, the alarm rings with a soft sound and your apps come back." }
+    ],
+    "featuresTitle": "what it does",
+    "features": [
+      { "t": "three colors of light", "d": "Amber, orange and red, always warm tones, without the blue that keeps the brain alert. Fix the color you prefer or let the Day Finisher cycle on its own." },
+      { "t": "base with a niche", "d": "A fixed, beautiful place for your phone to sleep, out of reach." },
+      { "t": "app blocking", "d": "The apps you choose stay blocked until the alarm time. The app never knows which ones: only your iPhone keeps that choice." },
+      { "t": "sleep routines", "d": "Create routines with their own time, sound and blocked apps, and let SOVEE pick the weekday or weekend one." },
+      { "t": "calm alarm", "d": "Sounds of birds, water and bells, at your routine's time, even with your phone on silent." },
+      { "t": "one night at a time", "d": "Every night without touching your phone takes your rocket further: Moon, Mars, Saturn and Neptune." }
+    ],
+    "note": "The SOVEE app is for iPhone.",
+    "cta": "get yours"
+  },
+  "sobre": {
+    "eyebrow": "about sovee",
+    "title": "bedtime deserves a ritual.",
+    "lead": "SOVEE is the Day Finisher, which turns bedtime into a ritual.",
+    "paragraphs": [
+      "The last gesture of the day is usually looking at a screen. SOVEE swaps that gesture for another: touching your phone to the Day Finisher, leaving it in the niche on the base and letting the warm light do the rest.",
+      "It doesn't promise to sleep for you. It promises to clear out of the way whatever gets in the way: the screen, the notifications, the urge to pick up your phone one more time."
+    ],
+    "valuesTitle": "what we believe in",
+    "values": [
+      { "t": "calm", "d": "Warm light, soft sounds and nothing that asks for your attention after switch-off time." },
+      { "t": "simplicity", "d": "One button, one gesture and one Day Finisher. The rest happens on its own." },
+      { "t": "privacy", "d": "The app doesn't know which apps you block, and your routines stay with you." }
+    ],
+    "closing": "time to switch off."
+  },
+  "ciencia": {
+    "eyebrow": "the science of sleep",
+    "title": "why light matters so much at bedtime.",
+    "lead": "A summary of what research on light, sleep and the circadian rhythm shows, and what it changes about your night.",
+    "sections": [
+      { "t": "light and the body clock", "p": [
+        "The body follows a cycle of about 24 hours, the circadian rhythm, which regulates sleep, temperature and hormones. Light is the main signal that sets this clock.",
+        "At night, light, especially blue-rich light, can reduce melatonin, the hormone that signals the body it is time to sleep."
+      ] },
+      { "t": "why amber and red", "p": [
+        "The retinal cells that report to the body clock are more sensitive to blue light. Amber and red light, which is warmer, has less effect on melatonin than white or bluish light.",
+        "Intensity also counts: the dimmer the light at night, the smaller the effect. That is why SOVEE uses warm, soft tones."
+      ] },
+      { "t": "screens before bed", "p": [
+        "A study published in 2015 compared reading on a light-emitting e-reader with reading a printed book before bed. Those who read on the screen took longer to fall asleep, had less melatonin and were less alert the next morning."
+      ] },
+      { "t": "the power of ritual", "p": [
+        "Regular bed and wake times reinforce the circadian rhythm. Repeating a gesture before bed, such as always putting your phone in the same place, helps the brain recognize that it is time to slow down."
+      ] }
+    ],
+    "disclaimer": "SOVEE is not a medical device and does not treat sleep disorders. If you have persistent insomnia, talk to a healthcare professional.",
+    "refsTitle": "further reading",
+    "refs": [
+      "Chang, A.-M. et al. (2015). Evening use of light-emitting eReaders negatively affects sleep, circadian timing, and next-morning alertness. PNAS, 112(4), 1232–1237.",
+      "Brainard, G. C. et al. (2001). Action spectrum for melatonin regulation in humans: evidence for a novel circadian photoreceptor. Journal of Neuroscience, 21(16), 6405–6412."
+    ]
+  }
+}

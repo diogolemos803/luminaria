@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { useLang } from "./LangProvider";
 
 /** Logo SOVEE: a carinha dormindo, recolorida pela cor do texto. */
 export function Logo({ size = 120, color = "#FDF8C7" }: { size?: number; color?: string }) {
@@ -20,13 +21,14 @@ export function Logo({ size = 120, color = "#FDF8C7" }: { size?: number; color?:
 }
 
 export default function Loading({ reduced }: { reduced: boolean }) {
+  const { t } = useLang();
   return (
     <motion.div
       className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-5 bg-carvao"
       exit={{ opacity: 0 }}
       transition={{ duration: 0.8, ease: "easeInOut" }}
       role="status"
-      aria-label="carregando"
+      aria-label={t.loading}
     >
       {/* o zZ pulsa em ~2,5s por ciclo; sem spinner */}
       <motion.div

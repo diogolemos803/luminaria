@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import Loading from "./Loading";
 import Menu from "./Menu";
+import { useLang } from "./LangProvider";
 import { lampColors, rooms, type Mode } from "./palette";
 
 const MIN_LOADING_MS = 1200;
@@ -36,6 +37,7 @@ function Layers({ mode, colorIndex, reduced }: { mode: Mode; colorIndex: number;
 }
 
 export default function Experience() {
+  const { t } = useLang();
   const reduced = !!useReducedMotion();
   const [minTime, setMinTime] = useState(false);
   const [loaded, setLoaded] = useState(0);
@@ -123,7 +125,7 @@ export default function Experience() {
           <motion.div
             className="absolute inset-0"
             role="img"
-            aria-label="Quarto à noite: o Day Finisher SOVEE aceso sobre o criado-mudo, com o celular guardado, e uma pessoa dormindo ao lado"
+            aria-label={t.experience.scene}
           >
             <div className="absolute inset-0" style={{ filter: hovering ? "blur(1.8px)" : "none", transition: "filter .45s ease" }}>
               <Layers mode={mode} colorIndex={colorIndex} reduced={reduced} />
@@ -156,7 +158,7 @@ export default function Experience() {
             <div
               role="button"
               tabIndex={0}
-              aria-label="day finisher sovee"
+              aria-label={t.experience.lamp}
               aria-expanded={lampActive}
               className="absolute cursor-pointer"
               style={LAMP}
@@ -183,14 +185,14 @@ export default function Experience() {
             onPointerEnter={hoverIn}
             onPointerLeave={hoverOut}
           >
-          <p className="text-sm leading-snug">uma luz que acompanha o seu sono, do âmbar ao vermelho.</p>
+          <p className="text-sm leading-snug">{t.experience.hover}</p>
             {night && (
-              <div className="mt-3 flex gap-2" role="group" aria-label="cor da luz">
+              <div className="mt-3 flex gap-2" role="group" aria-label={t.experience.colorGroup}>
                 {lampColors.map((col, i) => (
                   <button
                     key={col}
                     type="button"
-                    aria-label={["âmbar", "laranja", "vermelho"][i]}
+                    aria-label={t.experience.colors[i]}
                     aria-pressed={colorIndex === i}
                     onClick={() => {
                       setPicked(i);
@@ -204,7 +206,7 @@ export default function Experience() {
               </div>
             )}
             <Link href="/produto" className="mt-4 inline-block rounded-full px-4 py-1.5 text-sm" style={{ background: night ? lampColor : "#DB8149", color: "#2A2A2A" }}>
-              conheça a sovee
+              {t.experience.learnMore}
             </Link>
           </motion.div>
         )}
@@ -217,7 +219,7 @@ export default function Experience() {
             <span>sovee</span>
           </div>
           <Link href="/comprar" className={`buy-cta ${night ? "" : "is-day"}`} style={{ ["--lc" as string]: lampColor }}>
-            adquira
+            {t.nav.buy}
           </Link>
           <Menu
             mode={mode}
@@ -231,7 +233,7 @@ export default function Experience() {
           <button
             type="button"
             onClick={toggleMode}
-            aria-label={night ? "ver o quarto de dia" : "ver o quarto à noite"}
+            aria-label={night ? t.experience.seeDay : t.experience.seeNight}
             className="fixed bottom-4 left-4 z-40 flex h-12 w-12 items-center justify-center rounded-full"
             style={{ background: c.card, color: c.text }}
           >

@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import HowItWorks from "@/components/HowItWorks";
+import { ui } from "@/lib/i18n";
+import { getLang } from "@/lib/lang";
 
-export const metadata: Metadata = {
-  title: "Como funciona o Day Finisher",
-  description: "Do gesto de encaixar o celular ao despertador: veja a noite com o Day Finisher passo a passo.",
-};
+export function generateMetadata(): Metadata {
+  return ui[getLang()].meta.how;
+}
 
 export default function ComoFunciona() {
   return <HowItWorks />;

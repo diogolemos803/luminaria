@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
 import PageShell from "@/components/PageShell";
-import content from "@/lib/content.json";
+import { content, ui } from "@/lib/i18n";
+import { getLang } from "@/lib/lang";
 
-export const metadata: Metadata = {
-  title: "A ciência do sono",
-  description: "O que a pesquisa mostra sobre luz, sono e ritmo circadiano.",
-};
+export function generateMetadata(): Metadata {
+  return ui[getLang()].meta.science;
+}
 
 export default function Ciencia() {
-  const c = content.ciencia;
+  const c = content[getLang()].ciencia;
   return (
     <PageShell>
       <article className="pg-article">

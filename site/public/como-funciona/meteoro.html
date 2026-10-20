@@ -127,9 +127,10 @@
     c.save(); c.beginPath(); c.rect(x0, y, x1 - x0, 3.2); c.clip(); c.fillStyle = '#f4c02e'; c.fillRect(x0, y, x1 - x0, 3.2);
     c.fillStyle = '#1f2228'; for (let x = x0 - 6; x < x1 + 6; x += 6){ c.beginPath(); c.moveTo(x, y + 3.2); c.lineTo(x + 3, y); c.lineTo(x + 6, y); c.lineTo(x + 3, y + 3.2); c.closePath(); c.fill(); }
     c.restore(); }
+  const SIGN = ({ en: 'REPAIRS', es: 'EN OBRAS' })[new URLSearchParams(location.search).get('l')] || 'EM OBRAS';
   function drawSign(c, x, y){ c.fillStyle = '#6b6f78'; c.fillRect(x - .8, y - 18, 1.6, 18);
     c.fillStyle = '#f4c02e'; roundRect(c, x - 13, y - 30, 26, 13, 2); c.fill(); c.strokeStyle = '#1f2228'; c.lineWidth = 1; roundRect(c, x - 13, y - 30, 26, 13, 2); c.stroke();
-    c.fillStyle = '#1f2228'; c.font = 'bold 5.4px -apple-system, system-ui, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('EM OBRAS', x, y - 23.5); }
+    c.fillStyle = '#1f2228'; c.font = 'bold 5.4px -apple-system, system-ui, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(SIGN, x, y - 23.5); }
 
   // bonequinho de capacete (pés em x,y; ~24 unidades de altura). pose: função que devolve ângulos dos braços/pernas
   function drawWorker(c, x, y, facing, pose, extra){

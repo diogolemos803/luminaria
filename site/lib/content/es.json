@@ -1,0 +1,68 @@
+{
+  "produto": {
+    "eyebrow": "Day Finisher",
+    "title": "sovee",
+    "lead": "hora de desconectar. Una luz que acompaña tu sueño, del ámbar al rojo, y un ritual sencillo para guardar el móvil y dormir.",
+    "stepsTitle": "cómo funciona",
+    "steps": [
+      { "t": "activa el modo noche", "d": "En la app SOVEE, toca el botón redondo. Queda listo para reconocer el Day Finisher." },
+      { "t": "acerca el móvil", "d": "La etiqueta NFC del Day Finisher avisa a la app de que la noche ha empezado. El cohete despega, se programa el despertador y se bloquean las apps que elegiste." },
+      { "t": "déjalo en el nicho y duerme", "d": "El móvil descansa en el nicho de madera de la base, a la vista y lejos de la cama, mientras la luz cálida acompaña el final de tu día." },
+      { "t": "despierta con calma", "d": "A la hora de tu rutina, el despertador suena con un sonido suave y las apps vuelven." }
+    ],
+    "featuresTitle": "qué hace",
+    "features": [
+      { "t": "tres colores de luz", "d": "Ámbar, naranja y rojo, siempre tonos cálidos, sin el azul que mantiene el cerebro en alerta. Fija el color que prefieras o deja que el Day Finisher alterne solo." },
+      { "t": "base con nicho", "d": "Un lugar fijo y bonito para que el móvil duerma, fuera del alcance de la mano." },
+      { "t": "bloqueo de apps", "d": "Las apps que elijas quedan bloqueadas hasta la hora del despertador. La app nunca sabe cuáles son: solo tu iPhone guarda esa elección." },
+      { "t": "rutinas de sueño", "d": "Crea rutinas con su propio horario, sonido y apps bloqueadas, y deja que SOVEE elija la de entre semana o la de fin de semana." },
+      { "t": "despertador tranquilo", "d": "Sonidos de pájaros, agua y campanas, a la hora de tu rutina, incluso con el móvil en silencio." },
+      { "t": "una noche cada vez", "d": "Cada noche sin coger el móvil lleva tu cohete más lejos: Luna, Marte, Saturno y Neptuno." }
+    ],
+    "note": "La app SOVEE es para iPhone.",
+    "cta": "adquiérelo"
+  },
+  "sobre": {
+    "eyebrow": "sobre sovee",
+    "title": "la hora de dormir merece un ritual.",
+    "lead": "SOVEE es el Day Finisher, que convierte la hora de dormir en un ritual.",
+    "paragraphs": [
+      "El último gesto del día suele ser mirar una pantalla. SOVEE cambia ese gesto por otro: acercar el móvil al Day Finisher, dejarlo en el nicho de la base y dejar que la luz cálida haga el resto.",
+      "No promete dormir por ti. Promete quitar de en medio lo que estorba: la pantalla, las notificaciones, el impulso de coger el móvil una vez más."
+    ],
+    "valuesTitle": "en qué creemos",
+    "values": [
+      { "t": "calma", "d": "Luz cálida, sonidos suaves y nada que reclame tu atención después de la hora de desconectar." },
+      { "t": "sencillez", "d": "Un botón, un gesto y un Day Finisher. Lo demás ocurre solo." },
+      { "t": "privacidad", "d": "La app no sabe qué apps bloqueas, y tus rutinas se quedan contigo." }
+    ],
+    "closing": "hora de desconectar."
+  },
+  "ciencia": {
+    "eyebrow": "la ciencia del sueño",
+    "title": "por qué la luz importa tanto a la hora de dormir.",
+    "lead": "Un resumen de lo que muestra la investigación sobre luz, sueño y ritmo circadiano, y de lo que cambia en tu noche.",
+    "sections": [
+      { "t": "la luz y el reloj del cuerpo", "p": [
+        "El cuerpo sigue un ciclo de unas 24 horas, el ritmo circadiano, que regula el sueño, la temperatura y las hormonas. La luz es la principal señal que ajusta este reloj.",
+        "Por la noche, la luz, sobre todo la rica en azul, puede reducir la melatonina, la hormona que indica al cuerpo que es hora de dormir."
+      ] },
+      { "t": "por qué ámbar y rojo", "p": [
+        "Las células de la retina que informan al reloj del cuerpo son más sensibles a la luz azul. La luz ámbar y roja, más cálida, afecta menos a la melatonina que la luz blanca o azulada.",
+        "La intensidad también cuenta: cuanto más tenue es la luz por la noche, menor es el efecto. Por eso SOVEE usa tonos cálidos y suaves."
+      ] },
+      { "t": "pantallas antes de dormir", "p": [
+        "Un estudio publicado en 2015 comparó leer en un lector electrónico luminoso con leer un libro impreso antes de dormir. Quienes leyeron en la pantalla tardaron más en conciliar el sueño, tuvieron menos melatonina y estuvieron menos alerta a la mañana siguiente."
+      ] },
+      { "t": "la fuerza del ritual", "p": [
+        "Los horarios regulares para acostarse y levantarse refuerzan el ritmo circadiano. Repetir un gesto antes de acostarse, como guardar siempre el móvil en el mismo sitio, ayuda al cerebro a reconocer que es hora de bajar el ritmo."
+      ] }
+    ],
+    "disclaimer": "SOVEE no es un producto sanitario y no trata trastornos del sueño. Si tienes insomnio persistente, habla con un profesional de la salud.",
+    "refsTitle": "para leer más",
+    "refs": [
+      "Chang, A.-M. et al. (2015). Evening use of light-emitting eReaders negatively affects sleep, circadian timing, and next-morning alertness. PNAS, 112(4), 1232–1237.",
+      "Brainard, G. C. et al. (2001). Action spectrum for melatonin regulation in humans: evidence for a novel circadian photoreceptor. Journal of Neuroscience, 21(16), 6405–6412."
+    ]
+  }
+}

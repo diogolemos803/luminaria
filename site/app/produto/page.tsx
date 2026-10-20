@@ -2,15 +2,16 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import LampDrawing from "@/components/LampDrawing";
 import PageShell from "@/components/PageShell";
-import content from "@/lib/content.json";
+import { content, ui } from "@/lib/i18n";
+import { getLang } from "@/lib/lang";
 
-export const metadata: Metadata = {
-  title: "O Day Finisher SOVEE",
-  description: "Uma luz que acompanha o seu sono, do âmbar ao vermelho.",
-};
+export function generateMetadata(): Metadata {
+  return ui[getLang()].meta.product;
+}
 
 export default function Produto() {
-  const c = content.produto;
+  const lang = getLang();
+  const c = content[lang].produto;
   return (
     <PageShell>
       <section className="buy-grid pg-hero">
@@ -29,7 +30,7 @@ export default function Produto() {
       <section className="pg-section" aria-labelledby="steps-h">
         <h2 id="steps-h" className="pg-h2">{c.stepsTitle}</h2>
         <p className="pg-p" style={{ marginBottom: 16 }}>
-          <Link href="/como-funciona" className="hw-link">veja a animação passo a passo</Link>
+          <Link href="/como-funciona" className="hw-link">{ui[lang].product.seeAnimation}</Link>
         </p>
         <ol className="pg-steps">
           {c.steps.map((s, i) => (
