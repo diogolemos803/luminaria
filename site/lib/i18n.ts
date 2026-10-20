@@ -14,7 +14,7 @@ export const content: Record<Lang, Content> = { pt, en, es };
 /** Preço do Day Finisher em cada idioma (mesmo produto, moeda do mercado). */
 export const price: Record<Lang, { amount: number; locale: string; currency: string }> = {
   pt: { amount: 649, locale: "pt-BR", currency: "BRL" },
-  en: { amount: 120, locale: "en-US", currency: "USD" },
+  en: { amount: 130, locale: "en-US", currency: "USD" },
   es: { amount: 110, locale: "es-ES", currency: "EUR" },
 };
 export const money = (lang: Lang, n: number) => {
