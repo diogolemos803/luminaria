@@ -187,6 +187,21 @@ depende de CI num runner macOS na nuvem (GitHub Actions) e de sideload via AltSt
   `isNightModeArmed`, que propaga se o modo noite está armado pras telas secundárias
   sem precisar passar o bool por parâmetro em cada `init` — setada uma vez no
   `.sheet`/`.environment` de `ContentView`.
+  **Menus no estilo do site sovee.com.br (2026-10-20)** — protótipo aprovado em
+  `design/menus_sovee_prototipo.html`. Tema próprio só dos menus, `ModeTheme.menu(armed:)`
+  (`.menuNight` = vidro marrom-quente sobre grafite-azulado #23252C, como o menu ☰ do
+  site; `.menuDay` = o inverso, pedido do usuário: texto grafite sobre cinza quente
+  #E9E7E2, vidro claro). Âmbar do site (`SoveeColor.ambar`, #F2B05E, texto #2A2A2A em
+  cima) é a cor de ação nos dois modos. Usado por Configurações, Rotinas, editor de
+  rotina, Ajuda, Relatório, Amigos, Bloqueio de apps e pareamento da lâmpada. A tela do
+  botão, a da lâmpada, `LockedView` e `AlarmRingingView` continuam em `.current(armed:)`
+  (usuário: "a tela do botão e da luminária estão ótimas"). Os componentes leem
+  `theme.isSoveeMenu` (cartão de vidro com borda, rótulo em minúsculas espaçado, ícone em
+  círculo neutro, botões em pílula) — os campos novos de `ModeTheme` têm valor padrão,
+  então os temas antigos não mudam. Cada tela tem `MenuHeader` (título grande em
+  minúsculas no conteúdo) + `.menuChrome(...)` (título da barra escondido, fundo na cor do
+  palco, botões na cor do texto) e `MenuRoundButton` pra fechar. Pra voltar ao visual
+  anterior dos menus: `menu(armed:)` devolver `current(armed:)`.
 - `Luminaria/LockedView.swift` (só no `main`) — tela mostrada por `ContentView` no
   lugar do botão redondo enquanto `!nfcManager.isLinked`. Pedido explícito do usuário:
   o app não deve fazer nada de útil (armar modo noite, bloquear apps) sem uma
@@ -326,6 +341,14 @@ depende de CI num runner macOS na nuvem (GitHub Actions) e de sideload via AltSt
   que roda em loop até o fim da noite (`drawLaunchBase(withTower: false)` +
   `ConstructionSiteArt`). Não validado visualmente num device ainda (sem Mac/simulador aqui)
   — só compilação no CI.
+- **Redesenho do foguete em traço — PROPOSTA, não aprovada (2026-10-20)**:
+  `design/foguete_traco_prototipo.html` redesenha as três cenas na linguagem do logo e do
+  desenho da luminária (linha creme fina, cantos redondos, cor só no que é luz: chama,
+  visor, escotilha, bandeira âmbar "7 noites", capacetes). Antes disso foi feita uma
+  versão só recolorida (`design/foguete_sovee_prototipo.html` + `*_sovee_prototipo.html`,
+  via `scripts/sovee_recolor.py`), que o usuário recusou ("não só as cores, mas
+  geometricamente"). Usuário vai pensar antes de passar pro Swift — exigiria reescrever o
+  desenho de `RocketScenes.swift` e `ConstructionSiteArt.swift`.
 - `Luminaria/ConstructionSiteArt.swift` — canteiro de obras noturno do foguete destruído
   (protótipo aprovado `design/meteoro_prototipo.html`): andaime com holofotes, foguete pela
   metade (parte de baixo pronta, de cima tracejada), guindaste subindo e descendo o bico,
