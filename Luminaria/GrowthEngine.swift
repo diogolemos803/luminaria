@@ -24,9 +24,9 @@ protocol GrowthVisualizing {
 /// consecutivos com sessão "limpa" (`DetoxStats.currentCleanDayStreak`), não por
 /// compra (decisão do usuário: só sequência por enquanto, sem StoreKit — isso exigiria
 /// configurar produtos no App Store Connect e não dá pra testar sem device real com
-/// conta sandbox, nenhum dos dois disponível neste ambiente). Hoje aparece como o
-/// selo no céu da decolagem (`LaunchScene`); o pouso (`MoonLandingScene`) ainda é
-/// sempre na Lua.
+/// conta sandbox, nenhum dos dois disponível neste ambiente). O destino aparece no alto
+/// do céu da decolagem (`LaunchScene`), muda o lugar do pouso (`LandingScene`) e o mapa
+/// da jornada no relatório (`JourneyMapView`).
 struct CelestialDestination: Identifiable, Equatable {
     let id: String
     let name: String
@@ -263,6 +263,6 @@ struct RocketGrowthVisual: GrowthVisualizing {
     var destroyedAt: Date?
 
     func render(phase: NightSessionActivityTracker.Phase, destination: CelestialDestination, theme: ModeTheme) -> some View {
-        LaunchScene(badgeColor: destination.color, sceneStart: sceneStart, destroyedAt: destroyedAt)
+        LaunchScene(destinationID: destination.id, sceneStart: sceneStart, destroyedAt: destroyedAt)
     }
 }

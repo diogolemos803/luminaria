@@ -622,8 +622,8 @@ struct ContentView: View {
     }
 }
 
-/// Tela do despertador tocando — mostra a animação de pouso na Lua
-/// (`MoonLandingScene`, ver `RocketScenes.swift` e `design/pouso_prototipo.html`)
+/// Tela do despertador tocando — mostra o pouso no destino de hoje (`LandingScene`, ver
+/// `RocketScenes.swift` e `design/foguete_traco_prototipo.html`)
 /// atrás do botão "Parar": a pessoa aguentou a noite inteira (chegar aqui já
 /// significa que `AlarmManager.triggerAlarm()` registrou a sessão como
 /// `.alarmFired`), então o foguete pousa, o astronauta sai e crava a bandeira com o
@@ -651,12 +651,15 @@ struct AlarmRingingView: View {
             Group {
                 if growthTracker.lastNightRocketDestroyed {
                     LaunchScene(
-                        badgeColor: GrowthDestinations.furthestUnlocked(currentStreak: streakDays).color,
+                        destinationID: GrowthDestinations.furthestUnlocked(currentStreak: streakDays).id,
                         sceneStart: nil,
                         destroyedAt: .distantPast
                     )
                 } else {
-                    MoonLandingScene(streakDays: streakDays)
+                    LandingScene(
+                        destinationID: GrowthDestinations.furthestUnlocked(currentStreak: streakDays).id,
+                        streakDays: streakDays
+                    )
                 }
             }
             .ignoresSafeArea()
@@ -664,48 +667,59 @@ struct AlarmRingingView: View {
 
             VStack {
                 Spacer()
-                Text("Hora de acordar")
-                    .font(.soveeDisplay(size: 28, weight: .bold))
-                    .foregroundStyle(theme.ink)
-                    // fica sobre o chão (Lua ou canteiro) — sombra leve pra manter leitura
-                    .shadow(color: .black.opacity(0.35), radius: 6, x: 0, y: 2)
-                if growthTracker.lastNightRocketDestroyed {
-                    Text("O foguete fica pronto pra próxima noite.")
-                        .font(.soveeBody(.subheadline, weight: .medium))
-                        .foregroundStyle(theme.ink.opacity(0.85))
-                        .shadow(color: .black.opacity(0.35), radius: 6, x: 0, y: 2)
-                        .padding(.top, 2)
-                }
-                // Amanhecer da lâmpada ainda aceso: dá pra apagar daqui mesmo.
-                if lampManager.isLit {
-                    Button {
-                        lampManager.turnOff()
-                    } label: {
-                        Text("Apagar a luz")
-                            .font(.soveeBody(.subheadline, weight: .bold))
-                            .padding(.horizontal, 18)
-                            .padding(.vertical, 9)
-                            .foregroundStyle(theme.ink)
-                            .background(theme.card.opacity(0.85))
-                            .clipShape(Capsule())
+                // Cartão escuro por baixo dos textos: o chão do pouso muda de cor por
+                // planeta (a Lua é creme), então o texto creme precisa do próprio fundo.
+                VStack(spacing: 0) {
+                    Text("Hora de acordar")
+                        .font(.soveeDisplay(size: 28, weight: .bold))
+                        .foregroundStyle(theme.ink)
+                    if growthTracker.lastNightRocketDestroyed {
+                        Text("O foguete fica pronto pra próxima noite.")
+                            .font(.soveeBody(.subheadline, weight: .medium))
+                            .foregroundStyle(theme.ink.opacity(0.85))
+                            .multilineTextAlignment(.center)
+                            .padding(.top, 4)
                     }
-                    .buttonStyle(.plain)
-                    .padding(.top, 10)
+                    // Amanhecer da lâmpada ainda aceso: dá pra apagar daqui mesmo.
+                    if lampManager.isLit {
+                        Button {
+                            lampManager.turnOff()
+                        } label: {
+                            Text("Apagar a luz")
+                                .font(.soveeBody(.subheadline, weight: .bold))
+                                .padding(.horizontal, 18)
+                                .padding(.vertical, 9)
+                                .foregroundStyle(theme.ink)
+                                .background(theme.card.opacity(0.85))
+                                .clipShape(Capsule())
+                        }
+                        .buttonStyle(.plain)
+                        .padding(.top, 12)
+                    }
+                    Button {
+                        alarmManager.stopRingingAlarm()
+                    } label: {
+                        Text("Parar")
+                            .font(.soveeBody(.title2, weight: .bold))
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(theme.accent)
+                    .foregroundStyle(theme.accentForeground)
+                    .padding(.top, 16)
                 }
-                Button {
-                    alarmManager.stopRingingAlarm()
-                } label: {
-                    Text("Parar")
-                        .font(.soveeBody(.title2, weight: .bold))
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                }
-                .buttonStyle(.borderedProminent)
-                .tint(theme.accent)
-                .foregroundStyle(theme.accentForeground)
-                .padding(.horizontal, 40)
-                .padding(.top, 12)
-                .padding(.bottom, 40)
+                .padding(20)
+                .background(
+                    RoundedRectangle(cornerRadius: 28, style: .continuous)
+                        .fill(Color(sceneHex: 0x23252C, opacity: 0.88))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 28, style: .continuous)
+                        .strokeBorder(SoveeColor.creme.opacity(0.14), lineWidth: 1)
+                )
+                .padding(.horizontal, 20)
+                .padding(.bottom, 28)
             }
         }
     }

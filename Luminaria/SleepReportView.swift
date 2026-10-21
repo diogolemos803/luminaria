@@ -46,6 +46,14 @@ struct SleepReportView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
                     MenuHeader(title: "Relatório de sono", theme: theme)
+
+                    // Mapa da jornada: planetas alcançados pela sequência atual de noites
+                    // limpas (protótipo design/foguete_traco_prototipo.html).
+                    ThemedCard(title: "Jornada", theme: theme) {
+                        JourneyMapView(streak: DetoxStats.currentCleanDayStreak(in: store.entries), theme: theme)
+                            .padding(.vertical, 6)
+                    }
+
                     filterSelector
 
                     if filteredEntries.isEmpty {
