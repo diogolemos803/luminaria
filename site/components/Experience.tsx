@@ -235,7 +235,7 @@ export default function Experience() {
             <i className="brand-mark" aria-hidden="true" />
             <Wordmark />
           </div>
-          <Link href="/lista" className={`buy-cta ${night ? "" : "is-day"} ${menuOpen ? "is-hidden" : ""}`} style={{ ["--lc" as string]: lampColor }}>
+          <Link href="/lista" className={`buy-cta ${night ? "" : "is-day"} ${menuOpen ? "is-hidden" : ""} ${hovering ? "card-open" : ""}`} style={{ ["--lc" as string]: lampColor }}>
             {t.nav.waitlist}
           </Link>
           <nav className={`home-links ${night ? "" : "is-day"} ${menuOpen ? "is-hidden" : ""}`} aria-label={t.pagesNav}>

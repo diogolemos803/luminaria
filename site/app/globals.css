@@ -302,3 +302,6 @@ body {
 /* aviso de cookies e lista de idiomas sobre a animação: fundo sólido, sem desfoque */
 .cookie-banner{-webkit-backdrop-filter:none;backdrop-filter:none;background:rgba(40,44,54,.97)}
 .lang-pop{-webkit-backdrop-filter:none;backdrop-filter:none;background:rgba(40,44,54,.97)}
+
+/* no celular o cartão do Day Finisher ocupa o pé da tela: o botão da lista de espera sai de cena enquanto ele está aberto */
+@media (max-width:700px){.buy-cta.card-open{opacity:0;visibility:hidden;pointer-events:none}}
