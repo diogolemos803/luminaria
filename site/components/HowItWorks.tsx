@@ -47,6 +47,12 @@ const LAMP_PATH = "M219.5 467 A117 58 0 0 1 453.5 467 L453.5 669 A117 58 0 0 1 2
 const PHONE_SCALE = 0.57;
 const MATRIX = `matrix(${U[0]} ${U[1]} ${V[0]} ${V[1]} ${T[0]} ${T[1]})`;
 
+/* As cenas têm filtros de desfoque dentro de grupos que se movem: o navegador refaz o desfoque a cada quadro e o celular trava.
+   Sem os filtros a imagem quase não muda (as bordas ficam um pouco mais nítidas) e a rolagem flui. */
+const noBlur = (svg: string, prefix: string) => svg.replace(new RegExp(`\\sfilter="url\\(#${prefix}-[a-z]+\\)"`, "g"), "");
+const LAUNCH_SVG = noBlur(launch.svg, "dl");
+const LAND_SVG = noBlur(landing.svg, "ld");
+
 type Anim = Animation[];
 
 export default function HowItWorks() {
@@ -193,7 +199,16 @@ export default function HowItWorks() {
       const cx = px + lift * 0.3 * k;
       const cy = py - (lift + 7) * k; // 7: o corpo do celular assenta dentro do nicho
       if (phone.current) {
-        put(phone.current, "transform", `translate(${cx - 150}px, ${cy - 313}px) perspective(3000px) rotateX(${60 * tilt}deg) rotateZ(${-59.9 * tilt}deg) scale3d(${PHONE_SCALE * k}, ${PHONE_SCALE * k}, ${PHONE_SCALE * k})`); // 3d: a espessura escala junto
+        // de pé (sem inclinar) não precisa de 3D: sem perspectiva nem camadas de espessura, o celular é uma camada 2D simples e a rolagem fica bem mais leve
+        const flat = tilt < 0.0005;
+        putAttr(phone.current, "data-flat", flat ? "1" : "0");
+        put(
+          phone.current,
+          "transform",
+          flat
+            ? `translate(${cx - 150}px, ${cy - 313}px) scale(${PHONE_SCALE * k})`
+            : `translate(${cx - 150}px, ${cy - 313}px) perspective(3000px) rotateX(${60 * tilt}deg) rotateZ(${-59.9 * tilt}deg) scale3d(${PHONE_SCALE * k}, ${PHONE_SCALE * k}, ${PHONE_SCALE * k})`, // 3d: a espessura escala junto
+        );
         put(phone.current, "opacity", "1");
       }
       // deitado no nicho: corpo escuro e fosco com o traço fino claro do desenho
@@ -529,9 +544,9 @@ export default function HowItWorks() {
                   </div>
                   <p>{all.tagline}</p>
                 </div>
-                <div className="hw-layer sc-dl" ref={launchEl} style={{ opacity: 0 }} dangerouslySetInnerHTML={{ __html: launch.svg }} />
+                <div className="hw-layer sc-dl" ref={launchEl} style={{ opacity: 0 }} dangerouslySetInnerHTML={{ __html: LAUNCH_SVG }} />
                 <iframe className="hw-layer" ref={meteorEl} src={`/como-funciona/meteoro.html?l=${lang}`} title="" aria-hidden="true" tabIndex={-1} style={{ opacity: 0 }} />
-                <div className="hw-layer sc-ld" ref={landEl} style={{ opacity: 0 }} dangerouslySetInnerHTML={{ __html: landing.svg }} />
+                <div className="hw-layer sc-ld" ref={landEl} style={{ opacity: 0 }} dangerouslySetInnerHTML={{ __html: LAND_SVG }} />
                 <div className="hw-black" ref={blackLayer} style={{ opacity: 0 }} />
                 <div className="hw-notch" />
               </div>

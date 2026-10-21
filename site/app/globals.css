@@ -295,3 +295,10 @@ body {
 .lamp-hint.is-day .lamp-hint-ring{border-color:rgba(68,68,68,.9);box-shadow:0 0 18px rgba(255,255,255,.5)}
 .lamp-hint.is-day .lamp-hint-dot{background:rgba(68,68,68,.9);box-shadow:0 0 14px rgba(255,255,255,.6)}
 .lamp-hint.is-day .lamp-hint-label{color:#444;background:rgba(253,248,199,.88);border-color:rgba(68,68,68,.14)}
+
+/* celular de pé: camada 2D (sem a espessura em 3D, que só aparece deitado no nicho) */
+.hw-phone[data-flat="1"]{transform-style:flat}
+.hw-phone[data-flat="1"] .hw-slabs,.hw-phone[data-flat="1"] .hw-wire{display:none}
+/* aviso de cookies e lista de idiomas sobre a animação: fundo sólido, sem desfoque */
+.cookie-banner{-webkit-backdrop-filter:none;backdrop-filter:none;background:rgba(40,44,54,.97)}
+.lang-pop{-webkit-backdrop-filter:none;backdrop-filter:none;background:rgba(40,44,54,.97)}

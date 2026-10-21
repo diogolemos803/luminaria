@@ -16,10 +16,11 @@
   const canvas = document.getElementById('scene');
   const ctx = canvas.getContext('2d');
   const phaseEl = { textContent: '' };
+  const COARSE = matchMedia('(pointer:coarse)').matches;
   let W = 0, H = 0, DPR = 1;
   function resize(){
     const r = canvas.getBoundingClientRect();
-    DPR = Math.min(window.devicePixelRatio || 1, matchMedia('(pointer:coarse)').matches ? 1.5 : 2);
+    DPR = Math.min(window.devicePixelRatio || 1, COARSE ? 1.5 : 2);
     W = r.width; H = r.height;
     canvas.width = Math.round(W * DPR); canvas.height = Math.round(H * DPR);
   }
@@ -323,7 +324,7 @@
     // onda de choque (dois anéis)
     c.save(); c.globalCompositeOperation = 'lighter';
     for (const [delay, maxR, w] of [[0, 150, 3], [.08, 110, 1.5]]){ const p = clamp((q - delay) / .35); if (p <= 0 || p >= 1) continue;
-      c.shadowColor = 'rgba(255,150,70,.9)'; c.shadowBlur = 12; c.strokeStyle = `rgba(255,200,140,${.7 * (1 - p)})`; c.lineWidth = w * 2 * (1 - p) + .5; c.beginPath(); c.ellipse(cx, cy, maxR * easeOut(p), maxR * .8 * easeOut(p), 0, 0, 7); c.stroke(); }
+      c.shadowColor = 'rgba(255,150,70,.9)'; c.shadowBlur = COARSE ? 0 : 12; c.strokeStyle = `rgba(255,200,140,${.7 * (1 - p)})`; c.lineWidth = w * 2 * (1 - p) + .5; c.beginPath(); c.ellipse(cx, cy, maxR * easeOut(p), maxR * .8 * easeOut(p), 0, 0, 7); c.stroke(); }
     // fagulhas com arrasto
     for (let i = 0; i < 44; i++){ const a = rnd(i + 100) * 7, sp = 90 + rnd(i + 200) * 150, life = clamp(q / (.4 + rnd(i + 300) * .5));
       if (life >= 1) continue; const d = sp * (1 - Math.pow(1 - life, 2)) * .6;
