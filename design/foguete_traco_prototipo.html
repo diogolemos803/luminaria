@@ -544,13 +544,24 @@ figure { margin: 0; display: flex; flex-direction: column; align-items: center; 
       c.stroke();
       c.beginPath(); c.ellipse(x, y - r * .86, r * .42, r * .16, 0, 0, 6.283); c.fillStyle = cream(.8); c.fill();
     } else if (id === 'saturn') {
-      c.beginPath(); [-.45, -.1, .35].forEach(function (k) { c.moveTo(x - r, y + r * k); c.quadraticCurveTo(x, y + r * k + r * .12, x + r, y + r * k); }); c.stroke();
+      // faixas finas e fracas, inclinadas como o anel, pra não competir com ele
+      c.save(); c.translate(x, y); c.rotate(tilt); c.strokeStyle = cream(.22); c.lineWidth = lw * .6;
+      c.beginPath(); [.42, .7].forEach(function (k) { c.moveTo(-r, r * k); c.quadraticCurveTo(0, r * k + r * .08, r, r * k); }); c.stroke(); c.restore();
     } else if (id === 'neptune') {
       c.beginPath(); [-.5, .05, .5].forEach(function (k) { c.moveTo(x - r, y + r * k); c.lineTo(x + r, y + r * k); }); c.stroke();
       c.beginPath(); c.ellipse(x - r * .3, y - r * .2, r * .2, r * .11, 0, 0, 6.283); c.fillStyle = 'rgba(35,37,44,.55)'; c.fill(); c.stroke();
     }
     c.restore();
-    if (id === 'saturn') ringHalf(true);
+    if (id === 'saturn') {
+      // metade de trás do anel vista "através" do planeta, mais fraca, pra ler que passa por trás
+      c.save(); clipCircle(c, x, y, r); c.translate(x, y); c.rotate(tilt);
+      c.beginPath(); c.ellipse(0, 0, r * 1.95, r * .52, 0, Math.PI, 2 * Math.PI);
+      c.strokeStyle = cream(.6); c.lineWidth = lw; c.stroke();
+      c.beginPath(); c.ellipse(0, 0, r * 1.6, r * .4, 0, Math.PI, 2 * Math.PI);
+      c.strokeStyle = cream(.32); c.lineWidth = lw * .8; c.stroke();
+      c.restore();
+      ringHalf(true);
+    }
     c.restore();
   }
 
