@@ -127,16 +127,16 @@ figure { margin: 0; display: flex; flex-direction: column; align-items: center; 
   </section>
 
   <section class="notes" aria-label="O que muda">
-    <div><h2>foguete</h2><p>Cápsula com bico redondo e duas linhas curvas no casco, como as elipses da luminária. Visor redondo aceso em âmbar. Ele sai de uma base em pílula, a mesma forma da base da luminária.</p></div>
-    <div><h2>cenário</h2><p>A Terra e a Lua viram um arco grande desenhado com a mesma linha. Fumaça, poeira e explosão viram bolhas e anéis em traço. Estrelas são pontos e brilhos em cruz, sem céu colorido.</p></div>
-    <div><h2>obras e pouso</h2><p>Andaime, guindaste e bonequinhos em linha, com capacete âmbar. A metade de cima do foguete fica tracejada até a noite acabar. No pouso a escotilha acende, o astronauta desce e crava uma bandeira âmbar com "7 noites".</p></div>
+    <div><h2>foguete e base</h2><p>Cápsula com bico redondo e duas linhas curvas no casco, como as elipses da luminária. Visor aceso em âmbar. Sai da base de lançamento antiga, redesenhada em traço: deck com luzes, mesa com fosso de chamas, garras que abrem na ignição, torre treliçada com luz piscando, prédio de controle, tanques e poste.</p></div>
+    <div><h2>cenário</h2><p>A Terra é verde, como na paleta da marca: morro com platô, estrada, campos, lago e árvores. Marte é laranja, no planeta e no chão do pouso. Fumaça, poeira e explosão viram bolhas e anéis em traço.</p></div>
+    <div><h2>pessoas</h2><p>Os bonequinhos antigos voltaram, com volume: colete laranja com faixa, calça, botas e capacete âmbar, contornados em creme. Um martela, um solda, um carrega painéis e um orienta o guindaste. O astronauta tem roupa clara com contorno grafite, mochila, painel terracota e visor azul.</p></div>
   </section>
 </div>
 
 <script>
 (function () {
   'use strict';
-  var COL = { bg: '#23252c', ground: '#292b33', line: '#fdf8c7', amber: '#f2b05e', terra: '#db8149', sage: '#80a68e', luar: '#84a1c8' };
+  var COL = { bg: '#23252c', ground: '#292b33', earth: '#2a4536', earthDeep: '#223a2d', mars: '#5a3424', suit: '#efe8d6', suitLine: '#444444', vest: '#ff9f66', pants: '#3a4256', skin: '#f0c9a0', line: '#fdf8c7', amber: '#f2b05e', terra: '#db8149', sage: '#80a68e', luar: '#84a1c8' };
   var W = 390, H = 844, CX = 195, CY = 422, LW = 2;
   var FONT = '"DM Sans", system-ui, sans-serif';
 
@@ -234,6 +234,89 @@ figure { margin: 0; display: flex; flex-direction: column; align-items: center; 
     c.strokeStyle = cream(.9); c.lineWidth = LW; c.stroke();
     c.beginPath(); c.arc(CX, y + R + 14, R, Math.PI * 1.36, Math.PI * 1.64); c.strokeStyle = cream(.22); c.lineWidth = 1.3; c.stroke();
   }
+  // ---------- Terra + base de lançamento (a base do protótipo antigo, redesenhada em traço) ----------
+  // Desenhada nas coordenadas do protótipo da decolagem (mesa de lançamento em y 666),
+  // encolhida e encaixada com a mesa logo abaixo do bocal do foguete.
+  var BS = 0.9;
+  var HILL = 'M -60 700 C 55 700 95 668 155 660 C 185 656 205 656 235 660 C 275 665 325 682 450 700';
+  function baseSpace(c, mesaY) { c.translate(CX, mesaY); c.scale(BS, BS); c.translate(-195, -666); }
+  function earthGround(c, mesaY) {
+    c.save(); baseSpace(c, mesaY);
+    c.fillStyle = COL.earth; c.fill(new Path2D(HILL + ' L 450 3200 L -60 3200 Z'));
+    c.strokeStyle = cream(.95); c.lineWidth = 2; c.stroke(new Path2D(HILL));
+    c.strokeStyle = 'rgba(128,166,142,.5)'; c.lineWidth = 1.3; c.stroke(new Path2D('M -60 714 C 55 714 95 682 155 674 C 185 670 205 670 235 674 C 275 679 325 696 450 714'));
+    // platô onde fica a base
+    var plat = new Path2D('M 73 688 C 100 677 130 667 155 665 C 180 662 210 662 235 665 C 262 669 285 674 306 681 C 280 692 240 696 195 696 C 150 696 105 694 73 688 Z');
+    c.fillStyle = '#39443a'; c.fill(plat); c.strokeStyle = cream(.55); c.lineWidth = 1.3; c.stroke(plat);
+    // estrada
+    c.setLineDash([5, 6]); c.strokeStyle = cream(.35); c.lineWidth = 1.3;
+    c.stroke(new Path2D('M 150 697 C 146 730 118 770 84 810 C 60 838 44 880 36 940')); c.setLineDash([]);
+    // campos cultivados
+    c.strokeStyle = 'rgba(128,166,142,.75)'; c.lineWidth = 1.3;
+    [['M 196 900 L 286 880 L 312 924 L 214 946 Z', [[202, 912, 292, 892], [207, 923, 298, 903], [210, 934, 304, 913]]],
+     ['M 96 960 L 170 948 L 186 984 L 108 998 Z', [[100, 970, 174, 958], [104, 980, 179, 968], [106, 990, 183, 977]]]].forEach(function (f) {
+      var pth = new Path2D(f[0]); c.fillStyle = 'rgba(65,124,90,.55)'; c.fill(pth); c.stroke(pth);
+      c.beginPath(); f[1].forEach(function (l) { c.moveTo(l[0], l[1]); c.lineTo(l[2], l[3]); }); c.strokeStyle = 'rgba(128,166,142,.45)'; c.stroke(); c.strokeStyle = 'rgba(128,166,142,.75)';
+    });
+    // lago
+    var lake = new Path2D('M 246 816 C 266 800 328 802 350 818 C 358 834 322 846 286 844 C 258 842 240 832 246 816 Z');
+    c.fillStyle = 'rgba(132,161,200,.4)'; c.fill(lake); c.strokeStyle = cream(.6); c.lineWidth = 1.3; c.stroke(lake);
+    // árvores: copas redondas em verde floresta
+    [[4, 698, 6], [-4, 700, 5], [330, 684, 4], [360, 690, 5.5], [352, 693, 4], [386, 697, 6], [40, 840, 5], [50, 846, 4], [31, 848, 4.5],
+     [330, 880, 5], [342, 886, 6], [320, 889, 4], [140, 1040, 5.5], [152, 1046, 4.5], [360, 1010, 5], [372, 1016, 4], [120, 860, 3], [300, 940, 3.4], [70, 960, 2.8]].forEach(function (k) {
+      c.beginPath(); c.arc(k[0], k[1], k[2], 0, 6.283); c.fillStyle = '#417c5a'; c.fill(); c.strokeStyle = 'rgba(128,166,142,.95)'; c.lineWidth = 1.1; c.stroke();
+    });
+    c.restore();
+  }
+  function glowDot(c, x, y, r, col, blur) { c.save(); c.shadowColor = col; c.shadowBlur = blur; c.beginPath(); c.arc(x, y, r, 0, 6.283); c.fillStyle = col; c.fill(); c.restore(); }
+  function launchBase(c, mesaY, t, opt) {
+    opt = opt || {};
+    c.save(); baseSpace(c, mesaY);
+    function box(x, y, w, h, r, a) { c.beginPath(); c.roundRect(x, y, w, h, r || 0); c.fillStyle = COL.bg; c.fill(); c.strokeStyle = cream(a == null ? .9 : a); c.lineWidth = 1.5; c.stroke(); }
+    function lines(segs, a, w) { c.beginPath(); segs.forEach(function (s) { c.moveTo(s[0], s[1]); c.lineTo(s[2], s[3]); }); c.strokeStyle = cream(a); c.lineWidth = w || 1.3; c.stroke(); }
+    // deck elevado com pés e luzes de pista
+    lines([[72, 695, 72, 703], [132, 695, 132, 703], [258, 695, 258, 703], [318, 695, 318, 703]], .7, 1.5);
+    box(58, 688, 276, 7, 2);
+    [66, 104, 286, 326].forEach(function (x) { glowDot(c, x, 691.5, 1.6, COL.amber, 6); });
+    // prédio de controle com janelas acesas e antenas
+    box(10, 676, 46, 22, 2);
+    lines([[10, 681, 56, 681]], .5, 1.1);
+    [15, 24, 33, 45].forEach(function (x) { c.fillStyle = amber(.9); c.fillRect(x, 686, 5, 4); });
+    lines([[61.5, 674, 61.5, 662], [67.5, 674, 67.5, 657]], .75, 1.3);
+    glowDot(c, 67.5, 656, 1.5, COL.amber, 5);
+    if (opt.tower !== false) {
+      box(72, 670, 54, 20, 2);
+      box(80, 444, 6, 228, 1); box(112, 444, 6, 228, 1); box(78, 440, 42, 6, 2);
+      var x = [];
+      for (var y = 446; y < 670; y += 28) x.push([86, y, 112, y + 28], [112, y, 86, y + 28]);
+      lines(x, .45, 1.2);
+      // braço de cima recolhe na ignição
+      c.save(); c.translate(118, 450); c.rotate(-(opt.armK || 0) * 1.05);
+      box(0, -2, 52, 5, 2); lines([[0, 26, 30, 3]], .55, 1.3); c.restore();
+      box(118, 566, 38, 4, 2); lines([[118, 586, 140, 570]], .55, 1.3);
+      box(97.5, 431, 3, 10, 1, .7);
+      var blink = .5 + .5 * Math.sin(t * 4);
+      c.save(); c.globalAlpha = .35 + .65 * blink; glowDot(c, 99, 430, 3.2, COL.terra, 16 * blink); c.restore();
+    }
+    // mesa de lançamento com a boca do fosso de chamas
+    var mesa = new Path2D('M 158 666 L 232 666 L 244 688 L 146 688 Z');
+    c.fillStyle = COL.bg; c.fill(mesa); c.strokeStyle = cream(.95); c.lineWidth = 1.6; c.stroke(mesa);
+    var trench = new Path2D('M 181 672 L 209 672 L 213 688 L 177 688 Z'); c.fillStyle = '#14161b'; c.fill(trench); c.strokeStyle = cream(.45); c.lineWidth = 1.1; c.stroke(trench);
+    // garras de fixação: abrem pros lados na ignição
+    var open = (opt.clampK || 0) * 6;
+    box(166 - open, 652, 5, 16, 1.5); box(219 + open, 652, 5, 16, 1.5);
+    // tubulação
+    lines([[126, 676, 150, 676], [126, 682, 148, 682], [268, 680, 242, 680]], .6, 1.4);
+    // tanques: cilindro deitado e esfera
+    lines([[277.5, 686, 277.5, 690], [305.5, 686, 305.5, 690], [334.5, 676, 334.5, 689], [349.5, 676, 349.5, 689]], .7, 1.4);
+    box(268, 668, 48, 18, 9);
+    lines([[276, 672, 306, 672]], .4, 1.1);
+    c.beginPath(); c.arc(342, 664, 14, 0, 6.283); c.fillStyle = COL.bg; c.fill(); c.strokeStyle = cream(.9); c.lineWidth = 1.5; c.stroke();
+    c.beginPath(); c.arc(342, 664, 10, Math.PI * 1.15, Math.PI * 1.55); c.strokeStyle = cream(.45); c.lineWidth = 1.2; c.stroke();
+    if (opt.post !== false) { lines([[373.5, 690, 373.5, 614]], .75, 1.4); glowDot(c, 373.5, 612, 2.4, COL.amber, 10); }
+    c.restore();
+  }
+
   function pad(c, y) { // base em pílula, igual à base da luminária
     c.beginPath(); c.roundRect(CX - 62, y - 14, 124, 14, 7); c.fillStyle = COL.ground; c.fill(); c.strokeStyle = cream(1); c.lineWidth = LW; c.stroke();
     c.beginPath(); c.roundRect(CX - 54, y - 11, 108, 7, 3.5); c.strokeStyle = cream(.35); c.lineWidth = 1.2; c.stroke();
@@ -254,7 +337,8 @@ figure { margin: 0; display: flex; flex-direction: column; align-items: center; 
 
   // ================= CENA 1: decolagem =================
   var BASE = (function () { var r = rnd(21), a = []; for (var i = 0; i < 16; i++) { var s = r() < .5 ? -1 : 1; a.push({ dx: s * (18 + r() * 120), dy: -6 - r() * 26, r: 9 + r() * 15, d: r() * .9 }); } return a; })();
-  var GY0 = CY + 57 + 15; // chão logo abaixo da base em pílula
+  var MESA0 = CY + 58; // topo da mesa de lançamento, logo abaixo do bocal
+  var GY0 = MESA0 + 20; // deck (onde a fumaça se espalha)
   function launchOffset(t) { var k = Math.max(0, t - 2.6); return 0.5 * 150 * k * k; }
   function destinationInSky(c) {
     var P = PLANETS[current];
@@ -266,10 +350,11 @@ figure { margin: 0; display: flex; flex-direction: column; align-items: center; 
     var off = launchOffset(t), gy = GY0 + off;
     sky(c, t, off * .18 + t * 2);
     destinationInSky(c);
-    if (gy < H + 200) {
-      ground(c, gy);
-      tower(c, gy, t, eInOut(seg(t, 1.0, 1.7)));
-      pad(c, gy);
+    if (gy < H + 260) {
+      earthGround(c, MESA0 + off);
+      launchBase(c, MESA0 + off, t, { armK: eInOut(seg(t, 1.0, 1.7)), clampK: eOut(seg(t, 2.2, 2.6)) });
+    } else {
+      c.fillStyle = COL.earth; // Terra ainda embaixo da tela
     }
     // nuvem da base, presa ao chão
     var ign = seg(t, 1.4, 3.4);
@@ -281,7 +366,7 @@ figure { margin: 0; display: flex; flex-direction: column; align-items: center; 
     for (var j = 0; j < 60; j++) {
       var h = j * 13; if (h > off) break;
       var age = (off - h), r = 7 + Math.min(age * .03, 16), a = .7 * (1 - seg(age, 120, 520));
-      bubble(c, CX + Math.sin(j * 1.9) * 3 * (1 + age * .004), gy - 20 - h, r, a);
+      bubble(c, CX + Math.sin(j * 1.9) * 3 * (1 + age * .004), MESA0 + off - h, r, a);
     }
     flame(c, t, eOut(seg(t, 1.3, 2.2)) * (1 + .15 * seg(t, 2.6, 4)));
     rocketBody(c);
@@ -297,7 +382,7 @@ figure { margin: 0; display: flex; flex-direction: column; align-items: center; 
   ];
   var ROCK = (function () { var r = rnd(5), a = []; for (var i = 0; i < 9; i++) a.push(15 + r() * 6); return a; })();
   var SPARKS = (function () { var r = rnd(11), a = []; for (var i = 0; i < 18; i++) a.push({ a: r() * 6.283, v: 90 + r() * 140, l: 6 + r() * 10 }); return a; })();
-  var T_IMPACT = 2.6, G_SITE = 600;
+  var T_IMPACT = 2.6, M_SITE = 590;
   function meteor(c, x, y, rot, dir) {
     c.save(); c.translate(x, y);
     for (var k = 0; k < 3; k++) { // rastro em três linhas âmbar
@@ -313,69 +398,120 @@ figure { margin: 0; display: flex; flex-direction: column; align-items: center; 
     c.beginPath(); c.arc(-5, -3, 4, 0, 6.283); c.moveTo(9, 5); c.arc(6, 5, 2.6, 0, 6.283); c.stroke();
     c.restore();
   }
-  function worker(c, x, y, t, kind) {
-    var head = y - 30;
-    c.strokeStyle = cream(.95); c.lineWidth = 1.7;
-    // pernas e corpo
-    c.beginPath(); c.moveTo(x, y - 12); c.lineTo(x - 4, y); c.moveTo(x, y - 12); c.lineTo(x + 4, y); c.moveTo(x, y - 12); c.lineTo(x, head + 6); c.stroke();
-    // braços
-    c.beginPath();
-    if (kind === 'hammer') { var a = -1.1 + .9 * Math.abs(Math.sin(t * 5)); c.moveTo(x, head + 10); c.lineTo(x + Math.cos(a) * 11, head + 10 + Math.sin(a) * 11); c.moveTo(x, head + 10); c.lineTo(x - 6, head + 18); }
-    else if (kind === 'wave') { var b = -2.2 + .5 * Math.sin(t * 3); c.moveTo(x, head + 10); c.lineTo(x + Math.cos(b) * 12, head + 10 + Math.sin(b) * 12); c.moveTo(x, head + 10); c.lineTo(x - 6, head + 18); }
-    else { c.moveTo(x, head + 10); c.lineTo(x - 11, head + 12); c.moveTo(x, head + 10); c.lineTo(x - 9, head + 16); }
-    c.stroke();
-    if (kind === 'hammer') { var a2 = -1.1 + .9 * Math.abs(Math.sin(t * 5)), hx = x + Math.cos(a2) * 11, hy = head + 10 + Math.sin(a2) * 11; c.beginPath(); c.moveTo(hx - 3, hy - 2); c.lineTo(hx + 3, hy + 2); c.strokeStyle = cream(.95); c.lineWidth = 3; c.stroke(); }
-    if (kind === 'weld') { for (var i = 0; i < 5; i++) { var p = (t * 3 + i * .23) % 1, ang = -2.6 + i * .35; c.fillStyle = amber(1 - p); c.beginPath(); c.arc(x - 12 + Math.cos(ang) * p * 14, head + 13 + Math.sin(ang) * p * 14 + p * p * 10, 1.2, 0, 6.283); c.fill(); } }
-    // cabeça + capacete âmbar
-    c.beginPath(); c.arc(x, head, 5, 0, 6.283); c.fillStyle = COL.bg; c.fill(); c.strokeStyle = cream(.95); c.lineWidth = 1.6; c.stroke();
-    c.beginPath(); c.arc(x, head - 1, 5.6, Math.PI, 0); c.closePath(); c.fillStyle = COL.amber; c.fill();
+  // Bonequinho de capacete — o modelo do protótipo antigo (colete, calça, botas, cabeça,
+  // capacete), agora com contorno creme e cores da marca. Pés em (x, y).
+  var WS = 1.45;
+  function worker(c, x, y, facing, pose, extra) {
+    c.save(); c.translate(x, y); c.scale(facing * WS, WS);
+    function limb(x0, y0, len, ang, col) { c.save(); c.translate(x0, y0); c.rotate(ang); c.beginPath(); c.moveTo(0, 0); c.lineTo(0, len); c.lineCap = 'round'; c.strokeStyle = cream(.95); c.lineWidth = 3.8; c.stroke(); c.strokeStyle = col; c.lineWidth = 2.3; c.stroke(); c.restore(); }
+    function boot(dx) { c.beginPath(); c.roundRect(dx, -1.6, 4.2, 2.2, .8); c.fillStyle = '#2a2c33'; c.fill(); c.strokeStyle = cream(.9); c.lineWidth = .7; c.stroke(); }
+    limb(-1.8, -9, 8.3, pose.legB || 0, COL.pants);
+    limb(1.8, -9, 8.3, pose.legA || 0, COL.pants);
+    boot(-4.3 + Math.sin(pose.legB || 0) * -6); boot(Math.sin(pose.legA || 0) * -6);
+    limb(-3.2, -16.5, 7, pose.armB || .2, COL.vest);
+    c.beginPath(); c.roundRect(-4.6, -18.2, 9.2, 10.2, 2.6); c.fillStyle = COL.vest; c.fill(); c.strokeStyle = cream(.95); c.lineWidth = .8; c.stroke();
+    c.fillStyle = cream(.95); c.fillRect(-4.2, -13.4, 8.4, 1.4);
+    c.beginPath(); c.arc(0, -21.6, 3.6, 0, 6.283); c.fillStyle = COL.skin; c.fill(); c.strokeStyle = cream(.95); c.lineWidth = .7; c.stroke();
+    c.fillStyle = '#2a2a2a'; c.fillRect(1.3, -22.3, .9, 1.1);
+    c.beginPath(); c.arc(0, -22.7, 4.2, Math.PI, 0); c.closePath(); c.fillStyle = COL.amber; c.fill();
+    c.beginPath(); c.roundRect(-4.2, -23.2, 9.8, 1.4, .6); c.fill();
+    if (extra) extra(c);
+    limb(3.2, -16.5, 7, pose.armA || -.2, COL.vest);
+    var ax = 3.2 + Math.sin(-(pose.armA || -.2)) * 7, ay = -16.5 + Math.cos(pose.armA || -.2) * 7;
+    c.beginPath(); c.arc(ax, ay, 1.4, 0, 6.283); c.fillStyle = COL.skin; c.fill();
+    c.restore();
+    return [x + facing * WS * ax, y + WS * ay];
   }
-  function site(c, t, G) {
-    ground(c, G, 2400);
-    pad(c, G);
-    var rc = G - 14 - 57; // centro do foguete em obras
-    // metade de baixo pronta (traço cheio), metade de cima tracejada
+  function cone(c, x, y) {
+    c.beginPath(); c.moveTo(x - 5, y - 1); c.lineTo(x, y - 14); c.lineTo(x + 5, y - 1); c.closePath(); c.fillStyle = COL.terra; c.fill(); c.strokeStyle = cream(.9); c.lineWidth = 1; c.stroke();
+    c.fillStyle = cream(.95); c.fillRect(x - 2.6, y - 8, 5.2, 1.8);
+    c.beginPath(); c.roundRect(x - 7, y - 1.6, 14, 2.4, 1); c.fillStyle = COL.bg; c.fill(); c.stroke();
+  }
+  function tape(c, x0, x1, y) {
+    c.strokeStyle = cream(.8); c.lineWidth = 1.3; c.beginPath(); c.moveTo(x0, y - 2); c.lineTo(x0, y + 12); c.moveTo(x1, y - 2); c.lineTo(x1, y + 12); c.stroke();
+    c.save(); c.beginPath(); c.rect(x0, y, x1 - x0, 3.4); c.clip(); c.fillStyle = COL.amber; c.fillRect(x0, y, x1 - x0, 3.4);
+    c.fillStyle = '#2a2c33'; for (var x = x0 - 6; x < x1 + 6; x += 7) { c.beginPath(); c.moveTo(x, y + 3.4); c.lineTo(x + 3, y); c.lineTo(x + 6, y); c.lineTo(x + 3, y + 3.4); c.closePath(); c.fill(); } c.restore();
+  }
+  // Canteiro de obras em cima da mesma base (sem a torre): foguete pela metade,
+  // andaime, guindaste e os 4 bonequinhos do protótipo antigo.
+  function site(c, t, M) {
+    var G = M + 20; // chão do deck, onde os bonequinhos pisam
+    earthGround(c, M);
+    launchBase(c, M, t, { tower: false, post: false });
+    var rc = M - 58; // centro do foguete em obras
+    var L = CX - 50, R = CX + 50, top = rc - 64;
+    // andaime atrás do foguete: postes e travas em X
+    c.strokeStyle = cream(.8); c.lineWidth = 1.5; c.beginPath();
+    [L - 14, L, R, R + 14].forEach(function (x) { c.moveTo(x, G - 2); c.lineTo(x, top); }); c.stroke();
+    c.strokeStyle = cream(.3); c.lineWidth = 1.1; c.beginPath();
+    [[L - 14, L], [R, R + 14]].forEach(function (p) { for (var y = G - 2; y > top + 20; y -= 28) { c.moveTo(p[0], y); c.lineTo(p[1], y - 28); c.moveTo(p[1], y); c.lineTo(p[0], y - 28); } }); c.stroke();
+    // foguete: metade de baixo pronta, de cima tracejada com as costelas
     c.save(); c.beginPath(); c.rect(0, rc + 8, W, H); c.clip(); rocketBody(c, { y: rc, glow: 0 }); c.restore();
     c.save(); c.translate(CX, rc); c.beginPath(); c.rect(-60, -90, 120, 98); c.clip();
-    c.setLineDash([4, 6]); c.beginPath(); pBody(c); c.strokeStyle = cream(.45); c.lineWidth = 1.6; c.stroke(); c.restore();
-    // andaime
-    var L = CX - 44, R = CX + 44, top = G - 150;
-    c.strokeStyle = cream(.75); c.lineWidth = 1.5; c.beginPath();
-    c.moveTo(L, G - 14); c.lineTo(L, top); c.moveTo(R, G - 14); c.lineTo(R, top);
-    for (var y = G - 54; y >= top; y -= 40) { c.moveTo(L - 6, y); c.lineTo(L + 14, y); c.moveTo(R - 14, y); c.lineTo(R + 6, y); }
-    c.stroke();
-    c.strokeStyle = cream(.25); c.lineWidth = 1.1; c.beginPath();
-    for (var y2 = G - 14; y2 > top + 40; y2 -= 40) { c.moveTo(L - 6, y2); c.lineTo(L - 6, y2 - 40); c.moveTo(R + 6, y2); c.lineTo(R + 6, y2 - 40); c.moveTo(L - 6, y2); c.lineTo(L, y2 - 40); c.moveTo(R + 6, y2); c.lineTo(R, y2 - 40); }
-    c.stroke();
-    // holofotes nos topos
-    [L, R].forEach(function (x) { c.save(); c.shadowColor = amber(1); c.shadowBlur = 12; c.beginPath(); c.arc(x, top - 4, 3, 0, 6.283); c.fillStyle = COL.amber; c.fill(); c.restore();
-      var g = c.createRadialGradient(x, top - 4, 0, x, top - 4, 90); g.addColorStop(0, amber(.12)); g.addColorStop(1, amber(0)); c.fillStyle = g; c.beginPath(); c.arc(x, top - 4, 90, 0, 6.283); c.fill(); });
+    c.setLineDash([4, 6]); c.beginPath(); pBody(c); c.strokeStyle = cream(.5); c.lineWidth = 1.6; c.stroke(); c.setLineDash([]);
+    c.strokeStyle = cream(.3); c.lineWidth = 1.2; c.beginPath(); [-28, -10].forEach(function (y) { c.moveTo(-21, y); c.lineTo(21, y); }); c.moveTo(0, -36); c.lineTo(0, 8); c.stroke(); c.restore();
+    // tábuas (plataformas) dos dois lados, por cima do foguete
+    var P1 = G - 52, P2 = G - 96;
+    [P1, P2].forEach(function (y) { [[L - 20, L + 6], [R - 6, R + 20]].forEach(function (p) { c.beginPath(); c.roundRect(p[0], y, p[1] - p[0], 3.4, 1); c.fillStyle = '#5a4a3a'; c.fill(); c.strokeStyle = cream(.85); c.lineWidth = 1; c.stroke(); }); });
+    // holofotes no topo, apontados pro foguete
+    [[L - 7, 1], [R + 7, -1]].forEach(function (h) {
+      var g = c.createRadialGradient(h[0], top, 0, h[0], top, 110); g.addColorStop(0, amber(.22)); g.addColorStop(1, amber(0));
+      c.fillStyle = g; c.beginPath(); c.moveTo(h[0], top); c.lineTo(h[0] + h[1] * 90, top + 40); c.lineTo(h[0] + h[1] * 50, G); c.closePath(); c.fill();
+      c.beginPath(); c.roundRect(h[0] - 5, top - 5, 10, 6, 1.5); c.fillStyle = COL.bg; c.fill(); c.strokeStyle = cream(.85); c.lineWidth = 1.1; c.stroke();
+      glowDot(c, h[0], top - 1, 1.6, COL.amber, 8);
+    });
     // guindaste
-    var mx = 330, jy = G - 250;
-    c.strokeStyle = cream(.85); c.lineWidth = 1.6; c.beginPath();
-    c.moveTo(mx, G - 2); c.lineTo(mx, jy - 18); c.moveTo(mx - 8, G - 2); c.lineTo(mx - 8, jy);
-    c.moveTo(140, jy); c.lineTo(mx + 30, jy); c.moveTo(mx - 4, jy - 18); c.lineTo(160, jy); c.moveTo(mx - 4, jy - 18); c.lineTo(mx + 30, jy);
-    c.stroke();
-    c.strokeStyle = cream(.3); c.lineWidth = 1.1; c.beginPath(); for (var yy = G - 2; yy > jy; yy -= 16) { c.moveTo(mx, yy); c.lineTo(mx - 8, yy - 16); } c.stroke();
-    var hookY = jy + 70 + 16 * Math.sin(t * .9);
-    c.strokeStyle = cream(.7); c.lineWidth = 1.2; c.beginPath(); c.moveTo(CX, jy); c.lineTo(CX, hookY - 30); c.stroke();
-    c.save(); c.translate(CX, hookY + 46); strokeFill(c, pNose); c.restore();
-    var bl = .5 + .5 * Math.sin(t * 4.2);
-    c.save(); c.shadowColor = amber(1); c.shadowBlur = 10 * bl; c.beginPath(); c.arc(mx - 4, jy - 22, 3, 0, 6.283); c.fillStyle = amber(.35 + .65 * bl); c.fill(); c.restore();
-    // bonequinhos
-    worker(c, 92, G - 1, t, 'hammer');
-    c.strokeStyle = cream(.8); c.lineWidth = 1.4; c.beginPath(); c.roundRect(100, G - 13, 16, 12, 2); c.stroke();
-    c.strokeStyle = cream(.75); c.lineWidth = 1.5; c.beginPath(); c.moveTo(R - 14, G - 94); c.lineTo(R + 34, G - 94); c.stroke();
-    worker(c, R + 22, G - 95, t, 'weld');
-    worker(c, 285, G - 1, t, 'wave');
-    // placa "em obras" em pílula
-    c.strokeStyle = cream(.6); c.lineWidth = 1.4; c.beginPath(); c.moveTo(40, G - 2); c.lineTo(40, G - 26); c.moveTo(74, G - 2); c.lineTo(74, G - 26); c.stroke();
-    c.beginPath(); c.roundRect(24, G - 46, 66, 22, 11); c.fillStyle = COL.amber; c.fill();
-    c.fillStyle = '#2a2a2a'; c.font = '500 11px ' + FONT; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('em obras', 57, G - 35);
+    var mx = 356, jy = rc - 120;
+    c.strokeStyle = cream(.85); c.lineWidth = 1.5; c.beginPath();
+    c.moveTo(mx - 4, G - 2); c.lineTo(mx - 4, jy); c.moveTo(mx + 4, G - 2); c.lineTo(mx + 4, jy);
+    c.moveTo(150, jy); c.lineTo(mx + 26, jy); c.moveTo(158, jy + 6); c.lineTo(mx + 26, jy + 6); c.stroke();
+    c.strokeStyle = cream(.3); c.lineWidth = 1; c.beginPath();
+    for (var yy = G - 2; yy > jy; yy -= 12) { c.moveTo(mx - 4, yy); c.lineTo(mx + 4, yy - 12); c.moveTo(mx + 4, yy); c.lineTo(mx - 4, yy - 12); }
+    for (var xx = 158; xx < mx + 20; xx += 10) { c.moveTo(xx, jy + 6); c.lineTo(xx + 5, jy); c.lineTo(xx + 10, jy + 6); } c.stroke();
+    c.beginPath(); c.roundRect(mx - 8, jy + 8, 16, 11, 2); c.fillStyle = COL.bg; c.fill(); c.strokeStyle = cream(.85); c.lineWidth = 1.2; c.stroke();
+    c.fillStyle = amber(.9); c.fillRect(mx - 5, jy + 10, 10, 4);
+    var bl = .5 + .5 * Math.sin(t * 4.2); c.save(); c.globalAlpha = .35 + .65 * bl; glowDot(c, mx, jy - 4, 2.4, COL.terra, 10 * bl); c.restore();
+    var cyc = (t % 6) / 6, low = eInOut(cyc < .5 ? cyc * 2 : 2 - cyc * 2), hookY = jy + 22 + 22 * low, sway = Math.sin(t * 1.3) * 2.4;
+    c.beginPath(); c.roundRect(CX - 5, jy + 6, 10, 5, 1); c.fillStyle = COL.bg; c.fill(); c.strokeStyle = cream(.85); c.stroke();
+    c.strokeStyle = cream(.7); c.lineWidth = 1; c.beginPath(); c.moveTo(CX, jy + 11); c.lineTo(CX + sway, hookY); c.moveTo(CX + sway, hookY); c.lineTo(CX + sway - 8, hookY + 7); c.moveTo(CX + sway, hookY); c.lineTo(CX + sway + 8, hookY + 7); c.stroke();
+    c.save(); c.translate(CX + sway, hookY + 84); c.rotate(sway * .02); strokeFill(c, pNose); c.restore();
+    // pilha de peças, caixa de ferramentas, cones, fita e placa
+    [[262, G - 6, 22], [264, G - 11, 19], [267, G - 16, 14]].forEach(function (k) { c.beginPath(); c.roundRect(k[0], k[1], k[2], 5, 1); c.fillStyle = COL.bg; c.fill(); c.strokeStyle = cream(.85); c.lineWidth = 1; c.stroke(); });
+    c.beginPath(); c.roundRect(108, G - 9, 15, 8, 1.5); c.fillStyle = COL.terra; c.fill(); c.strokeStyle = cream(.9); c.lineWidth = 1; c.stroke();
+    cone(c, 100, G); cone(c, 146, G); cone(c, 250, G);
+    tape(c, 86, 142, G - 12);
+    c.strokeStyle = cream(.7); c.lineWidth = 1.3; c.beginPath(); c.moveTo(56, G); c.lineTo(56, G - 22); c.stroke();
+    c.beginPath(); c.roundRect(24, G - 42, 64, 20, 10); c.fillStyle = COL.amber; c.fill();
+    c.fillStyle = '#2a2a2a'; c.font = '500 11px ' + FONT; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('em obras', 56, G - 32);
+
+    // 1) martelando na plataforma da esquerda
+    var hit = (t * 2.2) % 1, hammer = -2.3 + 1.5 * (hit < .35 ? eIn(hit / .35) : 1 - eOut((hit - .35) / .65));
+    worker(c, L - 7, P2, 1, { armA: hammer, armB: .5 }, function (cc) {
+      cc.save(); cc.translate(3.2, -16.5); cc.rotate(hammer); cc.translate(0, 7); cc.rotate(Math.PI);
+      cc.strokeStyle = cream(.9); cc.lineWidth = 1.3; cc.beginPath(); cc.moveTo(0, -1); cc.lineTo(0, 7); cc.stroke();
+      cc.beginPath(); cc.roundRect(-2.8, 5.4, 5.6, 2.6, .6); cc.fillStyle = '#2a2c33'; cc.fill(); cc.lineWidth = .7; cc.stroke(); cc.restore();
+    });
+    if (hit > .33 && hit < .45) for (var i = 0; i < 4; i++) glowDot(c, L + 8 + i * 2, P2 - 22 - i * 3, 1, COL.amber, 4);
+    // 2) soldando na plataforma da direita, com faíscas
+    var hand2 = worker(c, R + 9, P1, -1, { armA: -1.1 + Math.sin(t * 3) * .06, armB: .6 });
+    var tip = [hand2[0] - 6, hand2[1]], flick = .6 + .4 * Math.abs(Math.sin(t * 37));
+    var wg = c.createRadialGradient(tip[0], tip[1], 0, tip[0], tip[1], 16); wg.addColorStop(0, 'rgba(132,161,200,' + (.75 * flick) + ')'); wg.addColorStop(1, 'rgba(132,161,200,0)');
+    c.fillStyle = wg; c.beginPath(); c.arc(tip[0], tip[1], 16, 0, 6.283); c.fill();
+    c.strokeStyle = cream(.9); c.lineWidth = 1.4; c.beginPath(); c.moveTo(hand2[0], hand2[1]); c.lineTo(tip[0], tip[1]); c.stroke();
+    for (var k = 0; k < 9; k++) { var life = (t * 1.6 + k * .137) % 1, ang = -Math.PI * (.2 + ((k * 37) % 10) / 16), sp = 12 + (k % 4) * 5;
+      c.fillStyle = amber(1 - life); c.fillRect(tip[0] + Math.cos(ang) * sp * life, tip[1] + Math.sin(ang) * sp * life + 30 * life * life, 1.4, 1.4); }
+    // 3) carregando painel entre a pilha e o andaime (ida com carga, volta vazio)
+    var c3 = (t % 5) / 5, going = c3 < .5, p3 = eInOut(going ? c3 * 2 : (c3 - .5) * 2);
+    var x3 = going ? 258 - 26 * p3 : 232 + 26 * p3, step = Math.sin(t * 9) * .45;
+    var hand3 = worker(c, x3, G, going ? -1 : 1, { legA: step, legB: -step, armA: going ? -1.35 : -.2 + step * .3, armB: going ? -1.2 : .2 - step * .3 });
+    if (going) { c.beginPath(); c.roundRect(x3 - 12, hand3[1] - 8, 24, 6, 1); c.fillStyle = COL.bg; c.fill(); c.strokeStyle = cream(.9); c.lineWidth = 1; c.stroke(); }
+    // 4) orientando o guindaste (acenando com os dois braços)
+    var wave = Math.sin(t * 2.4);
+    worker(c, 318, G, -1, { armA: -2.6 + wave * .35, armB: -2.5 - wave * .35 });
   }
   function drawMeteor(c, t) {
     var groundK = eOut(seg(t, T_IMPACT + 1.6, T_IMPACT + 3.2));
-    var G = lerp(H + 160, G_SITE, groundK);
+    var G = lerp(H + 220, M_SITE, groundK);
     sky(c, t, t * 22 * (1 - seg(t, T_IMPACT, T_IMPACT + 1)) + T_IMPACT * 22 * seg(t, T_IMPACT, T_IMPACT + 1));
     destinationInSky(c);
     if (groundK > 0) site(c, t, G);
@@ -408,18 +544,35 @@ figure { margin: 0; display: flex; flex-direction: column; align-items: center; 
   var CRATERS = [[-150, 30, 26], [-60, 90, 34], [70, 40, 20], [140, 120, 30], [-120, 190, 22], [30, 220, 40], [150, 250, 18]];
   var S_LAND = CY + 57 + 3;
   function surfaceY(t) { return t < 1 ? H + 120 : lerp(H + 120, S_LAND, eOut(seg(t, 1, 4.6))); }
+  // Astronauta do protótipo antigo: roupa clara preenchida com contorno grafite (igual à
+  // cúpula acesa do desenho da luminária), mochila, botas, painel terracota no peito e
+  // visor azul de luar. Pés em (x, y).
   function astronaut(c, x, y, t, walking, waveK) {
-    var ph = walking ? Math.sin(t * 7) : 0;
-    c.strokeStyle = cream(.95); c.lineWidth = 1.6;
-    c.beginPath(); c.moveTo(x - 2, y - 9); c.lineTo(x - 2 + ph * 3, y); c.moveTo(x + 2, y - 9); c.lineTo(x + 2 - ph * 3, y); c.stroke();
-    c.beginPath(); c.roundRect(x - 6.5, y - 21, 13, 13, 4); c.fillStyle = COL.bg; c.fill(); c.stroke();
-    c.beginPath(); c.roundRect(x - 10, y - 19, 4, 9, 2); c.stroke(); // mochila
-    var wa = waveK > 0 ? -2.3 + .45 * Math.sin(t * 5) : 0.9;
-    c.beginPath(); c.moveTo(x + 5, y - 18); c.lineTo(x + 5 + Math.cos(wa) * 9, y - 18 + Math.sin(wa) * 9); c.stroke();
-    c.beginPath(); c.arc(x, y - 28, 7, 0, 6.283); c.fillStyle = COL.bg; c.fill(); c.stroke();
-    c.save(); c.shadowColor = amber(.8); c.shadowBlur = 6; c.beginPath(); c.roundRect(x - 2, y - 31, 7, 5, 2.5); c.fillStyle = COL.amber; c.fill(); c.restore();
+    var ph = walking ? Math.sin(t * 7) : 0, S = 1.25;
+    c.save(); c.translate(x, y); c.scale(S, S); c.lineWidth = .9; c.strokeStyle = COL.suitLine;
+    function part(px, py, w, h, r, fill) { c.beginPath(); c.roundRect(px, py, w, h, r); c.fillStyle = fill; c.fill(); c.stroke(); }
+    function leg(dx, ang, shade) { c.save(); c.translate(dx + 2.25, -10); c.rotate(ang); part(-2.25, 0, 4.5, 10, 2, shade); part(-2.75, 7.5, 5.5, 2.8, 1, '#5a5d66'); c.restore(); }
+    part(-10, -25, 6, 13, 2, '#d9d1bc');            // mochila
+    leg(-5, ph * .4, '#e2dbc8');                    // perna de trás
+    leg(.5, -ph * .4, COL.suit);                    // perna da frente
+    part(-10, -20, 4, 10, 2, '#e2dbc8');            // braço de trás
+    part(-7, -22, 14, 13, 4, COL.suit);             // corpo
+    c.beginPath(); c.roundRect(-3, -18, 6, 3.6, 1); c.fillStyle = COL.terra; c.fill();
+    c.beginPath(); c.arc(0, -27, 7.5, 0, 6.283); c.fillStyle = COL.suit; c.fill(); c.stroke();   // capacete
+    c.beginPath(); c.ellipse(1.8, -27, 5, 4, 0, 0, 6.283); c.fillStyle = '#2f3a4d'; c.fill(); c.stroke();
+    c.beginPath(); c.ellipse(3.4, -28.4, 1.6, 1, 0, 0, 6.283); c.fillStyle = COL.luar; c.fill();
+    c.save(); c.translate(7.5, -19); c.rotate(waveK > 0 ? -2.5 + .45 * Math.sin(t * 5) : ph * -.3); part(-2, -1, 4, 10, 2, COL.suit); c.restore();
+    c.restore();
   }
   function earthIcon(c) {
+    var x = 72, y = 118, r = 20;
+    c.beginPath(); c.arc(x, y, r, 0, 6.283); c.fillStyle = COL.bg; c.fill(); c.fillStyle = 'rgba(132,161,200,.55)'; c.fill(); c.strokeStyle = cream(.9); c.lineWidth = 1.6; c.stroke();
+    c.save(); c.beginPath(); c.arc(x, y, r - 1, 0, 6.283); c.clip();
+    c.beginPath(); c.moveTo(x - 14, y - 6); c.bezierCurveTo(x - 6, y - 14, x + 2, y - 4, x - 2, y + 2); c.bezierCurveTo(x - 6, y + 8, x - 14, y + 4, x - 14, y - 6);
+    c.moveTo(x + 6, y + 6); c.bezierCurveTo(x + 12, y + 2, x + 18, y + 8, x + 12, y + 14); c.bezierCurveTo(x + 8, y + 16, x + 4, y + 12, x + 6, y + 6);
+    c.fillStyle = '#417c5a'; c.fill(); c.strokeStyle = 'rgba(128,166,142,.9)'; c.lineWidth = 1; c.stroke(); c.restore();
+  }
+  function earthIconOld(c) {
     var x = 72, y = 118, r = 20;
     c.beginPath(); c.arc(x, y, r, 0, 6.283); c.fillStyle = 'rgba(132,161,200,.28)'; c.fill(); c.strokeStyle = cream(.9); c.lineWidth = 1.6; c.stroke();
     c.save(); c.beginPath(); c.arc(x, y, r - 1, 0, 6.283); c.clip();
@@ -459,13 +612,14 @@ figure { margin: 0; display: flex; flex-direction: column; align-items: center; 
     var P = PLANETS[current];
     ground(c, S, 1800);
     c.save(); c.beginPath(); c.arc(CX, S + 1800, 1800, 0, 6.283); c.clip();
-    c.fillStyle = 'rgba(' + P.tint + ',.07)'; c.fillRect(0, S - 20, W, H);
-    c.strokeStyle = cream(.3); c.lineWidth = 1.3;
+    if (current === 'mars') { c.fillStyle = COL.mars; c.fillRect(0, S - 20, W, H + 40); }
+    else { c.fillStyle = 'rgba(' + P.tint + ',.07)'; c.fillRect(0, S - 20, W, H); }
+    c.strokeStyle = current === 'mars' ? 'rgba(255,159,102,.55)' : cream(.3); c.lineWidth = 1.3;
     if (current === 'moon') {
       CRATERS.forEach(function (k) { c.beginPath(); c.ellipse(CX + k[0], S + k[1], k[2], k[2] * .24, 0, 0, 6.283); c.stroke(); });
     } else if (current === 'mars') { // dunas e pedras
       [34, 78, 132, 196, 270].forEach(function (d, i) { c.beginPath(); for (var x = -10; x <= W + 10; x += 6) { var y = S + d + Math.sin(x / (38 + i * 9) + i) * (5 + i * 1.5); x === -10 ? c.moveTo(x, y) : c.lineTo(x, y); } c.stroke(); });
-      ROCKS.forEach(function (k) { var x = CX + k[0], y = S + k[1], r = k[2]; c.beginPath(); c.moveTo(x - r, y); c.quadraticCurveTo(x - r * .8, y - r * .9, x, y - r * .8); c.quadraticCurveTo(x + r * .9, y - r * .7, x + r, y); c.closePath(); c.fillStyle = COL.ground; c.fill(); c.stroke(); });
+      ROCKS.forEach(function (k) { var x = CX + k[0], y = S + k[1], r = k[2]; c.beginPath(); c.moveTo(x - r, y); c.quadraticCurveTo(x - r * .8, y - r * .9, x, y - r * .8); c.quadraticCurveTo(x + r * .9, y - r * .7, x + r, y); c.closePath(); c.fillStyle = '#7a4630'; c.fill(); c.stroke(); });
     } else if (current === 'saturn') { // gelo e rocha: placas rachadas
       [[-120, 40, 70], [40, 30, 90], [-40, 120, 120], [110, 150, 80]].forEach(function (k) { var x = CX + k[0], y = S + k[1], w = k[2]; c.beginPath(); c.moveTo(x - w / 2, y); c.lineTo(x - w / 6, y - 4); c.lineTo(x + w / 5, y + 3); c.lineTo(x + w / 2, y - 2); c.stroke(); });
       ROCKS.forEach(function (k) { c.beginPath(); c.arc(CX + k[0], S + k[1] + 6, k[2] * .35, 0, 6.283); c.fillStyle = cream(.35); c.fill(); });
@@ -522,10 +676,10 @@ figure { margin: 0; display: flex; flex-direction: column; align-items: center; 
 
   // ---------- planetas ----------
   var PLANETS = {
-    moon:    { name: 'lua',     days: 0,  tint: '253,248,199', flag: 3 },
-    mars:    { name: 'marte',   days: 7,  tint: '219,129,73',  flag: 7 },
-    saturn:  { name: 'saturno', days: 15, tint: '242,176,94',  flag: 15 },
-    neptune: { name: 'netuno',  days: 30, tint: '132,161,200', flag: 30 }
+    moon:    { name: 'lua',     days: 0,  tint: '253,248,199', fillA: .22, flag: 3 },
+    mars:    { name: 'marte',   days: 7,  tint: '255,159,102', fillA: .7,  flag: 7 },
+    saturn:  { name: 'saturno', days: 15, tint: '242,176,94',  fillA: .45, flag: 15 },
+    neptune: { name: 'netuno',  days: 30, tint: '132,161,200', fillA: .55, flag: 30 }
   };
   var ORDER = ['moon', 'mars', 'saturn', 'neptune'];
   var current = 'moon';
@@ -549,13 +703,14 @@ figure { margin: 0; display: flex; flex-direction: column; align-items: center; 
     if (id === 'neptune') { c.save(); c.translate(x, y); c.rotate(.2); c.beginPath(); c.ellipse(0, 0, r * 1.55, r * .3, 0, Math.PI, 2 * Math.PI); c.strokeStyle = cream(.3); c.lineWidth = lw * .7; c.stroke(); c.restore(); }
     c.beginPath(); c.arc(x, y, r, 0, 6.283);
     c.fillStyle = COL.bg; c.fill();
-    if (!opt.dashed) { c.fillStyle = 'rgba(' + P.tint + ',.22)'; c.fill(); }
+    if (!opt.dashed) { c.fillStyle = 'rgba(' + P.tint + ',' + P.fillA + ')'; c.fill(); }
     c.strokeStyle = cream(1); c.stroke();
     c.save(); clipCircle(c, x, y, r); c.strokeStyle = cream(.55); c.lineWidth = lw * .85;
     if (id === 'moon') {
       c.beginPath(); c.arc(x + r * .55, y - r * .1, r * .95, 0, 6.283); c.fillStyle = 'rgba(35,37,44,.35)'; c.fill();
       c.beginPath(); c.arc(x - r * .35, y - r * .3, r * .22, 0, 6.283); c.moveTo(x - r * .05 + r * .14, y + r * .35); c.arc(x - r * .05, y + r * .35, r * .14, 0, 6.283); c.moveTo(x - r * .45 + r * .1, y + r * .25); c.arc(x - r * .45, y + r * .25, r * .1, 0, 6.283); c.stroke();
     } else if (id === 'mars') {
+      c.strokeStyle = 'rgba(160,80,45,.85)';
       c.beginPath();
       [-.15, .3].forEach(function (k) { var yy = y + r * k; c.moveTo(x - r, yy); for (var i = 0; i <= 8; i++) { var xx = x - r + i * r / 4; c.lineTo(xx, yy + Math.sin(i * 1.3 + k * 5) * r * .07); } });
       c.stroke();
