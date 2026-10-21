@@ -34,6 +34,17 @@ figure { margin: 0; display: flex; flex-direction: column; align-items: center; 
 .notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; }
 .notes div { padding: 18px 20px; border-radius: 22px; background: var(--glass); border: 1px solid var(--edge); min-width: 0; }
 .notes p { margin: 6px 0 0; font-size: 14.5px; line-height: 1.5; }
+.dest, .map { display: flex; flex-direction: column; gap: 12px; align-items: center; text-align: center; }
+.seg { display: inline-flex; flex-wrap: wrap; justify-content: center; padding: 4px; border-radius: 999px; background: hsla(54,93%,89%,.1); gap: 4px; }
+.seg button { border: 0; font: inherit; font-size: 15px; padding: 9px 18px; border-radius: 999px; background: transparent; color: var(--ink); cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--amber); color: var(--amber-ink); }
+.seg button:focus-visible, .slider input:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+.hint { margin: 0; max-width: 60ch; font-size: 14px; line-height: 1.5; color: var(--muted); }
+.mapcard { width: 100%; max-width: 900px; padding: 16px; border-radius: 28px; background: linear-gradient(160deg, rgba(120,98,76,.3), rgba(52,44,38,.4)), #23252c; border: 1px solid var(--edge); display: flex; flex-direction: column; gap: 10px; }
+.mapcard canvas { width: 100%; height: auto; aspect-ratio: 900 / 200; display: block; }
+.slider { display: flex; align-items: center; gap: 12px; justify-content: center; flex-wrap: wrap; font-size: 14px; color: var(--muted); }
+.slider input { width: min(320px, 70vw); accent-color: var(--amber); }
+.slider output { color: var(--ink); font-variant-numeric: tabular-nums; min-width: 6ch; text-align: left; }
 .compare { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; justify-content: center; padding: 18px; border-radius: 26px; background: var(--glass); border: 1px solid var(--edge); }
 .compare img { height: 120px; width: auto; max-width: 100%; display: block; }
 .compare .lamp { height: 120px; border-radius: 18px; }
@@ -42,10 +53,21 @@ figure { margin: 0; display: flex; flex-direction: column; align-items: center; 
 
 <div class="wrap">
   <header>
-    <p class="eyebrow">protótipo · cenas do foguete, redesenho</p>
+    <p class="eyebrow">protótipo · cenas do foguete e planetas</p>
     <h1>foguete no traço da sovee</h1>
     <p class="lede">O foguete passa a ser desenhado do mesmo jeito que o logo e a luminária: uma linha creme fina, cantos redondos e quase nada preenchido. Só o que é luz ganha cor: a chama, o visor, a escotilha acesa e a bandeira. As três cenas seguem a mesma ordem de antes.</p>
   </header>
+
+  <section class="dest" aria-label="Destino">
+    <h2>destino da noite</h2>
+    <div class="seg" role="group" aria-label="Planeta">
+      <button type="button" data-planet="moon" aria-pressed="true">lua</button>
+      <button type="button" data-planet="mars" aria-pressed="false">marte</button>
+      <button type="button" data-planet="saturn" aria-pressed="false">saturno</button>
+      <button type="button" data-planet="neptune" aria-pressed="false">netuno</button>
+    </div>
+    <p class="hint">O app escolhe sozinho: o planeta mais longe que a sequência atual já liberou. Troque aqui pra ver cada um na decolagem e no pouso.</p>
+  </section>
 
   <div class="row">
     <figure>
@@ -65,11 +87,31 @@ figure { margin: 0; display: flex; flex-direction: column; align-items: center; 
     </figure>
   </div>
 
+  <section class="map" aria-label="Mapa da jornada">
+    <h2>mapa da jornada</h2>
+    <div class="mapcard">
+      <canvas id="c-map" width="900" height="200" aria-label="Mapa com a Lua, Marte, Saturno e Netuno ligados por uma rota pontilhada"></canvas>
+      <div class="slider">
+        <label for="streak">sequência atual</label>
+        <input id="streak" type="range" min="0" max="34" value="9">
+        <output id="streak-out" for="streak">9 noites</output>
+      </div>
+    </div>
+    <p class="hint">Planeta alcançado fica em traço cheio; o que falta fica tracejado, como a parte do foguete em obras. Pode morar no relatório de sono e no topo de Amigos.</p>
+  </section>
+
   <div class="compare" aria-label="Referências da marca">
     <img src="logo_sono.png" alt="Logo de rosto dormindo em traço">
     <img class="lamp" src="referencia_luminaria.png" alt="Desenho da luminária em traço creme">
     <span>mesma espessura de linha, mesmas formas redondas, luz só onde acende</span>
   </div>
+
+  <section class="notes" aria-label="Planetas">
+    <div><h2>lua · 0 noites</h2><p>Círculo com crateras e sombra de crescente. Pouso em chão de crateras, com a Terra no céu.</p></div>
+    <div><h2>marte · 7 noites</h2><p>Faixas de poeira e calota polar, tom terracota. Pouso em dunas com pedras, Fobos e Deimos pequenos no céu.</p></div>
+    <div><h2>saturno · 15 noites</h2><p>Anel inclinado passando atrás e na frente. Pouso numa lua de gelo e rocha, com Saturno enorme ocupando o céu.</p></div>
+    <div><h2>netuno · 30 noites</h2><p>Faixas, mancha escura e anel fino, azul de luar. Pouso em Tritão, chão com cristais de gelo e Netuno grande no céu.</p></div>
+  </section>
 
   <section class="notes" aria-label="O que muda">
     <div><h2>foguete</h2><p>Cápsula com bico redondo e duas linhas curvas no casco, como as elipses da luminária. Visor redondo aceso em âmbar. Ele sai de uma base em pílula, a mesma forma da base da luminária.</p></div>
@@ -201,9 +243,16 @@ figure { margin: 0; display: flex; flex-direction: column; align-items: center; 
   var BASE = (function () { var r = rnd(21), a = []; for (var i = 0; i < 16; i++) { var s = r() < .5 ? -1 : 1; a.push({ dx: s * (18 + r() * 120), dy: -6 - r() * 26, r: 9 + r() * 15, d: r() * .9 }); } return a; })();
   var GY0 = CY + 57 + 15; // chão logo abaixo da base em pílula
   function launchOffset(t) { var k = Math.max(0, t - 2.6); return 0.5 * 150 * k * k; }
+  function destinationInSky(c) {
+    var P = PLANETS[current];
+    planet(c, current, 306, 126, current === 'saturn' ? 17 : 21);
+    c.fillStyle = cream(.6); c.font = '500 11px ' + FONT; c.textAlign = 'center'; c.textBaseline = 'alphabetic';
+    c.fillText('rumo a ' + P.name, 306, current === 'saturn' ? 168 : 166);
+  }
   function drawLaunch(c, t) {
     var off = launchOffset(t), gy = GY0 + off;
     sky(c, t, off * .18 + t * 2);
+    destinationInSky(c);
     if (gy < H + 200) {
       ground(c, gy);
       tower(c, gy, t, eInOut(seg(t, 1.0, 1.7)));
@@ -315,6 +364,7 @@ figure { margin: 0; display: flex; flex-direction: column; align-items: center; 
     var groundK = eOut(seg(t, T_IMPACT + 1.6, T_IMPACT + 3.2));
     var G = lerp(H + 160, G_SITE, groundK);
     sky(c, t, t * 22 * (1 - seg(t, T_IMPACT, T_IMPACT + 1)) + T_IMPACT * 22 * seg(t, T_IMPACT, T_IMPACT + 1));
+    destinationInSky(c);
     if (groundK > 0) site(c, t, G);
     if (t < T_IMPACT) {
       flame(c, t, 1);
@@ -364,15 +414,43 @@ figure { margin: 0; display: flex; flex-direction: column; align-items: center; 
     c.moveTo(x + 6, y + 6); c.bezierCurveTo(x + 12, y + 2, x + 18, y + 8, x + 12, y + 14); c.bezierCurveTo(x + 8, y + 16, x + 4, y + 12, x + 6, y + 6);
     c.fillStyle = 'rgba(128,166,142,.75)'; c.fill(); c.restore();
   }
+  var ROCKS = [[-140, 22, 9], [-96, 64, 6], [104, 30, 7], [150, 88, 11], [-40, 150, 8], [60, 190, 6]];
+  var CRYSTALS = [[-150, 18, 14], [-88, 60, 10], [96, 26, 12], [142, 74, 16], [-30, 130, 11], [70, 170, 14], [-130, 210, 9]];
+  function landSky(c) {
+    if (current === 'moon') earthIcon(c);
+    else if (current === 'mars') { // Fobos e Deimos, pequenos e irregulares
+      c.strokeStyle = cream(.85); c.lineWidth = 1.4;
+      c.beginPath(); c.ellipse(78, 112, 9, 6.5, .4, 0, 6.283); c.fillStyle = COL.bg; c.fill(); c.stroke();
+      c.beginPath(); c.ellipse(132, 74, 5, 4, -.3, 0, 6.283); c.fill(); c.stroke();
+    }
+    else if (current === 'saturn') planet(c, 'saturn', 92, 150, 50);
+    else planet(c, 'neptune', 84, 136, 44);
+  }
+  function landGround(c, S) {
+    var P = PLANETS[current];
+    ground(c, S, 1800);
+    c.save(); c.beginPath(); c.arc(CX, S + 1800, 1800, 0, 6.283); c.clip();
+    c.fillStyle = 'rgba(' + P.tint + ',.07)'; c.fillRect(0, S - 20, W, H);
+    c.strokeStyle = cream(.3); c.lineWidth = 1.3;
+    if (current === 'moon') {
+      CRATERS.forEach(function (k) { c.beginPath(); c.ellipse(CX + k[0], S + k[1], k[2], k[2] * .24, 0, 0, 6.283); c.stroke(); });
+    } else if (current === 'mars') { // dunas e pedras
+      [34, 78, 132, 196, 270].forEach(function (d, i) { c.beginPath(); for (var x = -10; x <= W + 10; x += 6) { var y = S + d + Math.sin(x / (38 + i * 9) + i) * (5 + i * 1.5); x === -10 ? c.moveTo(x, y) : c.lineTo(x, y); } c.stroke(); });
+      ROCKS.forEach(function (k) { var x = CX + k[0], y = S + k[1], r = k[2]; c.beginPath(); c.moveTo(x - r, y); c.quadraticCurveTo(x - r * .8, y - r * .9, x, y - r * .8); c.quadraticCurveTo(x + r * .9, y - r * .7, x + r, y); c.closePath(); c.fillStyle = COL.ground; c.fill(); c.stroke(); });
+    } else if (current === 'saturn') { // gelo e rocha: placas rachadas
+      [[-120, 40, 70], [40, 30, 90], [-40, 120, 120], [110, 150, 80]].forEach(function (k) { var x = CX + k[0], y = S + k[1], w = k[2]; c.beginPath(); c.moveTo(x - w / 2, y); c.lineTo(x - w / 6, y - 4); c.lineTo(x + w / 5, y + 3); c.lineTo(x + w / 2, y - 2); c.stroke(); });
+      ROCKS.forEach(function (k) { c.beginPath(); c.arc(CX + k[0], S + k[1] + 6, k[2] * .35, 0, 6.283); c.fillStyle = cream(.35); c.fill(); });
+    } else { // cristais de gelo de Tritão
+      CRYSTALS.forEach(function (k) { var x = CX + k[0], y = S + k[1], h = k[2];
+        [[-.5, .8], [0, 1.3], [.55, .9]].forEach(function (q) { var bx = x + q[0] * h * .7, hh = h * q[1]; c.beginPath(); c.moveTo(bx - h * .22, y); c.lineTo(bx, y - hh); c.lineTo(bx + h * .22, y); c.closePath(); c.fillStyle = 'rgba(132,161,200,.18)'; c.fill(); c.stroke(); }); });
+    }
+    c.restore();
+  }
   function drawLand(c, t) {
     var S = surfaceY(t), descending = 1 - seg(t, 1, 4.6);
     sky(c, t, -(t * 30 * descending + Math.min(t, 1) * 0));
-    earthIcon(c);
-    if (S < H + 100) {
-      ground(c, S, 1800);
-      c.strokeStyle = cream(.3); c.lineWidth = 1.3;
-      CRATERS.forEach(function (k) { c.beginPath(); c.ellipse(CX + k[0], S + k[1], k[2], k[2] * .24, 0, 0, 6.283); c.stroke(); });
-    }
+    landSky(c);
+    if (S < H + 100) landGround(c, S);
     // poeira no toque
     var dk = seg(t, 4.3, 6.2);
     if (dk > 0 && dk < 1) for (var i = 0; i < 10; i++) { var s = i % 2 ? 1 : -1, n = Math.floor(i / 2); bubble(c, CX + s * (30 + n * 16 + 60 * eOut(dk)), S - 6 - n * 2, (7 + n * 2) * (1 - dk * .5), .7 * (1 - dk)); }
@@ -403,12 +481,99 @@ figure { margin: 0; display: flex; flex-direction: column; align-items: center; 
           c.beginPath(); c.moveTo(flagX, poleTop + 2); c.quadraticCurveTo(flagX + fw / 2, poleTop + 2 + wave, flagX + fw, poleTop + 2);
           c.lineTo(flagX + fw, poleTop + 38); c.quadraticCurveTo(flagX + fw / 2, poleTop + 38 + wave, flagX, poleTop + 38); c.closePath();
           c.fillStyle = COL.amber; c.fill(); c.restore();
-          if (ck > .9) { c.fillStyle = '#2a2a2a'; c.textAlign = 'center'; c.textBaseline = 'alphabetic'; c.font = '700 20px ' + FONT; c.fillText('7', flagX + 30, poleTop + 24); c.font = '500 9px ' + FONT; c.fillText('noites', flagX + 30, poleTop + 34); }
+          if (ck > .9) { c.fillStyle = '#2a2a2a'; c.textAlign = 'center'; c.textBaseline = 'alphabetic'; c.font = '700 20px ' + FONT; c.fillText(String(PLANETS[current].flag), flagX + 30, poleTop + 24); c.font = '500 9px ' + FONT; c.fillText('noites', flagX + 30, poleTop + 34); }
         }
       }
       astronaut(c, x, y, t, walking, seg(t, 11.4, 11.5));
     }
+    var lk = seg(t, 11.6, 12.4);
+    if (lk > 0) { c.fillStyle = cream(.85 * lk); c.font = '500 24px ' + FONT; c.textAlign = 'center'; c.textBaseline = 'alphabetic'; c.fillText({ moon: 'pouso na lua', mars: 'pouso em marte', saturn: 'pouso em saturno', neptune: 'pouso em netuno' }[current], CX, 262); }
   }
+
+  // ---------- planetas ----------
+  var PLANETS = {
+    moon:    { name: 'lua',     days: 0,  tint: '253,248,199', flag: 3 },
+    mars:    { name: 'marte',   days: 7,  tint: '219,129,73',  flag: 7 },
+    saturn:  { name: 'saturno', days: 15, tint: '242,176,94',  flag: 15 },
+    neptune: { name: 'netuno',  days: 30, tint: '132,161,200', flag: 30 }
+  };
+  var ORDER = ['moon', 'mars', 'saturn', 'neptune'];
+  var current = 'moon';
+
+  function clipCircle(c, x, y, r) { c.beginPath(); c.arc(x, y, r - .5, 0, 6.283); c.clip(); }
+  // Planeta em traço. dashed = ainda não alcançado.
+  function planet(c, id, x, y, r, opt) {
+    opt = opt || {};
+    var P = PLANETS[id], a = opt.alpha == null ? 1 : opt.alpha, lw = Math.max(1.2, r / 14);
+    c.save(); c.globalAlpha = a; c.lineWidth = lw;
+    if (opt.dashed) c.setLineDash([3, 4]);
+    var tilt = -0.32;
+    function ringHalf(front) { // anel de Saturno: metade de trás antes do corpo, da frente depois
+      c.save(); c.translate(x, y); c.rotate(tilt);
+      c.beginPath(); c.ellipse(0, 0, r * 1.95, r * .52, 0, front ? 0 : Math.PI, front ? Math.PI : 2 * Math.PI);
+      c.strokeStyle = cream(.95); c.stroke();
+      c.beginPath(); c.ellipse(0, 0, r * 1.6, r * .4, 0, front ? 0 : Math.PI, front ? Math.PI : 2 * Math.PI);
+      c.strokeStyle = cream(.4); c.lineWidth = lw * .8; c.stroke(); c.restore();
+    }
+    if (id === 'saturn') ringHalf(false);
+    if (id === 'neptune') { c.save(); c.translate(x, y); c.rotate(.2); c.beginPath(); c.ellipse(0, 0, r * 1.55, r * .3, 0, Math.PI, 2 * Math.PI); c.strokeStyle = cream(.3); c.lineWidth = lw * .7; c.stroke(); c.restore(); }
+    c.beginPath(); c.arc(x, y, r, 0, 6.283);
+    c.fillStyle = COL.bg; c.fill();
+    if (!opt.dashed) { c.fillStyle = 'rgba(' + P.tint + ',.22)'; c.fill(); }
+    c.strokeStyle = cream(1); c.stroke();
+    c.save(); clipCircle(c, x, y, r); c.strokeStyle = cream(.55); c.lineWidth = lw * .85;
+    if (id === 'moon') {
+      c.beginPath(); c.arc(x + r * .55, y - r * .1, r * .95, 0, 6.283); c.fillStyle = 'rgba(35,37,44,.35)'; c.fill();
+      c.beginPath(); c.arc(x - r * .35, y - r * .3, r * .22, 0, 6.283); c.moveTo(x - r * .05 + r * .14, y + r * .35); c.arc(x - r * .05, y + r * .35, r * .14, 0, 6.283); c.moveTo(x - r * .45 + r * .1, y + r * .25); c.arc(x - r * .45, y + r * .25, r * .1, 0, 6.283); c.stroke();
+    } else if (id === 'mars') {
+      c.beginPath();
+      [-.15, .3].forEach(function (k) { var yy = y + r * k; c.moveTo(x - r, yy); for (var i = 0; i <= 8; i++) { var xx = x - r + i * r / 4; c.lineTo(xx, yy + Math.sin(i * 1.3 + k * 5) * r * .07); } });
+      c.stroke();
+      c.beginPath(); c.ellipse(x, y - r * .86, r * .42, r * .16, 0, 0, 6.283); c.fillStyle = cream(.8); c.fill();
+    } else if (id === 'saturn') {
+      c.beginPath(); [-.45, -.1, .35].forEach(function (k) { c.moveTo(x - r, y + r * k); c.quadraticCurveTo(x, y + r * k + r * .12, x + r, y + r * k); }); c.stroke();
+    } else if (id === 'neptune') {
+      c.beginPath(); [-.5, .05, .5].forEach(function (k) { c.moveTo(x - r, y + r * k); c.lineTo(x + r, y + r * k); }); c.stroke();
+      c.beginPath(); c.ellipse(x - r * .3, y - r * .2, r * .2, r * .11, 0, 0, 6.283); c.fillStyle = 'rgba(35,37,44,.55)'; c.fill(); c.stroke();
+    }
+    c.restore();
+    if (id === 'saturn') ringHalf(true);
+    c.restore();
+  }
+
+  // ---------- mapa da jornada ----------
+  var mapC = (function () { var cv = document.getElementById('c-map'), d = Math.min(window.devicePixelRatio || 1, 2); cv.width = 900 * d; cv.height = 200 * d; var c = cv.getContext('2d'); c.setTransform(d, 0, 0, d, 0, 0); c.lineCap = 'round'; c.lineJoin = 'round'; return c; })();
+  var MAPX = [90, 330, 570, 810], MAPY = 92;
+  function mapPos(streak) { // posição do foguete na rota
+    for (var i = 0; i < 3; i++) { var a = PLANETS[ORDER[i]].days, b = PLANETS[ORDER[i + 1]].days; if (streak < b) { var k = (streak - a) / (b - a); return { x: lerp(MAPX[i], MAPX[i + 1], k), i: i, k: k }; } }
+    return { x: MAPX[3], i: 3, k: 0 };
+  }
+  function drawMap(streak) {
+    var c = mapC; c.clearRect(0, 0, 900, 200);
+    var pos = mapPos(streak);
+    // rota: feita = traço cheio âmbar; falta = pontilhado
+    c.lineWidth = 2;
+    c.setLineDash([]); c.strokeStyle = amber(.9); c.beginPath(); c.moveTo(MAPX[0], MAPY); c.lineTo(pos.x, MAPY); c.stroke();
+    c.setLineDash([2, 8]); c.strokeStyle = cream(.4); c.beginPath(); c.moveTo(pos.x, MAPY); c.lineTo(MAPX[3], MAPY); c.stroke(); c.setLineDash([]);
+    ORDER.forEach(function (id, i) {
+      var P = PLANETS[id], reached = streak >= P.days, r = id === 'saturn' ? 22 : 27;
+      planet(c, id, MAPX[i], MAPY, r, { dashed: !reached, alpha: reached ? 1 : .6 });
+      c.textAlign = 'center'; c.textBaseline = 'alphabetic';
+      c.fillStyle = cream(reached ? .95 : .55); c.font = '500 15px ' + FONT; c.fillText(P.name, MAPX[i], 158);
+      c.fillStyle = cream(.5); c.font = '400 12px ' + FONT; c.fillText(P.days === 0 ? 'desde a 1ª noite' : P.days + ' noites', MAPX[i], 178);
+    });
+    // foguete pequeno deitado na rota
+    if (pos.i < 3) {
+      c.save(); c.translate(pos.x, MAPY - 30); c.rotate(Math.PI / 2); c.scale(.32, .32);
+      c.translate(-CX, -CY); rocketBody(c, { glow: 1 }); c.restore();
+      var faltam = PLANETS[ORDER[pos.i + 1]].days - streak;
+      c.fillStyle = amber(1); c.font = '500 12px ' + FONT; c.textAlign = 'center';
+      c.fillText('faltam ' + faltam + (faltam === 1 ? ' noite' : ' noites'), pos.x, MAPY - 52);
+    }
+  }
+  var slider = document.getElementById('streak'), out = document.getElementById('streak-out');
+  function syncMap() { var v = +slider.value; out.textContent = v + (v === 1 ? ' noite' : ' noites'); drawMap(v); }
+  slider.addEventListener('input', syncMap);
 
   // ---------- relógios ----------
   var scenes = {
@@ -432,7 +597,13 @@ figure { margin: 0; display: flex; flex-direction: column; align-items: center; 
   document.querySelectorAll('[data-replay]').forEach(function (b) { b.addEventListener('click', function () { var s = scenes[b.dataset.replay]; s.t = 0; s.playing = true; syncButtons(); }); });
   document.querySelectorAll('[data-pause]').forEach(function (b) { b.addEventListener('click', function () { var s = scenes[b.dataset.pause]; s.playing = !s.playing; syncButtons(); }); });
   syncButtons();
+  document.querySelectorAll('[data-planet]').forEach(function (b) { b.addEventListener('click', function () {
+    current = b.dataset.planet;
+    document.querySelectorAll('[data-planet]').forEach(function (o) { o.setAttribute('aria-pressed', String(o === b)); });
+    if (scenes.land.playing) scenes.land.t = 0;
+  }); });
+  window.__planet = function (id) { current = id; };
   window.__seek = function (name, t) { scenes[name].t = t; scenes[name].playing = false; syncButtons(); };
-  (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(function () { requestAnimationFrame(frame); });
+  (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(function () { syncMap(); requestAnimationFrame(frame); });
 })();
 </script>
