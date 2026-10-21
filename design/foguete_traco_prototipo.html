@@ -39,6 +39,8 @@ figure { margin: 0; display: flex; flex-direction: column; align-items: center; 
 .seg button { border: 0; font: inherit; font-size: 15px; padding: 9px 18px; border-radius: 999px; background: transparent; color: var(--ink); cursor: pointer; }
 .seg button[aria-pressed="true"] { background: var(--amber); color: var(--amber-ink); }
 .seg button:focus-visible, .slider input:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+.row.four { gap: 16px; }
+.phone.sm { width: 210px; border-radius: 30px; border-width: 5px; }
 .hint { margin: 0; max-width: 60ch; font-size: 14px; line-height: 1.5; color: var(--muted); }
 .mapcard { width: 100%; max-width: 900px; padding: 16px; border-radius: 28px; background: linear-gradient(160deg, rgba(120,98,76,.3), rgba(52,44,38,.4)), #23252c; border: 1px solid var(--edge); display: flex; flex-direction: column; gap: 10px; }
 .mapcard canvas { width: 100%; height: auto; aspect-ratio: 900 / 200; display: block; }
@@ -86,6 +88,17 @@ figure { margin: 0; display: flex; flex-direction: column; align-items: center; 
       <div class="ctl"><button type="button" class="primary" data-replay="land">repetir</button><button type="button" data-pause="land">pausar</button></div>
     </figure>
   </div>
+
+  <section class="dest" aria-label="Os quatro pousos">
+    <h2>os quatro pousos</h2>
+    <div class="row four">
+      <figure><div class="phone sm"><canvas id="c-land-moon" width="390" height="844" aria-label="Pouso na Lua"></canvas></div><figcaption>lua · 1ª noite</figcaption></figure>
+      <figure><div class="phone sm"><canvas id="c-land-mars" width="390" height="844" aria-label="Pouso em Marte"></canvas></div><figcaption>marte · 7 noites</figcaption></figure>
+      <figure><div class="phone sm"><canvas id="c-land-saturn" width="390" height="844" aria-label="Pouso em Saturno"></canvas></div><figcaption>saturno · 15 noites</figcaption></figure>
+      <figure><div class="phone sm"><canvas id="c-land-neptune" width="390" height="844" aria-label="Pouso em Netuno"></canvas></div><figcaption>netuno · 30 noites</figcaption></figure>
+    </div>
+    <div class="ctl"><button type="button" class="primary" id="replay-four">repetir os quatro</button></div>
+  </section>
 
   <section class="map" aria-label="Mapa da jornada">
     <h2>mapa da jornada</h2>
@@ -581,6 +594,9 @@ figure { margin: 0; display: flex; flex-direction: column; align-items: center; 
     meteor: { c: setup('c-meteor'), draw: drawMeteor, len: 12, still: 8 },
     land:   { c: setup('c-land'),   draw: drawLand,   len: 14.5, still: 12.5 }
   };
+  ['moon', 'mars', 'saturn', 'neptune'].forEach(function (id) {
+    scenes['land-' + id] = { c: setup('c-land-' + id), draw: drawLand, len: 14.5, still: 12.6, planet: id };
+  });
   var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   Object.keys(scenes).forEach(function (k) { var s = scenes[k]; s.t = reduce ? s.still : 0; s.playing = !reduce; });
   var last = null;
@@ -589,7 +605,8 @@ figure { margin: 0; display: flex; flex-direction: column; align-items: center; 
     Object.keys(scenes).forEach(function (k) {
       var s = scenes[k];
       if (s.playing) { s.t += dt; if (s.t > s.len) s.t = 0; }
-      s.draw(s.c, s.t);
+      if (s.planet) { var keep = current; current = s.planet; s.draw(s.c, s.t); current = keep; }
+      else s.draw(s.c, s.t);
     });
     requestAnimationFrame(frame);
   }
@@ -597,6 +614,9 @@ figure { margin: 0; display: flex; flex-direction: column; align-items: center; 
   document.querySelectorAll('[data-replay]').forEach(function (b) { b.addEventListener('click', function () { var s = scenes[b.dataset.replay]; s.t = 0; s.playing = true; syncButtons(); }); });
   document.querySelectorAll('[data-pause]').forEach(function (b) { b.addEventListener('click', function () { var s = scenes[b.dataset.pause]; s.playing = !s.playing; syncButtons(); }); });
   syncButtons();
+  document.getElementById('replay-four').addEventListener('click', function () {
+    ['moon', 'mars', 'saturn', 'neptune'].forEach(function (id) { var s = scenes['land-' + id]; s.t = 0; s.playing = true; });
+  });
   document.querySelectorAll('[data-planet]').forEach(function (b) { b.addEventListener('click', function () {
     current = b.dataset.planet;
     document.querySelectorAll('[data-planet]').forEach(function (o) { o.setAttribute('aria-pressed', String(o === b)); });
