@@ -19,7 +19,7 @@
   let W = 0, H = 0, DPR = 1;
   function resize(){
     const r = canvas.getBoundingClientRect();
-    DPR = Math.min(window.devicePixelRatio || 1, 2);
+    DPR = Math.min(window.devicePixelRatio || 1, matchMedia('(pointer:coarse)').matches ? 1.5 : 2);
     W = r.width; H = r.height;
     canvas.width = Math.round(W * DPR); canvas.height = Math.round(H * DPR);
   }
@@ -376,7 +376,8 @@
     phaseEl.textContent = t < METEOR_START ? 'foguete em voo' : t < IMPACT ? 'meteoro chegando' : t < RISE_START ? 'explosão' : t < RISE_START + RISE ? 'voltando pra Terra' : 'canteiro de obras (loop)';
   }
 
-  window.__scrub = (t) => frame(t);
+  let __last = -1;
+  window.__scrub = (t) => { if (t === __last) return; __last = t; frame(t); };
   window.__DURATION = RISE_START + RISE + .6;
   frame(0);
 })();

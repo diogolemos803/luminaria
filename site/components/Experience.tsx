@@ -48,6 +48,7 @@ export default function Experience() {
   const [cycleIndex, setCycleIndex] = useState(0);
   const [paused, setPaused] = useState(false); // parou o ciclo ao escolher uma cor
   const [menuOpen, setMenuOpen] = useState(false);
+  const [touched, setTouched] = useState(false); // já interagiu com o Day Finisher: some a dica
   const [auto, setAuto] = useState(false); // "alternar sozinha": cicla sem precisar do cartão aberto
   const leaveTimer = useRef<ReturnType<typeof setTimeout>>();
   const pointerType = useRef("mouse");
@@ -84,6 +85,9 @@ export default function Experience() {
     return () => clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lampActive, auto, paused, mode]);
+  useEffect(() => {
+    if (lampActive) setTouched(true);
+  }, [lampActive]);
   const colorIndex = mode === "night" ? ((lampActive || auto) && !paused ? cycleIndex : picked) : 0;
 
   const hoverIn = useCallback(() => {
@@ -170,6 +174,18 @@ export default function Experience() {
               onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), setLampActive((a) => !a))}
             />
 
+            {/* dica: convida a tocar no Day Finisher (some depois da primeira interação) */}
+            {ready && (
+              <div className={`lamp-hint ${night ? "" : "is-day"} ${touched || menuOpen ? "is-hidden" : ""}`} style={{ left: "50%", top: "45%" }} aria-hidden="true">
+                <i className="lamp-hint-ring" />
+                <i className="lamp-hint-dot" />
+                <span className="lamp-hint-label">
+                  <b className="lh-tap">{t.experience.tapHint}</b>
+                  <b className="lh-hover">{t.experience.hoverHint}</b>
+                </span>
+              </div>
+            )}
+
           </motion.div>
         </div>
       </motion.div>
@@ -219,10 +235,10 @@ export default function Experience() {
             <i className="brand-mark" aria-hidden="true" />
             <Wordmark />
           </div>
-          <Link href="/lista" className={`buy-cta ${night ? "" : "is-day"}`} style={{ ["--lc" as string]: lampColor }}>
+          <Link href="/lista" className={`buy-cta ${night ? "" : "is-day"} ${menuOpen ? "is-hidden" : ""}`} style={{ ["--lc" as string]: lampColor }}>
             {t.nav.waitlist}
           </Link>
-          <nav className={`home-links ${night ? "" : "is-day"}`} aria-label={t.pagesNav}>
+          <nav className={`home-links ${night ? "" : "is-day"} ${menuOpen ? "is-hidden" : ""}`} aria-label={t.pagesNav}>
             <a href="https://instagram.com/the.sovee" target="_blank" rel="noopener noreferrer">{t.nav.instagram}</a>
             <Link href="/lista">{t.nav.waitlist}</Link>
           </nav>

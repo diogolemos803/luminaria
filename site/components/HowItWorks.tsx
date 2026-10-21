@@ -126,14 +126,45 @@ export default function HowItWorks() {
       L.Ey = L.objCy - isoH0 / 2 + NICHE[1] * L.k0;
     }
 
-    function setLayer(el: HTMLElement | null, o: number) {
-      if (el) el.style.opacity = String(o);
+    // só escreve no DOM quando o valor muda: menos recálculo de estilo e menos repintura a cada quadro
+    const written = new WeakMap<Element, Record<string, string>>();
+    function put(el: HTMLElement | SVGElement | null | undefined, prop: string, val: string) {
+      if (!el) return;
+      let c = written.get(el);
+      if (!c) written.set(el, (c = {}));
+      if (c[prop] === val) return;
+      c[prop] = val;
+      if (prop.startsWith("--")) el.style.setProperty(prop, val);
+      else (el.style as unknown as Record<string, string>)[prop] = val;
+    }
+    function putAttr(el: Element, name: string, val: string) {
+      let c = written.get(el);
+      if (!c) written.set(el, (c = {}));
+      const key = `@${name}`;
+      if (c[key] === val) return;
+      c[key] = val;
+      el.setAttribute(name, val);
     }
 
+    function setLayer(el: HTMLElement | null, o: number) {
+      put(el, "opacity", String(o));
+    }
+
+    let dirty = true;
+    let trTop = 0;
+    let maxScroll = 1;
+    let lastLaunchMs = -1;
+    let lastLandMs = -1;
+    let lastMeteorT = -1;
+
     function update() {
-      measure();
-      const max = tr!.offsetHeight - sc!.clientHeight;
-      const p = clamp01((sc!.scrollTop - tr!.offsetTop) / Math.max(1, max));
+      if (dirty) {
+        measure();
+        trTop = tr!.offsetTop;
+        maxScroll = Math.max(1, tr!.offsetHeight - sc!.clientHeight);
+        dirty = false;
+      }
+      const p = clamp01((sc!.scrollTop - trTop) / maxScroll);
 
       /* --- câmera e celular: o mesmo celular, com rotação rígida, sem deformar --- */
       const segA = ease(seg(p, 0.135, 0.3));
@@ -154,25 +185,25 @@ export default function HowItWorks() {
       L.nicheX = px;
       L.nicheY = py;
       if (iso.current) {
-        iso.current.style.width = `${L.isoW}px`;
-        iso.current.style.height = `${L.isoH}px`;
-        iso.current.style.left = `${L.isoX}px`;
-        iso.current.style.top = `${L.isoY}px`;
+        put(iso.current, "width", `${L.isoW}px`);
+        put(iso.current, "height", `${L.isoH}px`);
+        put(iso.current, "left", `${L.isoX}px`);
+        put(iso.current, "top", `${L.isoY}px`);
       }
       const cx = px + lift * 0.3 * k;
       const cy = py - (lift + 7) * k; // 7: o corpo do celular assenta dentro do nicho
       if (phone.current) {
-        phone.current.style.transform = `translate(${cx - 150}px, ${cy - 313}px) perspective(3000px) rotateX(${60 * tilt}deg) rotateZ(${-59.9 * tilt}deg) scale3d(${PHONE_SCALE * k}, ${PHONE_SCALE * k}, ${PHONE_SCALE * k})`; // 3d: a espessura escala junto
-        phone.current.style.opacity = "1";
+        put(phone.current, "transform", `translate(${cx - 150}px, ${cy - 313}px) perspective(3000px) rotateX(${60 * tilt}deg) rotateZ(${-59.9 * tilt}deg) scale3d(${PHONE_SCALE * k}, ${PHONE_SCALE * k}, ${PHONE_SCALE * k})`); // 3d: a espessura escala junto
+        put(phone.current, "opacity", "1");
       }
       // deitado no nicho: corpo escuro e fosco com o traço fino claro do desenho
-      if (frameEl.current) frameEl.current.style.opacity = "1";
+      if (frameEl.current) put(frameEl.current, "opacity", "1");
       // a espessura e o traço acompanham o celular em toda a animação; de frente o traço fica mais suave
-      if (wireEl.current) wireEl.current.style.opacity = String(0.55 + 0.45 * tilt);
-      if (slabsEl.current) slabsEl.current.style.opacity = "1";
+      if (wireEl.current) put(wireEl.current, "opacity", String(0.55 + 0.45 * tilt));
+      if (slabsEl.current) put(slabsEl.current, "opacity", "1");
       // tela apagada enquanto o celular fica no nicho
       const off = p < 0.5 ? ease(seg(p, 0.265, 0.3)) : p < 0.88 ? 1 - ease(seg(p, 0.545, 0.575)) : ease(seg(p, 0.9, 0.93));
-      if (blackLayer.current) blackLayer.current.style.opacity = String(off);
+      if (blackLayer.current) put(blackLayer.current, "opacity", String(off));
 
       /* --- telas do app --- */
       const toNight = seg(p, 0.05, 0.068);
@@ -182,12 +213,12 @@ export default function HowItWorks() {
       setLayer(okLayer.current, toNight * recognized);
       if (tap.current) {
         const q = seg(p, 0.036, 0.062);
-        tap.current.style.opacity = String(q > 0 && q < 1 ? 1 - q : 0);
-        tap.current.style.transform = `translate(-50%,-50%) scale(${lerp(0.55, 1.35, q)})`;
+        put(tap.current, "opacity", String(q > 0 && q < 1 ? 1 - q : 0));
+        put(tap.current, "transform", `translate(-50%,-50%) scale(${lerp(0.55, 1.35, q)})`);
       }
       const appOp = 1 - seg(p, 0.555, 0.575);
       [dayLayer.current, nightLayer.current, okLayer.current].forEach((el) => {
-        if (el) el.style.visibility = appOp > 0 ? "visible" : "hidden";
+        if (el) put(el, "visibility", appOp > 0 ? "visible" : "hidden");
       });
       if (appOp < 1) {
         setLayer(dayLayer.current, (1 - toNight) * appOp);
@@ -197,15 +228,25 @@ export default function HowItWorks() {
 
       const launchOp = seg(p, 0.555, 0.575) * (1 - seg(p, 0.665, 0.685));
       setLayer(launchEl.current, launchOp);
+      // cena fora de vista: o navegador não precisa pintar nem compor nada dela (ela travava o celular mesmo transparente)
+      put(launchEl.current, "contentVisibility", launchOp > 0 ? "visible" : "hidden");
+      if (launchOp <= 0) lastLaunchMs = -1;
       const launchMs = lerp(0, 7500, seg(p, 0.56, 0.665));
-      if (launchOp > 0) launchAnims.forEach((a) => (a.currentTime = launchMs));
+      if (launchOp > 0 && launchMs !== lastLaunchMs) {
+        lastLaunchMs = launchMs;
+        launchAnims.forEach((a) => (a.currentTime = launchMs));
+      }
 
       const meteorOp = seg(p, 0.665, 0.685) * (1 - seg(p, 0.775, 0.795));
       setLayer(meteorEl.current as unknown as HTMLElement, meteorOp);
       if (meteorOp > 0) {
         try {
           const w = meteorEl.current?.contentWindow as (Window & { __scrub?: (t: number) => void; __DURATION?: number }) | null | undefined;
-          w?.__scrub?.(lerp(0, w.__DURATION ?? 6.3, seg(p, 0.67, 0.775)));
+          const mt = lerp(0, w?.__DURATION ?? 6.3, seg(p, 0.67, 0.775));
+          if (mt !== lastMeteorT) {
+            lastMeteorT = mt;
+            w?.__scrub?.(mt);
+          }
         } catch {
           /* iframe ainda carregando */
         }
@@ -213,29 +254,34 @@ export default function HowItWorks() {
 
       const landOp = seg(p, 0.775, 0.795);
       setLayer(landEl.current, landOp);
+      put(landEl.current, "contentVisibility", landOp > 0 ? "visible" : "hidden");
+      if (landOp <= 0) lastLandMs = -1;
       const landMs = lerp(0, 9200, seg(p, 0.785, 0.905));
-      if (landOp > 0) landAnims.forEach((a) => (a.currentTime = landMs));
+      if (landOp > 0 && landMs !== lastLandMs) {
+        lastLandMs = landMs;
+        landAnims.forEach((a) => (a.currentTime = landMs));
+      }
 
       /* --- desenho do Day Finisher --- */
       const isoIn = ease(seg(p, 0.13, 0.2));
       const dim = seg(p, 0.545, 0.58) * (1 - seg(p, 0.9, 0.94));
-      if (iso.current) iso.current.style.opacity = String(isoIn * lerp(1, 0.28, dim));
+      if (iso.current) put(iso.current, "opacity", String(isoIn * lerp(1, 0.28, dim)));
 
       // luz: acende na etapa 3, muda de cor na 4, apaga de manhã
       const I = ease(seg(p, 0.36, 0.42)) * (1 - ease(seg(p, 0.88, 0.93)));
       let color = AMBER;
       if (p >= 0.44 && p < 0.5) color = mix(AMBER, ORANGE, ease(seg(p, 0.44, 0.5)));
       else if (p >= 0.5) color = mix(ORANGE, RED, ease(seg(p, 0.5, 0.56)));
-      if (iso.current) iso.current.style.setProperty("--lc", color);
-      if (lampFill.current) lampFill.current.style.opacity = String(I);
-      if (glow.current) glow.current.style.opacity = String(I * 0.85);
+      if (iso.current) put(iso.current, "--lc", color);
+      if (lampFill.current) put(lampFill.current, "opacity", String(I));
+      if (glow.current) put(glow.current, "opacity", String(I * 0.85));
       if (ambient.current) {
-        ambient.current.style.setProperty("--lc", color);
-        ambient.current.style.opacity = String(I * 0.55 * lerp(1, 0.5, dim));
-        ambient.current.style.left = `${L.isoX + 337 * (L.isoW / 1080)}px`;
-        ambient.current.style.top = `${L.isoY + 590 * (L.isoH / 1350)}px`;
-        ambient.current.style.width = `${L.isoW * 1.9}px`;
-        ambient.current.style.height = `${L.isoW * 1.9}px`;
+        put(ambient.current, "--lc", color);
+        put(ambient.current, "opacity", String(I * 0.55 * lerp(1, 0.5, dim)));
+        put(ambient.current, "left", `${L.isoX + 337 * (L.isoW / 1080)}px`);
+        put(ambient.current, "top", `${L.isoY + 590 * (L.isoH / 1350)}px`);
+        put(ambient.current, "width", `${L.isoW * 1.9}px`);
+        put(ambient.current, "height", `${L.isoW * 1.9}px`);
       }
 
       // ondas do NFC
@@ -244,9 +290,9 @@ export default function HowItWorks() {
         if (!el) return;
         const f = clamp01(q * 1.6 - i * 0.22);
         const r = lerp(0.12, 0.95, f);
-        el.setAttribute("rx", String(r / 2.24));
-        el.setAttribute("ry", String(r));
-        el.style.opacity = String(f > 0 && f < 1 ? (1 - f) * 0.9 : 0);
+        putAttr(el, "rx", String(r / 2.24));
+        putAttr(el, "ry", String(r));
+        put(el, "opacity", String(f > 0 && f < 1 ? (1 - f) * 0.9 : 0));
       });
 
       // legenda da cor da luz
@@ -254,16 +300,16 @@ export default function HowItWorks() {
       swatches.current.forEach((el, i) => el?.setAttribute("data-on", String(i === ci)));
       if (colorName.current) {
         colorName.current.textContent = tRef.current.how.colorNames[ci];
-        colorName.current.style.color = color;
-        colorName.current.style.opacity = String(I * (1 - seg(p, 0.545, 0.575)));
-        colorName.current.style.left = `${L.objCx}px`;
-        colorName.current.style.top = `${L.mobile ? H * 0.06 + 52 : H * 0.05 + 56}px`;
+        put(colorName.current, "color", color);
+        put(colorName.current, "opacity", String(I * (1 - seg(p, 0.545, 0.575))));
+        put(colorName.current, "left", `${L.objCx}px`);
+        put(colorName.current, "top", `${L.mobile ? H * 0.06 + 52 : H * 0.05 + 56}px`);
       }
-      if (phone.current) phone.current.style.setProperty("--sh", String(1 - tilt));
-      if (phone.current) phone.current.style.setProperty("--tilt", String(tilt));
+      if (phone.current) put(phone.current, "--sh", String(1 - tilt));
+      if (phone.current) put(phone.current, "--tilt", String(tilt));
 
       // sombra do celular no nicho
-      if (isoShadow.current) isoShadow.current.style.opacity = String(tilt * clamp01(1 - lift / 260) * 0.4);
+      if (isoShadow.current) put(isoShadow.current, "opacity", String(tilt * clamp01(1 - lift / 260) * 0.4));
 
       // relógio da noite
       if (clock.current) {
@@ -271,16 +317,16 @@ export default function HowItWorks() {
         const hh = Math.floor((mins % 1440) / 60);
         const mm = mins % 60;
         clock.current.textContent = `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
-        clock.current.style.opacity = String(seg(p, 0.29, 0.32) * (1 - seg(p, 0.9, 0.93)));
-        clock.current.style.left = `${L.objCx}px`;
-        clock.current.style.top = `${L.mobile ? H * 0.06 : H * 0.05}px`;
+        put(clock.current, "opacity", String(seg(p, 0.29, 0.32) * (1 - seg(p, 0.9, 0.93))));
+        put(clock.current, "left", `${L.objCx}px`);
+        put(clock.current, "top", `${L.mobile ? H * 0.06 : H * 0.05}px`);
       }
       if (chip.current) {
-        chip.current.style.opacity = String(seg(p, 0.36, 0.39) * (1 - seg(p, 0.54, 0.565)));
-        chip.current.style.left = `${L.nicheX}px`;
-        chip.current.style.top = `${L.nicheY + L.isoH * 0.13}px`;
+        put(chip.current, "opacity", String(seg(p, 0.36, 0.39) * (1 - seg(p, 0.54, 0.565))));
+        put(chip.current, "left", `${L.nicheX}px`);
+        put(chip.current, "top", `${L.nicheY + L.isoH * 0.13}px`);
       }
-      if (hint.current) hint.current.style.opacity = String(1 - seg(p, 0.015, 0.05));
+      if (hint.current) put(hint.current, "opacity", String(1 - seg(p, 0.015, 0.05)));
 
       /* --- cards --- */
       chapters.forEach((c, i) => {
@@ -289,14 +335,14 @@ export default function HowItWorks() {
         const a = seg(p, c.from + 0.012, c.from + 0.035);
         const b = 1 - seg(p, c.to - 0.025, c.to - 0.004);
         const o = Math.min(a, b);
-        el.style.opacity = String(o);
-        el.style.transform = `translateY(${(1 - a) * 22 - (1 - b) * 22}px)`;
+        put(el, "opacity", String(o));
+        put(el, "transform", `translateY(${(1 - a) * 22 - (1 - b) * 22}px)`);
       });
       if (finalCard.current) {
         const a = seg(p, FINAL.from + 0.006, FINAL.from + 0.03);
-        finalCard.current.style.opacity = String(a);
-        finalCard.current.style.transform = `translateY(${(1 - a) * 22}px)`;
-        finalCard.current.style.pointerEvents = a > 0.6 ? "auto" : "none";
+        put(finalCard.current, "opacity", String(a));
+        put(finalCard.current, "transform", `translateY(${(1 - a) * 22}px)`);
+        put(finalCard.current, "pointerEvents", a > 0.6 ? "auto" : "none");
       }
       const active = p >= FINAL.from ? chapters.length : chapters.findIndex((c) => p >= c.from && p < c.to);
       dots.current.forEach((d, i) => d?.setAttribute("aria-current", i === active ? "step" : "false"));
@@ -308,15 +354,19 @@ export default function HowItWorks() {
       raf = requestAnimationFrame(update);
     };
     sc.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll);
-    const ro = new ResizeObserver(onScroll);
+    const onResize = () => {
+      dirty = true;
+      onScroll();
+    };
+    window.addEventListener("resize", onResize);
+    const ro = new ResizeObserver(onResize);
     ro.observe(st);
     update();
     return () => {
       cancelAnimationFrame(setup);
       cancelAnimationFrame(raf);
       sc.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onScroll);
+      window.removeEventListener("resize", onResize);
       ro.disconnect();
     };
   }, []);
