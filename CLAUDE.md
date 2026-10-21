@@ -310,51 +310,38 @@ depende de CI num runner macOS na nuvem (GitHub Actions) e de sideload via AltSt
   removeShield` troca `.alarmFired` por `.rocketDestroyed` (caso novo de
   `DetoxSessionEndReason`, fora das noites limpas; versões antigas leem como
   `.alarmFired` pelo decode tolerante).
-- `Luminaria/RocketScenes.swift` — tradução em SwiftUI dos três protótipos aprovados
-  (`design/entrada_prototipo.html`, `decolagem_prototipo.html`, `pouso_prototipo.html`).
-  Tudo num `Canvas` dentro de `TimelineView(.animation)`, desenhado no MESMO espaço de
-  coordenadas dos protótipos (390×844, "aspect fill", ponto 195×422 = centro do
-  foguete = centro da tela) e como função pura do tempo, com os mesmos atrasos,
-  durações e curvas `cubic-bezier` do CSS (`SceneCurve`, `SceneTime.sample` aplica a
-  curva por trecho de keyframe como o CSS faz) — ajustar o protótipo e o Swift é trocar
-  o mesmo número. `LaunchScene` (entrada + decolagem; `sceneStart` define o t=0, chama
-  `liftoffAnimationCompleted()` ao assentar e cai pra 30fps em repouso) e
-  `MoonLandingScene(streakDays:)` (pouso na tela do despertador, bandeira com os dias;
-  espera `LandingPainter.holdBeforeLanding` = 1s com o foguete descendo antes da Lua
-  subir — pedido do usuário, não existe no protótipo, que começa direto).
-  `RocketArt` tem o foguete (com porta que abre), a chama e a fumaça compartilhados
-  pelas duas cenas. **Divergências do Swift em relação aos protótipos (pedidos do
-  usuário em 2026-09-26, não existem nos HTML):** (1) foguete 40% menor
-  (`RocketArt.scale = 0.6`, a partir da base das barbatanas `pivot`, com
-  `centerCompensation` subindo a câmera pra ele continuar no centro — o chão aparece um
-  pouco mais no começo); chama, brilho, porta, rampa e o astronauta do pouso vão na mesma
-  escala, o trajeto do astronauta e as pegadas foram recalculados, a bandeira não mudou;
-  a descida do chão na decolagem recalcula o trecho linear pra continuar emendando com a
-  mesma velocidade; (2) meteoro + explosão + canteiro de obras (protótipo
-  `design/meteoro_prototipo.html`, 2026-09-28): a partir de `destroyedAt` uma rocha
-  irregular girando, com crateras, borda em brasa, rastro de fogo em 3 camadas e
-  fagulhas cruza até o foguete (`meteorTravel` 1,5s); no impacto clarão na tela inteira,
-  tremor, fumaça escura, o foguete partido em 6 pedaços (bico/corpo/barbatanas/bocal,
-  recortados do próprio desenho) girando e caindo com brasa, bola de fogo, 2 ondas de
-  choque e fagulhas (`explosionLength` 2,2s); 1,5s depois do impacto a Terra volta sem
-  foguete, com a câmera 1,5× mais perto (`siteZoom`/`siteFocusY`), num canteiro de obras
-  que roda em loop até o fim da noite (`drawLaunchBase(withTower: false)` +
-  `ConstructionSiteArt`). Não validado visualmente num device ainda (sem Mac/simulador aqui)
-  — só compilação no CI.
-- **Redesenho do foguete em traço — PROPOSTA, não aprovada (2026-10-20)**:
-  `design/foguete_traco_prototipo.html` redesenha as três cenas na linguagem do logo e do
-  desenho da luminária (linha creme fina, cantos redondos, cor só no que é luz: chama,
-  visor, escotilha, bandeira âmbar "7 noites", capacetes). Antes disso foi feita uma
-  versão só recolorida (`design/foguete_sovee_prototipo.html` + `*_sovee_prototipo.html`,
-  via `scripts/sovee_recolor.py`), que o usuário recusou ("não só as cores, mas
-  geometricamente"). Usuário vai pensar antes de passar pro Swift — exigiria reescrever o
-  desenho de `RocketScenes.swift` e `ConstructionSiteArt.swift`.
-- `Luminaria/ConstructionSiteArt.swift` — canteiro de obras noturno do foguete destruído
-  (protótipo aprovado `design/meteoro_prototipo.html`): andaime com holofotes, foguete pela
-  metade (parte de baixo pronta, de cima tracejada), guindaste subindo e descendo o bico,
-  cones, fita zebrada, placa "EM OBRAS", pilha de peças e 4 bonequinhos de capacete e
-  colete em loop — um martela, um solda (faíscas), um carrega painéis, um sinaliza pro
-  guindaste. Tudo função do relógio, no espaço de coordenadas do chão da decolagem.
+- `Luminaria/RocketScenes.swift` — **cenas do foguete no traço da marca (2026-10-21)**,
+  protótipo aprovado `design/foguete_traco_prototipo.html` (substituiu as cenas
+  "flat" anteriores, cujos protótipos continuam em `design/` como histórico). Linguagem do
+  logo e do desenho da luminária: linha creme fina, cantos redondos, cor só no que é luz
+  (chama, visor, escotilha, bandeira âmbar) e nas cores da marca que identificam o lugar
+  (Terra verde, Marte laranja, Lua creme). Tudo num `Canvas` no espaço 390×844 (foguete
+  em 195×422), escalado pra preencher a tela, função pura do tempo. Peças: `LineArt`
+  (paleta + ajudantes, inclusive `svg()` que lê caminhos M/L/C/Q/Z copiados do
+  protótipo), `RocketLine` (foguete e chama), `PlanetPainter` (Lua/Marte/Saturno/Netuno —
+  forma e cor de cada um; tracejado = ainda não alcançado), `SkyArt` (estrelas + destino
+  no alto do céu, "rumo a…"), `LaunchBaseArt` (Terra verde com platô, estrada, campos,
+  lago e árvores + **a base de lançamento antiga redesenhada em traço** — pedido do
+  usuário: deck, mesa com fosso, garras que abrem na ignição, torre com braço que recolhe
+  e luz piscando, prédio, tanques, poste — desenhada nas coordenadas do protótipo antigo
+  da decolagem, escala 0,9, mesa em `mesaY`), `LaunchScene(destinationID:sceneStart:
+  destroyedAt:)` (entrada → ignição → decolagem → voo; meteoro, explosão e canteiro),
+  `LandingScene(destinationID:streakDays:)` (pouso por planeta: Lua creme com a Terra no
+  céu; Marte laranja com dunas, Fobos e Deimos; **Saturno sem o planeta no céu — o anel
+  nasce do horizonte e cruza o céu na diagonal por trás do foguete e do chão**, decisão
+  do usuário; Netuno com cristais de gelo e Tritão), `AstronautArt` (o astronauta antigo:
+  roupa clara com contorno grafite, mochila, painel terracota, visor azul) e
+  `JourneyMapView` (mapa da jornada no relatório de sono). O destino é sempre
+  `GrowthDestinations.furthestUnlocked` (sequência atual). `AlarmRingingView` ganhou um
+  cartão escuro por baixo dos textos (o chão da Lua é creme). Constantes de tempo que o
+  resto do app usa continuam em `LaunchPainter` (`settleTime`, `siteSettledTime`).
+  Não validado visualmente num device ainda — só compilação no CI.
+- `Luminaria/ConstructionSiteArt.swift` — canteiro de obras do foguete destruído, no mesmo
+  traço: Terra + base sem a torre, foguete pela metade (de cima tracejado), andaime com
+  holofotes, guindaste com o bico pendurado, cones, fita, placa "em obras" e os **quatro
+  bonequinhos do protótipo antigo** (colete laranja com faixa, calça, botas, capacete
+  âmbar, contorno creme — o usuário não gostou dos bonecos palito) — um martela, um
+  solda, um carrega painéis e um orienta o guindaste.
 - **Lâmpada Zleepy por Bluetooth (2026-10-18)** — placa própria (ESP32-C3, BLE, duas fitas
   de LED âmbar e vermelha, 12 V; firmware escrito em outra conversa, testado só em PC, a
   placa ainda não foi fabricada). Independente do NFC: a luminária/tag continua armando o
