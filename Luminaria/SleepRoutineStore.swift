@@ -190,7 +190,7 @@ struct SleepRoutine: Identifiable, Codable, Equatable {
     var autoActivateWeekday: Bool
     var autoActivateWeekend: Bool
     var autoActivateEventKeyword: String?
-    /// Lâmpada Zleepy (Bluetooth): apagar devagar ao encostar na luminária e amanhecer
+    /// Lâmpada SOVEE (Bluetooth): apagar devagar ao encostar na luminária e amanhecer
     /// antes do despertador. Sem lâmpada pareada não fazem nada. Ver `LampManager`.
     var lampSleep: LampSleepSettings
     var lampWake: LampWakeSettings

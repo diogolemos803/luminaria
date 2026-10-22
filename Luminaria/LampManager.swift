@@ -44,7 +44,7 @@ protocol LampTransport: AnyObject {
     func readRoutine()
 }
 
-/// Lâmpada Zleepy (Bluetooth) — singleton no mesmo estilo de `AlarmManager`/
+/// Lâmpada SOVEE (Bluetooth) — singleton no mesmo estilo de `AlarmManager`/
 /// `ScreenTimeManager`. Guarda o identificador da lâmpada pareada, reconecta sozinho
 /// enquanto o app está aberto, acerta a hora da lâmpada a cada conexão (e sempre que ela
 /// avisa que perdeu a hora) e expõe o estado que a própria lâmpada informa.

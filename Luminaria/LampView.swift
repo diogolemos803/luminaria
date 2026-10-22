@@ -1,6 +1,6 @@
 import SwiftUI
 
-// Telas da lâmpada Zleepy (Bluetooth), aprovadas em `design/lampada_prototipo.html`
+// Telas da lâmpada SOVEE (Bluetooth), aprovadas em `design/lampada_prototipo.html`
 // (controle com a luminária desenhada no meio, 5 bolinhas em cima e o painel da bolinha
 // embaixo; pareamento; lâmpada ao dormir/ao acordar na rotina) e
 // `design/integracao_prototipo.html` (opção C: bolinha no canto da tela inicial).
@@ -32,11 +32,11 @@ extension LampLink {
         case .bluetoothOff:
             return "O Bluetooth do iPhone está desligado. Ligue na Central de Controle pra falar com a lâmpada."
         case .unauthorized:
-            return "O Luminária não tem permissão de Bluetooth. Ative em Ajustes → Luminária → Bluetooth."
+            return "O SOVEE não tem permissão de Bluetooth. Ative em Ajustes → SOVEE → Bluetooth."
         case .unsupportedVersion(let version):
-            return "Esta lâmpada usa uma versão do protocolo que o app não conhece (v\(version)). Atualize o app Luminária pra controlar ela."
+            return "Esta lâmpada usa uma versão do protocolo que o app não conhece (v\(version)). Atualize o app SOVEE pra controlar ela."
         case .staleBond:
-            return "O iPhone ainda guarda um pareamento antigo desta lâmpada. Vá em Ajustes → Bluetooth, toque no ⓘ da Zleepy Lamp e em “Esquecer este dispositivo”. Depois pareie de novo."
+            return "O iPhone ainda guarda um pareamento antigo desta lâmpada. Vá em Ajustes → Bluetooth, toque no ⓘ da \(LampProtocol.settingsName) e em “Esquecer este dispositivo”. Depois pareie de novo."
         case .pairingRejected:
             return "A lâmpada recusou o pareamento. Segure o toque da lâmpada por 3 segundos até ela piscar âmbar e tente de novo."
         default:
@@ -193,14 +193,14 @@ struct LampControlView: View {
             Button("Esquecer", role: .destructive) { lamp.forget() }
             Button("Cancelar", role: .cancel) {}
         } message: {
-            Text("Pra parear de novo depois, apague também em Ajustes → Bluetooth → Zleepy Lamp → “Esquecer este dispositivo”.")
+            Text("Pra parear de novo depois, apague também em Ajustes → Bluetooth → \(LampProtocol.settingsName) → “Esquecer este dispositivo”.")
         }
     }
 
     private var header: some View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
-                Text(LampProtocol.deviceName)
+                Text(LampProtocol.displayName)
                     .font(.luminaria(.headline, weight: .bold))
                     .foregroundStyle(theme.ink)
                 HStack(spacing: 6) {
@@ -492,7 +492,7 @@ struct LampPairingContent: View {
 
             statusCard
 
-            Text("Segurar o toque por 10 segundos apaga todos os celulares pareados (a lâmpada pisca vermelho). Depois disso, vá em Ajustes → Bluetooth no iPhone, toque no ⓘ da Zleepy Lamp e em “Esquecer este dispositivo” antes de parear de novo.")
+            Text("Segurar o toque por 10 segundos apaga todos os celulares pareados (a lâmpada pisca vermelho). Depois disso, vá em Ajustes → Bluetooth no iPhone, toque no ⓘ da \(LampProtocol.settingsName) e em “Esquecer este dispositivo” antes de parear de novo.")
                 .font(.luminaria(.caption))
                 .foregroundStyle(theme.inkMuted)
                 .padding(.horizontal, 6)
@@ -540,9 +540,9 @@ struct LampPairingContent: View {
     private var statusCard: some View {
         switch lamp.link {
         case .searching:
-            progressRow(title: "Procurando a Zleepy Lamp…", subtitle: "Deixe o iPhone a menos de 2 metros da lâmpada.")
+            progressRow(title: "Procurando a lâmpada SOVEE…", subtitle: "Deixe o iPhone a menos de 2 metros da lâmpada.")
         case .pairing:
-            progressRow(title: "Zleepy Lamp encontrada", subtitle: "Toque em “Parear” no aviso do iPhone.")
+            progressRow(title: "Lâmpada SOVEE encontrada", subtitle: "Toque em “Parear” no aviso do iPhone.")
         case .connected where lamp.hasLamp:
             VStack(spacing: 12) {
                 HStack(spacing: 12) {
@@ -601,7 +601,7 @@ struct LampPairingScreen: View {
             theme.stageBackground
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
-                    MenuHeader(title: "Lâmpada", subtitle: "Zleepy Lamp, por Bluetooth.", theme: theme)
+                    MenuHeader(title: "Lâmpada", subtitle: "Lâmpada SOVEE, por Bluetooth.", theme: theme)
                     LampPairingContent(lamp: lamp, theme: theme)
                 }
                 .padding(16)
@@ -623,7 +623,7 @@ struct LampSettingsCard: View {
                 Button(action: onOpenLamp) {
                     ThemedRow(
                         theme: theme,
-                        title: LampProtocol.deviceName,
+                        title: LampProtocol.displayName,
                         subtitle: "\(lamp.statusText) · bolinha no canto da tela inicial",
                         leading: { IconBadge(systemName: "lamp.table.fill", theme: theme) },
                         accessory: { chevron }
@@ -637,7 +637,7 @@ struct LampSettingsCard: View {
                     ThemedRow(
                         theme: theme,
                         title: "Adicionar lâmpada",
-                        subtitle: "Zleepy Lamp, por Bluetooth",
+                        subtitle: "Lâmpada SOVEE, por Bluetooth",
                         leading: { IconBadge(systemName: "plus", theme: theme) },
                         accessory: { chevron }
                     )

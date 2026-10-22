@@ -10,6 +10,8 @@
     <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
+    <key>CFBundleDisplayName</key>
+    <string>SOVEE</string>
     <key>CFBundleName</key>
     <string>$(PRODUCT_NAME)</string>
     <key>CFBundlePackageType</key>
@@ -39,7 +41,7 @@
         <string>DMSans-Bold.ttf</string>
     </array>
     <key>NSBluetoothAlwaysUsageDescription</key>
-    <string>O Bluetooth é usado pra controlar a lâmpada Zleepy: ligar, escolher a cor e o brilho, apagar devagar quando você vai dormir e gravar a luz da manhã nela.</string>
+    <string>O Bluetooth é usado pra controlar a lâmpada SOVEE: ligar, escolher a cor e o brilho, apagar devagar quando você vai dormir e gravar a luz da manhã nela.</string>
     <key>NSAlarmKitUsageDescription</key>
     <string>O despertador da sua rotina de sono toca como um alarme do iPhone, mesmo no modo silencioso ou com o Foco ativado.</string>
     <key>NSSupportsLiveActivities</key>

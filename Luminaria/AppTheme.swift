@@ -34,7 +34,7 @@ enum SoveeColor {
 /// mesma lógica de antes (o produto é uma luminária, o destaque muda junto com o
 /// modo), só que recalibrado pra paleta SOVEE.
 ///
-/// `.legacyLiving`/`.legacyZleepy` preservam a paleta âmbar/periwinkle da identidade
+/// `.legacyDay`/`.legacyNight` preservam a paleta âmbar/periwinkle da identidade
 /// anterior (Zleepy Lamp) — não usados por padrão em lugar nenhum, existem só como
 /// caminho de volta rápido caso o visual SOVEE não seja aprovado (pedido explícito do
 /// usuário: "crie uma nova, mas deixe no código uma opção de retorno").
@@ -96,7 +96,7 @@ struct ModeTheme {
 
     /// Paleta Zleepy Lamp original — âmbar de luminária acesa / periwinkle de luar.
     /// Só existe como caminho de volta; nada usa isso por padrão.
-    static let legacyLiving = ModeTheme(
+    static let legacyDay = ModeTheme(
         stage: Color(red: 0.957, green: 0.953, blue: 0.941),
         card: .white,
         ink: Color(red: 0.290, green: 0.282, blue: 0.267),
@@ -109,7 +109,7 @@ struct ModeTheme {
         dangerWash: Color(red: 0.694, green: 0.361, blue: 0.275).opacity(0.10)
     )
 
-    static let legacyZleepy = ModeTheme(
+    static let legacyNight = ModeTheme(
         stage: Color(red: 0.129, green: 0.141, blue: 0.165),
         card: Color(red: 0.169, green: 0.184, blue: 0.216),
         ink: Color(red: 0.847, green: 0.855, blue: 0.878),

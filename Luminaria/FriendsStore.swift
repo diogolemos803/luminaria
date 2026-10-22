@@ -83,7 +83,7 @@ final class FriendsStore: ObservableObject {
 
     var inviteMessage: String {
         guard let code = me?.friendCode else { return "" }
-        return "Bora ver quem fica mais noites longe do celular? Me adiciona no Luminária (Amigos → Adicionar amigo) com o código \(code)."
+        return "Bora ver quem fica mais noites longe do celular? Me adiciona no SOVEE (Amigos → Adicionar amigo) com o código \(code)."
     }
 
     // MARK: - Carregar / atualizar

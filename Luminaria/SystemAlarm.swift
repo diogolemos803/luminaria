@@ -190,7 +190,7 @@ struct StopLuminariaAlarmIntent: LiveActivityIntent {
 /// Botão "Abrir": para o alarme e abre o app direto na tela do pouso.
 @available(iOS 26.0, *)
 struct OpenLuminariaAlarmIntent: LiveActivityIntent {
-    static let title: LocalizedStringResource = "Abrir o Luminária"
+    static let title: LocalizedStringResource = "Abrir o SOVEE"
     static let isDiscoverable = false
     static let openAppWhenRun = true
 

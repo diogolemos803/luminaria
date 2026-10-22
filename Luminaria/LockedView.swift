@@ -24,7 +24,7 @@ struct LockedView: View {
                     .font(.luminaria(.title2, weight: .bold))
                     .foregroundStyle(theme.ink)
 
-                Text("O Luminária só funciona com uma luminária física vinculada por NFC. Encoste o iPhone nela pra começar.")
+                Text("O SOVEE só funciona com uma luminária física vinculada por NFC. Encoste o iPhone nela pra começar.")
                     .font(.luminaria(.subheadline))
                     .foregroundStyle(theme.inkMuted)
                     .multilineTextAlignment(.center)

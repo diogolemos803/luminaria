@@ -490,7 +490,7 @@ final class AlarmManager: NSObject, ObservableObject {
 
         let content = UNMutableNotificationContent()
         content.title = "Despertador"
-        content.body = "Toque para abrir o Luminária"
+        content.body = "Toque para abrir o SOVEE"
         content.sound = UNNotificationSound(named: UNNotificationSoundName("\(soundFileName).wav"))
         content.interruptionLevel = .timeSensitive
         content.categoryIdentifier = Self.alarmCategoryID

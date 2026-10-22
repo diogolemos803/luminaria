@@ -10,7 +10,7 @@ struct ContentView: View {
     // ciclo de vida é ele mesmo, `ContentView` só observa) — a fase dele decide se
     // a cena de decolagem mostra o foguete ou a explosão (ver `soveeMainScreen`).
     @ObservedObject private var growthTracker = NightSessionActivityTracker.shared
-    /// Lâmpada Zleepy (Bluetooth) — singleton, só observado aqui.
+    /// Lâmpada SOVEE (Bluetooth) — singleton, só observado aqui.
     @ObservedObject private var lampManager = LampManager.shared
     @Environment(\.scenePhase) private var scenePhase
     @State private var isNightModeArmed = false
@@ -55,7 +55,7 @@ struct ContentView: View {
     private let menuIconSleep = Color(red: 0.929, green: 0.937, blue: 0.949)
 
     private var modeName: String {
-        isNightModeArmed ? "Zleepy mode" : "Living mode"
+        isNightModeArmed ? "modo noite" : "modo dia"
     }
 
     private var menuIconColor: Color {
@@ -199,7 +199,7 @@ struct ContentView: View {
                     }
                 }
                 // Sem isso, cancelar a leitura, deixar dar timeout (~60s do CoreNFC) ou
-                // encostar a tag errada deixava o app preso em "Zleepy mode" sem nada
+                // encostar a tag errada deixava o app preso no modo noite sem nada
                 // realmente armado — o modo noite só deve "pegar" se a leitura terminar
                 // com sucesso.
                 nfcManager.onScanEndedWithoutMatch = {

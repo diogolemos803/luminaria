@@ -57,7 +57,7 @@ struct AppBlockingView: View {
                         .disabled(screenTimeManager.isAuthorized != true)
                     }
 
-                    Text("Por privacidade, a Apple não deixa o Luminária saber quais apps você escolheu — só quantos. Enquanto o modo noite estiver ativo com ESTA rotina marcada como ativa (depois de reconhecer a luminária via NFC), os apps escolhidos aqui ficam bloqueados de verdade, com a própria tela de bloqueio do iOS. Cada rotina tem sua própria lista.")
+                    Text("Por privacidade, a Apple não deixa o SOVEE saber quais apps você escolheu — só quantos. Enquanto o modo noite estiver ativo com ESTA rotina marcada como ativa (depois de reconhecer a luminária via NFC), os apps escolhidos aqui ficam bloqueados de verdade, com a própria tela de bloqueio do iOS. Cada rotina tem sua própria lista.")
                         .font(.luminaria(.caption))
                         .foregroundStyle(theme.inkMuted)
                 }

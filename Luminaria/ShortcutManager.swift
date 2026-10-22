@@ -33,7 +33,7 @@ final class ShortcutManager {
     }
 
     /// Executa o atalho já configurado pelo usuário via x-callback-url: evita abrir o app
-    /// Atalhos por completo (mostra só um aviso rápido e volta pro Luminária sozinho).
+    /// Atalhos por completo (mostra só um aviso rápido e volta pro SOVEE sozinho).
     ///
     /// O despertador NÃO passa mais por aqui — é tratado nativamente pelo `AlarmManager`,
     /// sem depender do Atalho. Este método só cuida do Foco e do Modo Noturno.

@@ -576,6 +576,29 @@ depende de CI num runner macOS na nuvem (GitHub Actions) e de sideload via AltSt
   a chave `LuminariaAppStoreKey` na conta do Codemagic (Team settings → Integrations →
   App Store Connect) pra rodar o primeiro build de verdade.
 
+## Rebrand Zleepy → SOVEE nos textos (2026-10-22)
+
+Pedido do dono: todo texto visível e o código passam a dizer SOVEE. O que mudou:
+- **Nome do app na tela inicial**: `CFBundleDisplayName = SOVEE` no `Info.plist` (antes
+  aparecia "Luminaria", o `PRODUCT_NAME`). Widget também se chama "SOVEE". Os caminhos
+  de Ajustes citados nos textos ("Ajustes → Apps → SOVEE") seguem esse nome.
+  **Não mudou de propósito**: projeto, target, bundle ID (`com.luminaria.app`), nomes de
+  arquivo e tipos `Luminaria*` — trocar isso mexe em assinatura, App ID e TestFlight. O
+  nome do app na App Store ("Zleepy Lamp") é trocado à mão no App Store Connect.
+- "o Luminária" (o app) virou "o SOVEE" em todos os textos. "Luminária reconhecida!" e o
+  cartão "Luminária" continuam: ali "luminária" é o objeto físico com a tag NFC.
+- "Zleepy mode"/"Living mode" (só leitor de tela e a tela antiga `legacyMainScreen`) →
+  "modo noite"/"modo dia". Paletas `.legacyLiving`/`.legacyZleepy` → `.legacyDay`/
+  `.legacyNight`.
+- **Lâmpada**: textos dizem "lâmpada SOVEE". `LampProtocol.deviceName` saiu; agora
+  `displayName` ("Lâmpada SOVEE", só tela) e `advertisedNames = ["SOVEE Lamp",
+  "Zleepy Lamp"]` + `settingsName` ("SOVEE Lamp (ou Zleepy Lamp)"), usados nos textos que
+  mandam achar a lâmpada em Ajustes → Bluetooth. **O app nunca procurou a lâmpada pelo
+  nome** — `scanForPeripherals(withServices: [serviceUUID])` —, então o nome anunciado
+  pode mudar no firmware sem quebrar busca nem pareamento. **Depende do firmware**: o nome
+  que aparece no aviso de pareamento do iOS e em Ajustes → Bluetooth (hoje "Zleepy
+  Lamp"); ver pendência da lâmpada.
+
 ## As duas branches
 
 ### `main`
@@ -1369,6 +1392,10 @@ não conhece". Mudanças da v2 em relação à v1 que o usuário mandou:
    para_âmbar, para_vermelho, para_brilho`; cores no brilho máximo, saída = cor
    interpolada × brilho interpolado, limitador depois. Byte 0 do STATE = 2.
 Se o firmware fizer diferente, só `LampProtocol.swift` (e o simulado) mudam.
+4. **Nome anunciado por Bluetooth no rebrand** (pedido em 2026-10-22): trocar "Zleepy
+   Lamp" por "SOVEE Lamp" no firmware. O app já aceita os dois (busca por UUID; os textos
+   citam `LampProtocol.settingsName`). Celulares já pareados podem continuar mostrando o
+   nome antigo em Ajustes → Bluetooth até esquecer e parear de novo.
 
 Decisões: **só Bluetooth, sem Wi-Fi** (o firmware não liga o Wi-Fi do ESP32; controle de
 fora de casa exigiria rede + servidor, fora do escopo). **Sem `bluetooth-central` em

@@ -1,6 +1,6 @@
 import Foundation
 
-/// Protocolo Bluetooth (BLE) da lâmpada Zleepy — placa própria com ESP32-C3, duas fitas de
+/// Protocolo Bluetooth (BLE) da lâmpada SOVEE — placa própria com ESP32-C3, duas fitas de
 /// LED (âmbar e vermelha, sem azul), 12 V. Só bytes aqui: nada de CoreBluetooth nem de
 /// SwiftUI, pra a lâmpada simulada (`SimulatedLampTransport`) e a de verdade
 /// (`BluetoothLampTransport`) falarem exatamente a mesma língua.
@@ -12,7 +12,17 @@ import Foundation
 /// implementar diferente, só este arquivo muda.
 enum LampProtocol {
     static let version: UInt8 = 2
-    static let deviceName = "Zleepy Lamp"
+    /// Nome da lâmpada nas telas do app.
+    static let displayName = "Lâmpada SOVEE"
+    /// Nomes que a lâmpada anuncia por Bluetooth (o que o iOS mostra no aviso de
+    /// pareamento e em Ajustes → Bluetooth). O app NÃO procura por nome — a busca é pelo
+    /// `serviceUUID` —, então trocar o nome no firmware não quebra nada; esta lista só
+    /// serve pros textos que mandam a pessoa achar a lâmpada nos Ajustes. "Zleepy Lamp" é
+    /// o nome do firmware atual; "SOVEE Lamp" é o nome depois do rebrand (pendente de
+    /// firmware, ver CLAUDE.md).
+    static let advertisedNames = ["SOVEE Lamp", "Zleepy Lamp"]
+    /// Como os textos citam o nome que aparece nos Ajustes do iPhone.
+    static let settingsName = "\(advertisedNames[0]) (ou \(advertisedNames[1]))"
     static let serviceUUID = "5a1e0000-4c41-4d50-8000-7a6c65657079"
     /// Escrever, sempre com resposta (`.withResponse`).
     static let commandUUID = "5a1e0001-4c41-4d50-8000-7a6c65657079"
