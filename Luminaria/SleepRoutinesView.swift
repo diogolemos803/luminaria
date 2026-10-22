@@ -125,7 +125,7 @@ struct SleepRoutinesView: View {
     }
 
     private static func subtitle(for routine: SleepRoutine) -> String {
-        let base = String(format: "%02d:%02d · %@", routine.alarmHour, routine.alarmMinute, routine.soundOption.displayName)
+        let base = "\(routine.alarmSummary) · \(routine.soundOption.displayName)"
         let count = routine.appSelection.applicationTokens.count
             + routine.appSelection.categoryTokens.count
             + routine.appSelection.webDomainTokens.count
@@ -164,6 +164,52 @@ struct RoutineEditView: View {
         )
     }
 
+    /// Dias na ordem da semana brasileira (segunda primeiro). `weekday` como no Calendar.
+    private struct WeekdayRow: Identifiable {
+        let weekday: Int
+        let name: String
+        var id: Int { weekday }
+    }
+
+    private static let weekdayRows: [WeekdayRow] = [
+        WeekdayRow(weekday: 2, name: "Segunda"), WeekdayRow(weekday: 3, name: "Terça"),
+        WeekdayRow(weekday: 4, name: "Quarta"), WeekdayRow(weekday: 5, name: "Quinta"),
+        WeekdayRow(weekday: 6, name: "Sexta"), WeekdayRow(weekday: 7, name: "Sábado"),
+        WeekdayRow(weekday: 1, name: "Domingo")
+    ]
+
+    private var perDayBinding: Binding<Bool> {
+        Binding(
+            get: { routine.weekdayAlarms != nil },
+            set: { routine.setPerDayAlarms($0) }
+        )
+    }
+
+    private func dayAlarmTime(_ weekday: Int) -> Binding<Date> {
+        Binding(
+            get: {
+                let t = routine.alarmTime(forWeekday: weekday)
+                return Self.date(hour: t.hour, minute: t.minute)
+            },
+            set: { newValue in
+                guard var days = routine.weekdayAlarms, days.count == 7 else { return }
+                let comps = Calendar.current.dateComponents([.hour, .minute], from: newValue)
+                days[weekday - 1] = AlarmTime(hour: comps.hour ?? 7, minute: comps.minute ?? 0)
+                routine.weekdayAlarms = days
+            }
+        )
+    }
+
+    private var headerSubtitle: String {
+        let next = routine.nextAlarmDate()
+        let time = Calendar.current.dateComponents([.hour, .minute], from: next)
+        let clock = String(format: "%02d:%02d", time.hour ?? 0, time.minute ?? 0)
+        if routine.weekdayAlarms != nil {
+            return "Se ativar hoje, toca às \(clock) da manhã seguinte. Uma noite só, a cada leitura da luminária."
+        }
+        return "Toca às \(clock) na manhã depois de encostar na luminária."
+    }
+
     private var nightShiftOffTime: Binding<Date> {
         Binding(
             get: { Self.date(hour: routine.nightShiftOffHour, minute: routine.nightShiftOffMinute) },
@@ -199,7 +245,7 @@ struct RoutineEditView: View {
                     VStack(alignment: .leading, spacing: 20) {
                         MenuHeader(
                             title: isNew ? "Nova rotina" : "Editar rotina",
-                            subtitle: String(format: "Toca às %02d:%02d na manhã depois de encostar na luminária.", routine.alarmHour, routine.alarmMinute),
+                            subtitle: headerSubtitle,
                             theme: theme
                         )
 
@@ -213,16 +259,55 @@ struct RoutineEditView: View {
 
                         ThemedCard(title: "Horários", theme: theme) {
                             HStack {
-                                Text("Despertador")
+                                Text("Horário diferente por dia")
                                     .font(.luminaria(.subheadline, weight: .medium))
                                     .foregroundStyle(theme.ink)
                                 Spacer()
-                                DatePicker("", selection: alarmTime, displayedComponents: .hourAndMinute)
+                                Toggle("", isOn: perDayBinding)
                                     .labelsHidden()
                                     .tint(theme.accent)
                             }
                             .padding(.horizontal, 10)
                             .padding(.vertical, 9)
+
+                            Rectangle()
+                                .fill(theme.hairline)
+                                .frame(height: 1)
+                                .padding(.leading, 10)
+
+                            if routine.weekdayAlarms == nil {
+                                HStack {
+                                    Text("Despertador")
+                                        .font(.luminaria(.subheadline, weight: .medium))
+                                        .foregroundStyle(theme.ink)
+                                    Spacer()
+                                    DatePicker("", selection: alarmTime, displayedComponents: .hourAndMinute)
+                                        .labelsHidden()
+                                        .tint(theme.accent)
+                                }
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 9)
+                            } else {
+                                // O dia é o da manhã em que toca: domingo à noite → "Segunda".
+                                Text("Cada horário vale pra manhã daquele dia.")
+                                    .font(.luminaria(.caption))
+                                    .foregroundStyle(theme.inkMuted)
+                                    .padding(.horizontal, 10)
+                                    .padding(.top, 6)
+                                ForEach(Self.weekdayRows) { row in
+                                    HStack {
+                                        Text(row.name)
+                                            .font(.luminaria(.subheadline, weight: .medium))
+                                            .foregroundStyle(theme.ink)
+                                        Spacer()
+                                        DatePicker("", selection: dayAlarmTime(row.weekday), displayedComponents: .hourAndMinute)
+                                            .labelsHidden()
+                                            .tint(theme.accent)
+                                    }
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 5)
+                                }
+                            }
 
                             Rectangle()
                                 .fill(theme.hairline)

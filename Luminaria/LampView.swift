@@ -720,7 +720,11 @@ struct LampRoutineSections: View {
         }
     }
 
-    private var alarmMinutes: Int { routine.alarmHour * 60 + routine.alarmMinute }
+    /// Horário da PRÓXIMA manhã (a rotina pode ter horário por dia da semana).
+    private var alarmMinutes: Int {
+        let comps = Calendar.current.dateComponents([.hour, .minute], from: routine.nextAlarmDate())
+        return (comps.hour ?? routine.alarmHour) * 60 + (comps.minute ?? routine.alarmMinute)
+    }
 
     private func clock(_ totalMinutes: Int) -> String {
         let m = ((totalMinutes % 1440) + 1440) % 1440

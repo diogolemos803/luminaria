@@ -666,6 +666,31 @@ Atalhos chamando `x-error` quando o nome não existe (se ele só mostrar um avis
 cai no "não respondeu"); a leitura do ensaio; o pedido de cada permissão na ordem; o
 resultado do "Parar".
 
+## Horário do despertador por dia da semana (2026-10-22, item 2 do plano Hatch)
+
+- `SleepRoutine.weekdayAlarms: [AlarmTime]?` — `nil` = "igual todos os dias"
+  (`alarmHour`/`alarmMinute`, como sempre foi); com valor, 7 horários indexados por
+  `weekday − 1` do `Calendar` (0 = domingo). **O dia é o da manhã em que toca** (sexta à
+  noite → horário de sábado). Decode tolerante: chave ausente, ilegível ou sem 7 itens →
+  `nil`, então rotinas antigas viram "igual todos os dias". Também vai no backup do
+  iCloud (`SyncableRoutine`, opcional).
+- Conta pura em `AlarmSchedule.nextAlarm(after:calendar:time:)`: primeiro horário depois
+  de agora olhando hoje, amanhã e depois — cada dia com o seu horário (armar sábado 0h40
+  com sábado às 9h → esse sábado 9h). `SleepRoutine.nextAlarmDate()` usa ela; testes em
+  `SoveeCoreTests` (`AlarmScheduleTests`, decode).
+- Continua **uma noite só**: `ContentView.onRecognizedTap` chama
+  `AlarmManager.armAlarm(at: routine.nextAlarmDate(), …)` (novo; o `armAlarm(hour:minute:)`
+  antigo virou atalho pra ele). A notificação de reserva do esquema antigo usa
+  `nextFireDate` em vez de recalcular. A luz da manhã da lâmpada já usava
+  `alarmManager.nextFireDate` → só a manhã seguinte, sem mudança de firmware.
+- Editor de rotina: chave "Horário diferente por dia" no cartão Horários (ligar copia o
+  horário único pros 7 dias; desligar volta pro horário de segunda), 7 linhas de segunda a
+  domingo. Listas mostram `alarmSummary` ("07:00" ou "varia por dia"). Onboarding só
+  apaga o horário por dia se a pessoa mudar o horário de acordar ali.
+- Só dá pra validar em device: armar numa sexta com sábado diferente e ver o alarme do
+  sistema (AlarmKit) na hora certa; virada de horário de verão não se aplica no Brasil
+  hoje, mas a conta usa `Calendar`, não soma de segundos.
+
 ## As duas branches
 
 ### `main`

@@ -21,6 +21,7 @@ private struct SyncableRoutine: Codable {
     /// Opcionais: backups antigos no iCloud não têm.
     var lampSleep: LampSleepSettings?
     var lampWake: LampWakeSettings?
+    var weekdayAlarms: [AlarmTime]?
 
     init(_ routine: SleepRoutine) {
         id = routine.id
@@ -35,6 +36,7 @@ private struct SyncableRoutine: Codable {
         autoActivateEventKeyword = routine.autoActivateEventKeyword
         lampSleep = routine.lampSleep
         lampWake = routine.lampWake
+        weekdayAlarms = routine.weekdayAlarms
     }
 
     func toRoutine() -> SleepRoutine {
@@ -50,7 +52,8 @@ private struct SyncableRoutine: Codable {
             autoActivateWeekend: autoActivateWeekend,
             autoActivateEventKeyword: autoActivateEventKeyword,
             lampSleep: lampSleep ?? LampSleepSettings(),
-            lampWake: lampWake ?? LampWakeSettings()
+            lampWake: lampWake ?? LampWakeSettings(),
+            weekdayAlarms: weekdayAlarms?.count == 7 ? weekdayAlarms : nil
         )
     }
 }

@@ -176,6 +176,12 @@ extension AlarmSoundOption: Codable {
     }
 }
 
+/// Um horário do despertador (hora e minuto).
+struct AlarmTime: Codable, Equatable {
+    var hour: Int
+    var minute: Int
+}
+
 struct SleepRoutine: Identifiable, Codable, Equatable {
     var id: UUID
     var name: String
@@ -200,6 +206,50 @@ struct SleepRoutine: Identifiable, Codable, Equatable {
     /// antes do despertador. Sem lâmpada pareada não fazem nada. Ver `LampManager`.
     var lampSleep: LampSleepSettings
     var lampWake: LampWakeSettings
+    /// Horário do despertador por dia da semana (item 2 do plano Hatch, 2026-10-22).
+    /// `nil` = "igual todos os dias" (`alarmHour`/`alarmMinute`). Com valor, são 7 horários
+    /// indexados por `weekday − 1` do `Calendar` (0 = domingo … 6 = sábado) — o dia em que
+    /// o despertador TOCA. Ao armar, vale o horário da manhã seguinte
+    /// (`nextAlarmDate`). Rotinas antigas não têm a chave e viram "igual todos os dias".
+    var weekdayAlarms: [AlarmTime]?
+
+    /// Horário que toca no dia `weekday` (1 = domingo … 7 = sábado).
+    func alarmTime(forWeekday weekday: Int) -> AlarmTime {
+        if let weekdayAlarms, weekdayAlarms.count == 7, (1...7).contains(weekday) {
+            return weekdayAlarms[weekday - 1]
+        }
+        return AlarmTime(hour: alarmHour, minute: alarmMinute)
+    }
+
+    /// "07:00" ou, com horário por dia, "varia por dia" — legenda das listas.
+    var alarmSummary: String {
+        if let weekdayAlarms, weekdayAlarms.count == 7, Set(weekdayAlarms.map { $0.hour * 60 + $0.minute }).count > 1 {
+            return "varia por dia"
+        }
+        let t = alarmTime(forWeekday: 1)
+        return String(format: "%02d:%02d", t.hour, t.minute)
+    }
+
+    /// Liga/desliga o horário por dia. Ligar copia o horário único pros 7 dias; desligar
+    /// volta pro horário único (o de segunda, se os dias variavam).
+    mutating func setPerDayAlarms(_ on: Bool) {
+        if on {
+            guard weekdayAlarms == nil else { return }
+            weekdayAlarms = Array(repeating: AlarmTime(hour: alarmHour, minute: alarmMinute), count: 7)
+        } else if let weekdayAlarms, weekdayAlarms.count == 7 {
+            alarmHour = weekdayAlarms[1].hour
+            alarmMinute = weekdayAlarms[1].minute
+            self.weekdayAlarms = nil
+        }
+    }
+
+    /// Próximo despertador desta rotina depois de `date` (uma noite só).
+    func nextAlarmDate(after date: Date = Date(), calendar: Calendar = .current) -> Date {
+        AlarmSchedule.nextAlarm(after: date, calendar: calendar) { weekday in
+            let t = alarmTime(forWeekday: weekday)
+            return (t.hour, t.minute)
+        }
+    }
 
     init(
         id: UUID = UUID(),
@@ -214,7 +264,8 @@ struct SleepRoutine: Identifiable, Codable, Equatable {
         autoActivateWeekend: Bool = false,
         autoActivateEventKeyword: String? = nil,
         lampSleep: LampSleepSettings = LampSleepSettings(),
-        lampWake: LampWakeSettings = LampWakeSettings()
+        lampWake: LampWakeSettings = LampWakeSettings(),
+        weekdayAlarms: [AlarmTime]? = nil
     ) {
         self.id = id
         self.name = name
@@ -229,12 +280,14 @@ struct SleepRoutine: Identifiable, Codable, Equatable {
         self.autoActivateEventKeyword = autoActivateEventKeyword
         self.lampSleep = lampSleep
         self.lampWake = lampWake
+        self.weekdayAlarms = weekdayAlarms
     }
 
     private enum CodingKeys: String, CodingKey {
         case id, name, alarmHour, alarmMinute, nightShiftOffHour, nightShiftOffMinute, soundOption, appSelection
         case autoActivateWeekday, autoActivateWeekend, autoActivateEventKeyword
         case lampSleep, lampWake
+        case weekdayAlarms
     }
 
     /// `init(from:)` escrito à mão só pra tratar `appSelection` e os campos de
@@ -271,5 +324,8 @@ struct SleepRoutine: Identifiable, Codable, Equatable {
         // Rotinas salvas antes da lâmpada existir não têm essas chaves — padrão em vez de falhar.
         lampSleep = ((try? container.decodeIfPresent(LampSleepSettings.self, forKey: .lampSleep)) ?? nil) ?? LampSleepSettings()
         lampWake = ((try? container.decodeIfPresent(LampWakeSettings.self, forKey: .lampWake)) ?? nil) ?? LampWakeSettings()
+        // Ausente, ilegível ou sem os 7 dias: "igual todos os dias".
+        let perDay = (try? container.decodeIfPresent([AlarmTime].self, forKey: .weekdayAlarms)) ?? nil
+        weekdayAlarms = perDay?.count == 7 ? perDay : nil
     }
 }

@@ -38,6 +38,25 @@ final class SleepRoutineDecodingTests: XCTestCase {
         XCTAssertNil(r.autoActivateEventKeyword)
         XCTAssertEqual(r.lampSleep, LampSleepSettings())
         XCTAssertEqual(r.lampWake, LampWakeSettings())
+        XCTAssertNil(r.weekdayAlarms, "rotina antiga vira 'igual todos os dias'")
+    }
+
+    /// Horário por dia com tamanho errado (corrompido) também vira "igual todos os dias".
+    func testWeekdayAlarmsWithWrongCountIsIgnored() throws {
+        let json = """
+        {"id":"6F1C2A5E-0000-4000-8000-000000000002","name":"X","alarmHour":7,"alarmMinute":0,
+         "nightShiftOffHour":7,"nightShiftOffMinute":30,"soundOption":"birds",
+         "weekdayAlarms":[{"hour":6,"minute":0}]}
+        """
+        XCTAssertNil(try decode(SleepRoutine.self, json).weekdayAlarms)
+    }
+
+    func testWeekdayAlarmsRoundTrip() throws {
+        var r = SleepRoutine(name: "Dias", alarmHour: 7, alarmMinute: 0, soundOption: .rain)
+        r.setPerDayAlarms(true)
+        r.weekdayAlarms?[6] = AlarmTime(hour: 9, minute: 30)
+        let data = try JSONEncoder().encode(r)
+        XCTAssertEqual(try JSONDecoder().decode(SleepRoutine.self, from: data), r)
     }
 
     /// Sons antigos removidos do app migram pro equivalente em vez de falhar o decode.
@@ -152,6 +171,44 @@ final class AlarmScheduleTests: XCTestCase {
     func testEndOfMonthAndYear() {
         XCTAssertEqual(AlarmSchedule.nextOccurrence(hour: 6, minute: 0, after: date(2026, 12, 31, 23, 0), calendar: utc),
                        date(2027, 1, 1, 6, 0))
+    }
+
+    /// 22/10/2026 é quinta, 23 sexta, 24 sábado.
+    private func weekRoutine() -> SleepRoutine {
+        var r = SleepRoutine(name: "Semana", alarmHour: 6, alarmMinute: 30, soundOption: .rain)
+        r.setPerDayAlarms(true)
+        r.weekdayAlarms?[6] = AlarmTime(hour: 9, minute: 0)   // sábado
+        r.weekdayAlarms?[0] = AlarmTime(hour: 9, minute: 30)  // domingo
+        return r
+    }
+
+    func testPerDayUsesNextMorningTime() {
+        let r = weekRoutine()
+        // Quinta 22h → sexta 6h30.
+        XCTAssertEqual(r.nextAlarmDate(after: date(2026, 10, 22, 22), calendar: utc), date(2026, 10, 23, 6, 30))
+        // Sexta 23h → sábado 9h, não 6h30.
+        XCTAssertEqual(r.nextAlarmDate(after: date(2026, 10, 23, 23), calendar: utc), date(2026, 10, 24, 9, 0))
+        // Sábado 0h40 (já passou da meia-noite) → o mesmo sábado 9h.
+        XCTAssertEqual(r.nextAlarmDate(after: date(2026, 10, 24, 0, 40), calendar: utc), date(2026, 10, 24, 9, 0))
+        // Sábado 23h → domingo 9h30.
+        XCTAssertEqual(r.nextAlarmDate(after: date(2026, 10, 24, 23), calendar: utc), date(2026, 10, 25, 9, 30))
+    }
+
+    func testSameEveryDayMatchesNextOccurrence() {
+        let r = SleepRoutine(name: "Igual", alarmHour: 7, alarmMinute: 0, soundOption: .rain)
+        let now = date(2026, 10, 23, 23, 15)
+        XCTAssertEqual(r.nextAlarmDate(after: now, calendar: utc),
+                       AlarmSchedule.nextOccurrence(hour: 7, minute: 0, after: now, calendar: utc))
+        XCTAssertEqual(r.alarmSummary, "07:00")
+    }
+
+    func testTogglePerDayKeepsTimes() {
+        var r = weekRoutine()
+        XCTAssertEqual(r.alarmSummary, "varia por dia")
+        r.setPerDayAlarms(false)
+        XCTAssertNil(r.weekdayAlarms)
+        XCTAssertEqual(r.alarmHour, 6)       // o horário de segunda
+        XCTAssertEqual(r.alarmMinute, 30)
     }
 }
 

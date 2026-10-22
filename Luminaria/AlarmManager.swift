@@ -170,14 +170,23 @@ final class AlarmManager: NSObject, ObservableObject {
     }
 
     func armAlarm(hour: Int, minute: Int, soundFileName: String) {
+        armAlarm(at: Self.nextOccurrence(hour: hour, minute: minute, after: Date()), soundFileName: soundFileName)
+    }
+
+    /// Arma pra uma data exata — usado com o horário por dia da semana da rotina
+    /// (`SleepRoutine.nextAlarmDate`), que pode não ser a "próxima ocorrência" de um
+    /// horário fixo.
+    func armAlarm(at fireDate: Date, soundFileName: String) {
         // Nenhum alarme de sistema antigo pode sobrar — cancela TODOS os do app, não só o
         // último conhecido (achado real: despertador tocando numa noite sem leitura do NFC).
         cancelAllSystemAlarms()
         UserDefaults.standard.removeObject(forKey: Self.landingPendingKey)
+        let comps = Calendar.current.dateComponents([.hour, .minute], from: fireDate)
+        let hour = comps.hour ?? 7
+        let minute = comps.minute ?? 0
         scheduledHour = hour
         scheduledMinute = minute
         scheduledSoundFileName = soundFileName
-        let fireDate = Self.nextOccurrence(hour: hour, minute: minute, after: Date())
         nextFireDate = fireDate
 
         systemAlarmAuthorization = SystemAlarm.authorization
@@ -491,7 +500,10 @@ final class AlarmManager: NSObject, ObservableObject {
         // minuto depois, à meia-noite, poderia resolver pra "hoje" em vez de "amanhã" se
         // calculado incompleto). Reaproveita `nextOccurrence`, que já resolve isso certo.
         let calendar = Calendar.current
-        let fireDate = Self.nextOccurrence(hour: hour, minute: minute, after: Date())
+        // A data já calculada ao armar (pode ser de um horário por dia da semana); só
+        // recalcula se não houver.
+        let fireDate = nextFireDate.flatMap { $0 > Date() ? $0 : nil }
+            ?? Self.nextOccurrence(hour: hour, minute: minute, after: Date())
         let dateComponents = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: fireDate)
         let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: false)
         let request = UNNotificationRequest(identifier: Self.notificationID, content: content, trigger: trigger)

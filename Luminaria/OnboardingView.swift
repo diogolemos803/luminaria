@@ -452,6 +452,10 @@ struct OnboardingView: View {
 
     private func saveFirstRoutine() {
         var routine = routineStore.activeRoutine ?? SleepRoutine(name: "Minha rotina")
+        // Horário por dia da semana só é trocado se a pessoa mudou o horário aqui.
+        if routine.weekdayAlarms != nil, wakeMinutes != routine.alarmHour * 60 + routine.alarmMinute {
+            routine.weekdayAlarms = nil
+        }
         routine.alarmHour = wakeMinutes / 60
         routine.alarmMinute = wakeMinutes % 60
         routineStore.upsert(routine)

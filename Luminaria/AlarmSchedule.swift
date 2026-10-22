@@ -18,4 +18,26 @@ enum AlarmSchedule {
         }
         return calendar.date(byAdding: .day, value: 1, to: candidate) ?? candidate
     }
+
+    /// Despertador com horário que pode mudar por dia da semana: o primeiro horário,
+    /// estritamente depois de `date`, olhando hoje, amanhã e depois de amanhã — cada dia
+    /// com o SEU horário (`time(weekday)`, `weekday` como no `Calendar`: 1 = domingo … 7 =
+    /// sábado). Armar na segunda às 22h com terça às 6h dá terça 6h; armar na terça à 1h
+    /// da manhã com terça às 6h dá a mesma terça 6h. Continua sendo uma noite só.
+    static func nextAlarm(after date: Date, calendar: Calendar = .current, time: (Int) -> (hour: Int, minute: Int)) -> Date {
+        let today = calendar.startOfDay(for: date)
+        for offset in 0...2 {
+            guard let day = calendar.date(byAdding: .day, value: offset, to: today) else { continue }
+            let t = time(calendar.component(.weekday, from: day))
+            var components = calendar.dateComponents([.year, .month, .day], from: day)
+            components.hour = t.hour
+            components.minute = t.minute
+            components.second = 0
+            if let candidate = calendar.date(from: components), candidate > date {
+                return candidate
+            }
+        }
+        let t = time(calendar.component(.weekday, from: date))
+        return nextOccurrence(hour: t.hour, minute: t.minute, after: date, calendar: calendar)
+    }
 }

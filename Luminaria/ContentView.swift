@@ -166,7 +166,7 @@ struct ContentView: View {
                         }
                         guard let routine = routineStore.activeRoutine else { return }
                         ShortcutManager.shared.runSleepShortcut()
-                        alarmManager.armAlarm(hour: routine.alarmHour, minute: routine.alarmMinute, soundFileName: routine.soundOption.fileName)
+                        alarmManager.armAlarm(at: routine.nextAlarmDate(), soundFileName: routine.soundOption.fileName)
                         screenTimeManager.applyShield(selection: routine.appSelection)
                         // cartão da noite na tela bloqueada (ver WidgetBridge)
                         WidgetBridge.startNightActivity(alarmDate: alarmManager.nextFireDate)
@@ -828,7 +828,7 @@ struct SettingsView: View {
                                     ThemedRow(
                                         theme: theme,
                                         title: routine.name,
-                                        subtitle: String(format: "%02d:%02d · %@", routine.alarmHour, routine.alarmMinute, routine.soundOption.displayName),
+                                        subtitle: "\(routine.alarmSummary) · \(routine.soundOption.displayName)",
                                         leading: { IconBadge(systemName: "alarm", theme: theme) },
                                         accessory: { HStack(spacing: 10) { ActiveDot(theme: theme); chevron } }
                                     )
