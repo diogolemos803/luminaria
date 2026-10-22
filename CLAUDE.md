@@ -641,8 +641,8 @@ Arquivos separados pra isso: `SleepRoutine.swift` (saiu de `SleepRoutineStore.sw
   `wakeShortcutInstallLink` — o de dormir já tem link (2026-10-22,
   `icloud.com/shortcuts/8dda4d25…`, nome conferido pela API pública do iCloud:
   `https://www.icloud.com/shortcuts/api/records/<id>` → `fields.name`); o do "Acordar"
-  ainda é `nil` (o botão mostra "link em breve" e aparece "criar os atalhos à mão", que
-  abre a Ajuda). Conferir o nome de todo link novo: o primeiro link mandado veio como
+  também (`icloud.com/shortcuts/89ad05d1…`, nome conferido). Se algum link virar `nil`, o
+  botão mostra "link em breve" e aparece "criar os atalhos à mão", que abre a Ajuda. Conferir o nome de todo link novo: o primeiro link mandado veio como
   "Dormir Sem Celular" (maiúsculas) e foi recusado. Os atalhos não têm horário (dormir = Não Perturbe "até desligar";
   acordar = desliga). Nomes continuam fixos ("Dormir sem celular", "Acordar"; decisão do
   dono, compatível com quem já criou à mão); o onboarding avisa pra não renomear.
