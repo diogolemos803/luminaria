@@ -19,6 +19,7 @@
 		AAAAAAAAAAAAAAAAAAAAAA22 /* silence_loop.wav in Resources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA21 /* silence_loop.wav */; };
 		AAAAAAAAAAAAAAAAAAAAAA24 /* alarm_tone.wav in Resources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA23 /* alarm_tone.wav */; };
 		AAAAAAAAAAAAAAAAAAAAAA26 /* SleepRoutineStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA25 /* SleepRoutineStore.swift */; };
+		AAAAAAAAAAAAAAAAAAAAAAA9 /* SleepRoutine.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAAA8 /* SleepRoutine.swift */; };
 		AAAAAAAAAAAAAAAAAAAAAA28 /* SleepRoutinesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA27 /* SleepRoutinesView.swift */; };
 		AAAAAAAAAAAAAAAAAAAAAA2A /* HelpView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA29 /* HelpView.swift */; };
 		AAAAAAAAAAAAAAAAAAAAAA2E /* alarm_alvorada.wav in Resources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA2D /* alarm_alvorada.wav */; };
@@ -46,6 +47,8 @@
 		AAAAAAAAAAAAAAAAAAAAAA3C /* ScreenTimeManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA3B /* ScreenTimeManager.swift */; };
 		AAAAAAAAAAAAAAAAAAAAAA3E /* AppBlockingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA3D /* AppBlockingView.swift */; };
 		AAAAAAAAAAAAAAAAAAAAAA40 /* SleepReportStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA3F /* SleepReportStore.swift */; };
+		AAAAAAAAAAAAAAAAAAAAAAAD /* AlarmSchedule.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAAAC /* AlarmSchedule.swift */; };
+		AAAAAAAAAAAAAAAAAAAAAAAB /* SleepReportEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAAAA /* SleepReportEntry.swift */; };
 		AAAAAAAAAAAAAAAAAAAAAA42 /* SleepReportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA41 /* SleepReportView.swift */; };
 		AAAAAAAAAAAAAAAAAAAAAA48 /* LuminariaWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA47 /* LuminariaWidgetBundle.swift */; };
 		AAAAAAAAAAAAAAAAAAAAAA4A /* AlarmWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA49 /* AlarmWidget.swift */; };
@@ -112,6 +115,7 @@
 		AAAAAAAAAAAAAAAAAAAAAA21 /* silence_loop.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = silence_loop.wav; sourceTree = "<group>"; };
 		AAAAAAAAAAAAAAAAAAAAAA23 /* alarm_tone.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = alarm_tone.wav; sourceTree = "<group>"; };
 		AAAAAAAAAAAAAAAAAAAAAA25 /* SleepRoutineStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepRoutineStore.swift; sourceTree = "<group>"; };
+		AAAAAAAAAAAAAAAAAAAAAAA8 /* SleepRoutine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepRoutine.swift; sourceTree = "<group>"; };
 		AAAAAAAAAAAAAAAAAAAAAA27 /* SleepRoutinesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepRoutinesView.swift; sourceTree = "<group>"; };
 		AAAAAAAAAAAAAAAAAAAAAA29 /* HelpView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelpView.swift; sourceTree = "<group>"; };
 		AAAAAAAAAAAAAAAAAAAAAA2D /* alarm_alvorada.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = alarm_alvorada.wav; sourceTree = "<group>"; };
@@ -139,6 +143,8 @@
 		AAAAAAAAAAAAAAAAAAAAAA3B /* ScreenTimeManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenTimeManager.swift; sourceTree = "<group>"; };
 		AAAAAAAAAAAAAAAAAAAAAA3D /* AppBlockingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppBlockingView.swift; sourceTree = "<group>"; };
 		AAAAAAAAAAAAAAAAAAAAAA3F /* SleepReportStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepReportStore.swift; sourceTree = "<group>"; };
+		AAAAAAAAAAAAAAAAAAAAAAAC /* AlarmSchedule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlarmSchedule.swift; sourceTree = "<group>"; };
+		AAAAAAAAAAAAAAAAAAAAAAAA /* SleepReportEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepReportEntry.swift; sourceTree = "<group>"; };
 		AAAAAAAAAAAAAAAAAAAAAA41 /* SleepReportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepReportView.swift; sourceTree = "<group>"; };
 		AAAAAAAAAAAAAAAAAAAAAA47 /* LuminariaWidgetBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LuminariaWidgetBundle.swift; sourceTree = "<group>"; };
 		AAAAAAAAAAAAAAAAAAAAAA49 /* AlarmWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlarmWidget.swift; sourceTree = "<group>"; };
@@ -214,6 +220,7 @@
 				AAAAAAAAAAAAAAAAAAAAAA0F /* ShortcutManager.swift */,
 				AAAAAAAAAAAAAAAAAAAAAA1F /* AlarmManager.swift */,
 				AAAAAAAAAAAAAAAAAAAAAA25 /* SleepRoutineStore.swift */,
+				AAAAAAAAAAAAAAAAAAAAAAA8 /* SleepRoutine.swift */,
 				AAAAAAAAAAAAAAAAAAAAAA27 /* SleepRoutinesView.swift */,
 				AAAAAAAAAAAAAAAAAAAAAA29 /* HelpView.swift */,
 				AAAAAAAAAAAAAAAAAAAAAA31 /* AppTheme.swift */,
@@ -221,6 +228,8 @@
 				AAAAAAAAAAAAAAAAAAAAAA3B /* ScreenTimeManager.swift */,
 				AAAAAAAAAAAAAAAAAAAAAA3D /* AppBlockingView.swift */,
 				AAAAAAAAAAAAAAAAAAAAAA3F /* SleepReportStore.swift */,
+				AAAAAAAAAAAAAAAAAAAAAAAC /* AlarmSchedule.swift */,
+				AAAAAAAAAAAAAAAAAAAAAAAA /* SleepReportEntry.swift */,
 				AAAAAAAAAAAAAAAAAAAAAA41 /* SleepReportView.swift */,
 				AAAAAAAAAAAAAAAAAAAAAA5B /* GrowthEngine.swift */,
 				AAAAAAAAAAAAAAAAAAAAAA5F /* RocketScenes.swift */,
@@ -421,6 +430,7 @@
 				AAAAAAAAAAAAAAAAAAAAAA16 /* ShortcutManager.swift in Sources */,
 				AAAAAAAAAAAAAAAAAAAAAA20 /* AlarmManager.swift in Sources */,
 				AAAAAAAAAAAAAAAAAAAAAA26 /* SleepRoutineStore.swift in Sources */,
+				AAAAAAAAAAAAAAAAAAAAAAA9 /* SleepRoutine.swift in Sources */,
 				AAAAAAAAAAAAAAAAAAAAAA28 /* SleepRoutinesView.swift in Sources */,
 				AAAAAAAAAAAAAAAAAAAAAA2A /* HelpView.swift in Sources */,
 				AAAAAAAAAAAAAAAAAAAAAA32 /* AppTheme.swift in Sources */,
@@ -428,6 +438,8 @@
 				AAAAAAAAAAAAAAAAAAAAAA3C /* ScreenTimeManager.swift in Sources */,
 				AAAAAAAAAAAAAAAAAAAAAA3E /* AppBlockingView.swift in Sources */,
 				AAAAAAAAAAAAAAAAAAAAAA40 /* SleepReportStore.swift in Sources */,
+				AAAAAAAAAAAAAAAAAAAAAAAD /* AlarmSchedule.swift in Sources */,
+				AAAAAAAAAAAAAAAAAAAAAAAB /* SleepReportEntry.swift in Sources */,
 				AAAAAAAAAAAAAAAAAAAAAA42 /* SleepReportView.swift in Sources */,
 				AAAAAAAAAAAAAAAAAAAAAA5C /* GrowthEngine.swift in Sources */,
 				AAAAAAAAAAAAAAAAAAAAAA60 /* RocketScenes.swift in Sources */,
