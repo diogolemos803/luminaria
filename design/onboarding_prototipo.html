@@ -72,7 +72,13 @@ button:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
 .center { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 14px; }
 .face { width: 150px; height: 150px; border-radius: 50%; display: grid; place-items: center; background: #fff; box-shadow: 0 8px 18px rgba(35,37,44,.12); transition: background .4s; }
 .night .face { background: #525252; box-shadow: 0 8px 18px rgba(253,248,199,.1); }
-.face svg { width: 78px; height: 78px; }
+.face { flex: none; aspect-ratio: 1; }
+/* Logos do app (LogoAcordado/LogoSono): traço de uma cor só sobre fundo transparente,
+   recoloridos por máscara, como o app faz com .renderingMode(.template). */
+.logo { width: 82px; height: 82px; display: block; background: currentColor;
+        -webkit-mask: var(--logo) center / contain no-repeat; mask: var(--logo) center / contain no-repeat; transition: background-color .4s; }
+.logo.awake { --logo: url(logo_acordado.png); }
+.logo.asleep { --logo: url(logo_sono.png); }
 .face.ok { box-shadow: 0 0 0 6px rgba(128,166,142,.35), 0 8px 18px rgba(35,37,44,.12); }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 6px; }
 .chp { border: 0; padding: 9px 14px; border-radius: 999px; background: var(--chip); color: var(--ink); font: inherit; font-size: 14px; cursor: pointer; }
@@ -127,7 +133,7 @@ details summary::-webkit-details-marker { display: none; }
       <!-- 1. boas-vindas -->
       <section class="screen" data-s="0">
         <div class="body center" style="justify-content:center">
-          <div class="face" aria-hidden="true"><svg style="color:#444"><use href="#sleep"/></svg></div>
+          <div class="face" aria-hidden="true"><span class="logo awake" style="color:#444"></span></div>
           <h2 class="ttl">hora de desligar.</h2>
           <p class="sub" style="max-width:28ch">Encostou o celular na luminária, o SOVEE entra em modo noite: liga o Não Perturbe, bloqueia os apps que você escolher e te acorda de manhã.</p>
         </div>
@@ -190,7 +196,7 @@ details summary::-webkit-details-marker { display: none; }
       <!-- 6. teste do ritual -->
       <section class="screen" data-s="5" hidden>
         <div class="body center" style="justify-content:center">
-          <div class="face" id="ritual-face" aria-hidden="true"><svg style="color:#84a1c8" id="ritual-svg"><use href="#sleep"/></svg></div>
+          <div class="face" id="ritual-face" aria-hidden="true"><span class="logo asleep" style="color:#84a1c8" id="ritual-svg"></span></div>
           <h2 class="ttl" id="r-t">encoste agora</h2>
           <p class="sub" id="r-s" style="max-width:30ch">Um ensaio do ritual de toda noite. Nada é armado: só confere se a leitura funciona.</p>
           <div class="card" id="r-sum" style="width:100%;text-align:left" hidden>
