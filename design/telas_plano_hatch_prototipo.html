@@ -12,6 +12,7 @@
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 html, body { background: var(--page); color: var(--page-ink); font-family: var(--font); }
 body { padding-block: 28px 56px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
 .wrap { max-width: 1560px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px; }
@@ -25,7 +26,7 @@ h1 { margin: 0; font-weight: 500; font-size: clamp(28px, 4vw, 40px); letter-spac
 button:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
 .stage { display: flex; flex-wrap: wrap; gap: 28px; justify-content: center; align-items: flex-start; }
 .col { display: flex; flex-direction: column; gap: 12px; width: 340px; max-width: 100%; }
-.col h2 { margin: 0; font-size: 13px; letter-spacing: .18em; text-transform: lowercase; color: var(--page-muted); font-weight: 500; }
+.col > h2 { margin: 0; font-size: 13px; letter-spacing: .18em; text-transform: lowercase; color: var(--page-muted); font-weight: 500; }
 .col .why { margin: 0; font-size: 14px; line-height: 1.5; color: var(--page-muted); }
 .col .why b { color: var(--page-ink); font-weight: 500; }
 
@@ -79,6 +80,21 @@ button:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
 .wave { display: flex; align-items: center; gap: 8px; font-size: 14.5px; font-weight: 500; padding: 0 6px; }
 .wave svg { width: 18px; height: 18px; }
 .tag { font-size: 11px; letter-spacing: .1em; text-transform: lowercase; padding: 3px 8px; border-radius: 999px; background: rgba(242,176,94,.22); color: var(--ink); }
+.banner { display: flex; gap: 10px; align-items: flex-start; padding: 12px; border-radius: 16px; background: rgba(242,176,94,.16); font-size: 12.5px; line-height: 1.45; }
+.dots5 { display: flex; gap: 6px; }
+.dots5 button { width: 30px; height: 30px; border-radius: 50%; border: 2px solid transparent; padding: 2px; background-clip: content-box; cursor: pointer; }
+.dots5 button[aria-pressed="true"] { border-color: var(--amber); }
+.slider { padding: 4px 10px 10px; }
+.slider .top { display: flex; justify-content: space-between; font-size: 14.5px; font-weight: 500; }
+.slider input { width: 100%; accent-color: var(--amber); }
+.mins { display: flex; align-items: center; gap: 10px; }
+.mins b.v { font-weight: 700; font-variant-numeric: tabular-nums; }
+.mins .st { display: inline-flex; border-radius: 9px; background: var(--chip); }
+.mins .st button { width: 40px; height: 30px; border: 0; background: none; color: var(--ink); font-size: 18px; cursor: pointer; }
+.mins .st button + button { border-left: 1px solid var(--line); }
+.tl { height: 22px; border-radius: 8px; margin: 4px 10px 0; }
+.tl-l { position: relative; height: 16px; margin: 4px 10px 10px; font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.tl-l span { position: absolute; top: 0; white-space: nowrap; }
 @media (prefers-reduced-motion: reduce) { .sw, .sw::after { transition: none; } }
 </style>
 
@@ -105,7 +121,7 @@ button:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
       <h2>1 · editar rotina</h2>
       <div class="ph">
         <div class="status"><span>21:58</span><span>●●●</span></div>
-        <div class="nav"><button class="rb" type="button" aria-label="Voltar"><svg><use href="#back"/></svg></button><span class="tag">itens 2, 3 e 4</span></div>
+        <div class="nav"><button class="rb" type="button" aria-label="Voltar"><svg><use href="#back"/></svg></button><span class="tag">itens 2 e 4</span></div>
         <div class="body">
           <div><h2 class="ttl">editar rotina</h2><p class="sub" id="e-sub">Toca às 07:00 na manhã depois de encostar na luminária.</p></div>
           <div><p class="lbl">horários</p><div class="card">
@@ -124,18 +140,10 @@ button:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
             </div>
           </div></div>
           <div><p class="lbl">som do despertador</p><div class="card"><div class="row"><span class="tx"><b>Ondas do mar</b><span class="s">Abra um grupo e toque num som pra ouvir e escolher.</span></span></div></div></div>
-          <div><p class="lbl">lâmpada ao dormir</p><div class="card">
-            <div class="row"><span class="tx"><b>Apagar devagar</b><span class="s">Começa quando a luminária é reconhecida</span></span><button class="sw" type="button" role="switch" aria-checked="true" id="fade" aria-label="Apagar devagar"></button></div>
-            <div id="fade-on" class="sep">
-              <p class="cap" style="padding:10px 10px 0;color:var(--ink);font-size:14.5px;font-weight:500">Apaga em</p>
-              <div class="chips eq" data-group="fade"><button class="chp" type="button" aria-pressed="true">15 min</button><button class="chp" type="button" aria-pressed="false">30 min</button><button class="chp" type="button" aria-pressed="false">45 min</button><button class="chp" type="button" aria-pressed="false">60 min</button></div>
-              <p class="cap">A luz que estiver acesa vai diminuindo até apagar. Se a lâmpada estiver apagada, ela continua apagada.</p>
-            </div>
-          </div></div>
-          <p class="note">"Lâmpada ao dormir" e "ao acordar" só aparecem com uma lâmpada pareada.</p>
+          <p class="note">Com lâmpada pareada, aqui embaixo vêm "Lâmpada ao dormir" e "ao acordar" (tela 4).</p>
         </div>
       </div>
-      <p class="why"><b>Mudou:</b> a chave de horário por dia (desligada = igual ao antes), o cartão Lembrete, e o "ao dormir" que perdeu cor e brilho e ficou só com o tempo.</p>
+      <p class="why"><b>Mudou:</b> a chave de horário por dia (desligada = igual ao antes) e o cartão Lembrete.</p>
     </div>
 
     <!-- 2. primeira noite -->
@@ -185,9 +193,45 @@ button:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
       <p class="why"><b>Tela nova, sem protótipo.</b> Só ruído branco: os outros sons ficam pra depois do teste no nicho. O botão toca e para; trocar o timer com o som tocando vale na hora.</p>
     </div>
 
+    <!-- 5. luz por rotina -->
+    <div class="col">
+      <h2>4 · luz da lâmpada na rotina</h2>
+      <div class="ph">
+        <div class="status"><span>21:58</span><span>●●●</span></div>
+        <div class="nav"><button class="rb" type="button" aria-label="Voltar"><svg><use href="#back"/></svg></button><span class="tag">item 3 · resto igual</span></div>
+        <div class="body">
+          <p class="note" style="padding:0 4px">Continuação do editar rotina, só com lâmpada pareada:</p>
+          <div class="banner"><span aria-hidden="true">☾</span><span>A lâmpada segue o despertador: só acontece nas noites em que você arma o modo noite e encosta na luminária. Não repete sozinha nos outros dias.</span></div>
+          <div><p class="lbl">lâmpada ao dormir</p><div class="card">
+            <div class="row"><span class="tx"><b>Apagar devagar</b><span class="s">Começa quando a luminária é reconhecida</span></span><button class="sw" type="button" role="switch" aria-checked="true" id="fade" aria-label="Apagar devagar"></button></div>
+            <div id="fade-on" class="sep">
+              <p class="cap" style="padding:10px 10px 0;color:var(--ink);font-size:14.5px;font-weight:500">Apaga em</p>
+              <div class="chips eq" data-group="fade"><button class="chp" type="button" aria-pressed="true">15 min</button><button class="chp" type="button" aria-pressed="false">30 min</button><button class="chp" type="button" aria-pressed="false">45 min</button><button class="chp" type="button" aria-pressed="false">60 min</button></div>
+              <p class="cap">A luz que estiver acesa vai diminuindo até apagar. Se a lâmpada estiver apagada, ela continua apagada.</p>
+            </div>
+          </div></div>
+          <div><p class="lbl">lâmpada ao acordar</p><div class="card">
+            <div class="row"><span class="tx"><b>Amanhecer</b><span class="s" id="wake-sub">06:45 até 07:30, com despertador às 07:00</span></span><button class="sw" type="button" role="switch" aria-checked="true" id="dawn" aria-label="Amanhecer"></button></div>
+            <div id="dawn-on">
+              <div class="row mins"><span class="tx"><b>Começa antes do despertador</b></span><b class="v" id="before-v">15 min</b><span class="st"><button type="button" data-m="before" data-d="-5" aria-label="menos 5 minutos">−</button><button type="button" data-m="before" data-d="5" aria-label="mais 5 minutos">+</button></span></div>
+              <div class="row"><span class="tx"><b>Começa em</b><span class="s" id="from-n">Vermelho</span></span><span class="dots5" data-color="from"></span></div>
+              <div class="slider"><div class="top"><span>Brilho no começo</span><span id="fromb-v">0%</span></div><input id="fromb" type="range" min="0" max="100" value="0" aria-label="Brilho no começo"></div>
+              <div class="row"><span class="tx"><b>Termina em</b><span class="s" id="to-n">Amarelo</span></span><span class="dots5" data-color="to"></span></div>
+              <div class="slider"><div class="top"><span>Brilho no fim</span><span id="tob-v">100%</span></div><input id="tob" type="range" min="5" max="100" value="100" aria-label="Brilho no fim"></div>
+              <div class="row mins"><span class="tx"><b>Fica acesa depois</b></span><b class="v" id="hold-v">30 min</b><span class="st"><button type="button" data-m="hold" data-d="-5" aria-label="menos 5 minutos">−</button><button type="button" data-m="hold" data-d="5" aria-label="mais 5 minutos">+</button></span></div>
+              <div class="tl" id="tl" aria-hidden="true"></div>
+              <div class="tl-l" id="tl-l" aria-hidden="true"></div>
+            </div>
+          </div></div>
+          <p class="note">Com as duas chaves desligadas, esta rotina não mexe na lâmpada.</p>
+        </div>
+      </div>
+      <p class="why"><b>Mudou só o "ao dormir":</b> antes tinha cor, brilho inicial e tempo de 1 a 120 min; agora só o tempo. O "ao acordar" está igual, mas o horário da linha do tempo agora é o da manhã seguinte (muda se a rotina tiver horário por dia).</p>
+    </div>
+
     <!-- 4. onde liga -->
     <div class="col">
-      <h2>4 · onde liga o experimento</h2>
+      <h2>5 · onde liga o experimento</h2>
       <div class="ph">
         <div class="status"><span>23:10</span><span>●●●</span></div>
         <div class="nav"><span class="t"></span><button class="rb" type="button" aria-label="Fechar"><svg><use href="#x"/></svg></button></div>
@@ -260,6 +304,32 @@ button:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
   document.getElementById('a-on').addEventListener('click', function () { alarm(true); });
   document.getElementById('a-off').addEventListener('click', function () { alarm(false); });
   syncSounds();
+
+  // 5. luz por rotina
+  var presets = [['Amarelo', 0], ['Âmbar quente', 50/305], ['Laranja', 102/306], ['Laranja-avermelhado', 180/280], ['Vermelho', 1]];
+  function col(mix, b) { var a = [255, 194, 74], r = [229, 72, 47]; var c = a.map(function (v, i) { return Math.round(v + (r[i] - v) * mix); }); var k = 0.25 + 0.75 * b; var bg = [35, 37, 44]; return 'rgb(' + c.map(function (v, i) { return Math.round(bg[i] + (v - bg[i]) * k); }).join(',') + ')'; }
+  var wk = { before: 15, hold: 30, from: 4, to: 0 };
+  document.querySelectorAll('[data-color]').forEach(function (box) {
+    var key = box.dataset.color;
+    presets.forEach(function (p, i) { var b = document.createElement('button'); b.type = 'button'; b.style.backgroundColor = col(p[1], 1); b.setAttribute('aria-label', p[0]); b.setAttribute('aria-pressed', String(i === wk[key]));
+      b.addEventListener('click', function () { wk[key] = i; box.querySelectorAll('button').forEach(function (o, j) { o.setAttribute('aria-pressed', String(j === i)); }); syncWake(); }); box.appendChild(b); });
+  });
+  document.querySelectorAll('[data-m]').forEach(function (b) { b.addEventListener('click', function () { var k = b.dataset.m, lo = k === 'hold' ? 0 : 1, hi = k === 'hold' ? 240 : 120; wk[k] = Math.max(lo, Math.min(hi, wk[k] + +b.dataset.d)); syncWake(); }); });
+  ['fromb', 'tob'].forEach(function (id) { document.getElementById(id).addEventListener('input', syncWake); });
+  function syncWake() {
+    var fb = +document.getElementById('fromb').value / 100, tb = +document.getElementById('tob').value / 100, alarm = 7 * 60;
+    document.getElementById('before-v').textContent = wk.before + ' min'; document.getElementById('hold-v').textContent = wk.hold + ' min';
+    document.getElementById('fromb-v').textContent = Math.round(fb * 100) + '%'; document.getElementById('tob-v').textContent = Math.round(tb * 100) + '%';
+    document.getElementById('from-n').textContent = presets[wk.from][0]; document.getElementById('to-n').textContent = presets[wk.to][0];
+    document.getElementById('wake-sub').textContent = hm(alarm - wk.before) + ' até ' + hm(alarm + wk.hold) + ', com despertador às ' + hm(alarm);
+    var total = wk.before + wk.hold, split = total ? wk.before / total : 1, stops = [];
+    for (var i = 0; i <= 10; i++) { var t = i / 10, m, br; if (t < split) { var k = t / split; m = presets[wk.from][1] + (presets[wk.to][1] - presets[wk.from][1]) * k; br = fb + (tb - fb) * k; } else { m = presets[wk.to][1]; br = tb; } stops.push(col(m, br) + ' ' + (t * 100) + '%'); }
+    document.getElementById('tl').style.background = 'linear-gradient(90deg,' + stops.join(',') + ')';
+    var pos = Math.min(Math.max(split * 100, 14), 86);
+    document.getElementById('tl-l').innerHTML = '<span style="left:0">' + hm(alarm - wk.before) + '</span><span style="left:' + pos + '%;transform:translateX(-50%)">' + hm(alarm) + ' ⏰</span>' + (wk.hold > 0 ? '<span style="right:0">' + hm(alarm + wk.hold) + '</span>' : '');
+  }
+  sw('dawn', function (on) { document.getElementById('dawn-on').hidden = !on; });
+  syncWake();
 
   // 4. experimento
   sw('exp', function (on) { document.getElementById('menu-card').hidden = !on; document.getElementById('menu-off').hidden = on; });
