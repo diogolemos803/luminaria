@@ -335,3 +335,38 @@ final class LampProtocolTests: XCTestCase {
         XCTAssertEqual(LampState.version(of: v1), 1)
     }
 }
+
+
+// MARK: - Quiz da primeira noite
+
+final class FirstNightAnswersTests: XCTestCase {
+    func testAnswersBuildRoutine() {
+        var r = SleepRoutine(name: "Minha rotina", alarmHour: 7, alarmMinute: 0, soundOption: .rain)
+        FirstNightAnswers(wakeMinutes: 6 * 60 + 45, relaxMinutes: 45, light: .morningOnly, reminderMinutes: 22 * 60 + 15)
+            .apply(to: &r)
+        XCTAssertEqual(r.alarmHour, 6)
+        XCTAssertEqual(r.alarmMinute, 45)
+        XCTAssertEqual(r.lampSleep.minutes, 45)
+        XCTAssertFalse(r.lampSleep.enabled)
+        XCTAssertTrue(r.lampWake.enabled)
+        XCTAssertEqual(r.bedtimeReminder, AlarmTime(hour: 22, minute: 15))
+    }
+
+    func testNoLampQuestionKeepsLampSettingsAndNoReminderClearsIt() {
+        var r = SleepRoutine(name: "R", soundOption: .rain)
+        r.lampWake.enabled = false
+        r.bedtimeReminder = AlarmTime(hour: 23, minute: 0)
+        FirstNightAnswers(wakeMinutes: 8 * 60, light: nil, reminderMinutes: nil).apply(to: &r)
+        XCTAssertFalse(r.lampWake.enabled, "sem a pergunta da luz, nada muda na lâmpada")
+        XCTAssertNil(r.bedtimeReminder)
+    }
+
+    func testPerDayAlarmsKeptWhenWakeTimeUnchanged() {
+        var r = SleepRoutine(name: "R", alarmHour: 7, alarmMinute: 0, soundOption: .rain)
+        r.setPerDayAlarms(true)
+        FirstNightAnswers(wakeMinutes: 7 * 60).apply(to: &r)
+        XCTAssertNotNil(r.weekdayAlarms)
+        FirstNightAnswers(wakeMinutes: 7 * 60 + 15).apply(to: &r)
+        XCTAssertNil(r.weekdayAlarms)
+    }
+}

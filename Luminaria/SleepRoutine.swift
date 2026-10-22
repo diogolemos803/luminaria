@@ -343,3 +343,59 @@ struct SleepRoutine: Identifiable, Codable, Equatable {
         }
     }
 }
+
+// MARK: - Quiz da primeira noite (item 5 do plano Hatch, 2026-10-22)
+
+/// Respostas das 4 perguntas do onboarding ("sua primeira noite"). Só montam a rotina —
+/// nenhum diagnóstico, nenhuma sugestão de quanto dormir: cada número é o que a pessoa
+/// escolheu.
+struct FirstNightAnswers: Equatable {
+    enum Light: Equatable {
+        /// Apaga devagar ao encostar na luminária e acende de manhã.
+        case fadeAndMorning
+        /// Só a luz da manhã.
+        case morningOnly
+        /// A rotina não mexe na lâmpada.
+        case off
+    }
+
+    static let relaxChoices = LampSleepSettings.minuteChoices
+
+    var wakeMinutes: Int
+    /// "Quanto tempo pra desacelerar?" — vira o tempo do apagar devagar da lâmpada.
+    var relaxMinutes: Int = 30
+    /// `nil` = a pergunta não apareceu (sem lâmpada pareada): mantém o que a rotina tinha.
+    var light: Light?
+    /// Minutos do dia do lembrete "hora de desligar."; `nil` = sem lembrete.
+    var reminderMinutes: Int? = 22 * 60
+
+    func apply(to routine: inout SleepRoutine) {
+        let wake = ((wakeMinutes % 1440) + 1440) % 1440
+        // Horário por dia da semana só sai se a pessoa mudou o horário aqui.
+        if routine.weekdayAlarms != nil, wake != routine.alarmHour * 60 + routine.alarmMinute {
+            routine.weekdayAlarms = nil
+        }
+        routine.alarmHour = wake / 60
+        routine.alarmMinute = wake % 60
+        routine.lampSleep.minutes = min(max(relaxMinutes, 15), 60)
+        switch light {
+        case .fadeAndMorning?:
+            routine.lampSleep.enabled = true
+            routine.lampWake.enabled = true
+        case .morningOnly?:
+            routine.lampSleep.enabled = false
+            routine.lampWake.enabled = true
+        case .off?:
+            routine.lampSleep.enabled = false
+            routine.lampWake.enabled = false
+        case nil:
+            break
+        }
+        if let reminderMinutes {
+            let m = ((reminderMinutes % 1440) + 1440) % 1440
+            routine.bedtimeReminder = AlarmTime(hour: m / 60, minute: m % 60)
+        } else {
+            routine.bedtimeReminder = nil
+        }
+    }
+}

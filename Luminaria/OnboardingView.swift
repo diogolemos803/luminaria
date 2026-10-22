@@ -38,6 +38,11 @@ struct OnboardingView: View {
     @State private var step = 0
     @State private var permissionIndex = 0
     @State private var wakeMinutes = 7 * 60
+    @State private var relaxMinutes = 30
+    @State private var lightChoice: FirstNightAnswers.Light = .fadeAndMorning
+    @State private var reminderMinutes = 22 * 60
+    @State private var wantsReminder = true
+    @ObservedObject private var lampManager = LampManager.shared
     @State private var rehearsalOK = false
     @State private var showsManualShortcutHelp = false
     @State private var copiedTime = false
@@ -69,6 +74,11 @@ struct OnboardingView: View {
         .onAppear {
             if let routine = routineStore.activeRoutine {
                 wakeMinutes = routine.alarmHour * 60 + routine.alarmMinute
+                relaxMinutes = routine.lampSleep.fadeMinutes
+                if let reminder = routine.bedtimeReminder {
+                    reminderMinutes = reminder.hour * 60 + reminder.minute
+                }
+                lightChoice = !routine.lampWake.enabled ? .off : (routine.lampSleep.enabled ? .fadeAndMorning : .morningOnly)
             }
             nfcManager.onRehearsalRecognized = {
                 withAnimation(.easeInOut(duration: 0.4)) { rehearsalOK = true }
@@ -413,20 +423,32 @@ struct OnboardingView: View {
 
     private var firstNight: some View {
         screen {
-            MenuHeader(title: "sua primeira noite", subtitle: "Dá pra mudar tudo depois em Rotinas.", theme: theme)
+            MenuHeader(title: "sua primeira noite", subtitle: lampManager.hasLamp ? "Quatro perguntas. Dá pra mudar tudo depois em Rotinas." : "Três perguntas. Dá pra mudar tudo depois em Rotinas.", theme: theme)
             ThemedCard(title: "que horas você acorda?", theme: theme) {
-                HStack(spacing: 18) {
-                    stepperButton("minus", label: "15 minutos antes") { wakeMinutes = (wakeMinutes - 15 + 1440) % 1440 }
-                    Text(String(format: "%02d:%02d", wakeMinutes / 60, wakeMinutes % 60))
-                        .font(.soveeDisplay(size: 44, weight: .medium))
-                        .monospacedDigit()
-                        .foregroundStyle(theme.ink)
-                    stepperButton("plus", label: "15 minutos depois") { wakeMinutes = (wakeMinutes + 15) % 1440 }
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 12)
+                timeStepper($wakeMinutes, size: 44)
             }
-            Text("O despertador só toca nas noites em que você encostar na luminária. Os apps a bloquear você escolhe em Rotinas.")
+            ThemedCard(title: "quanto tempo pra desacelerar?", theme: theme) {
+                chipRow(FirstNightAnswers.relaxChoices.map { ("\($0) min", $0) }, selection: $relaxMinutes)
+                Text(lampManager.hasLamp ? "É o tempo que a luz da lâmpada leva pra apagar depois que você encosta." : "Vale pra luz da lâmpada SOVEE, se um dia você parear uma.")
+                    .font(.luminaria(.caption))
+                    .foregroundStyle(theme.inkMuted)
+                    .padding(.horizontal, 10)
+                    .padding(.bottom, 8)
+            }
+            if lampManager.hasLamp {
+                ThemedCard(title: "luz da lâmpada", theme: theme) {
+                    chipRow([("apagar devagar e acender de manhã", FirstNightAnswers.Light.fadeAndMorning),
+                             ("só de manhã", .morningOnly),
+                             ("não usar a lâmpada", .off)], selection: $lightChoice)
+                }
+            }
+            ThemedCard(title: "lembrete \u{201C}hora de desligar.\u{201D}", theme: theme) {
+                if wantsReminder {
+                    timeStepper($reminderMinutes, size: 32)
+                }
+                chipRow([("com lembrete", true), ("sem lembrete", false)], selection: $wantsReminder)
+            }
+            Text("Você escolhe os horários; o SOVEE não sugere quanto dormir. O despertador só toca nas noites em que você encostar na luminária. Os apps a bloquear você escolhe em Rotinas.")
                 .font(.luminaria(.footnote))
                 .foregroundStyle(theme.inkMuted)
                 .padding(.horizontal, 6)
@@ -436,6 +458,41 @@ struct OnboardingView: View {
                 go(5)
             }
         }
+    }
+
+    private func timeStepper(_ minutes: Binding<Int>, size: CGFloat) -> some View {
+        HStack(spacing: 18) {
+            stepperButton("minus", label: "15 minutos antes") { minutes.wrappedValue = (minutes.wrappedValue - 15 + 1440) % 1440 }
+            Text(String(format: "%02d:%02d", minutes.wrappedValue / 60, minutes.wrappedValue % 60))
+                .font(.soveeDisplay(size: size, weight: .medium))
+                .monospacedDigit()
+                .foregroundStyle(theme.ink)
+            stepperButton("plus", label: "15 minutos depois") { minutes.wrappedValue = (minutes.wrappedValue + 15) % 1440 }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 10)
+    }
+
+    /// Fila de opções em pílula, quebrando linha quando não cabe.
+    private func chipRow<Value: Equatable>(_ options: [(String, Value)], selection: Binding<Value>) -> some View {
+        ChipFlow(spacing: 6) {
+            ForEach(options.indices, id: \.self) { i in
+                let selected = options[i].1 == selection.wrappedValue
+                Button {
+                    selection.wrappedValue = options[i].1
+                } label: {
+                    Text(options[i].0)
+                        .font(.luminaria(.subheadline, weight: selected ? .bold : .regular))
+                        .foregroundStyle(selected ? theme.accentForeground : theme.ink)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 9)
+                        .background(selected ? theme.accent : (theme.chip ?? theme.accentWash), in: Capsule())
+                }
+                .buttonStyle(.plain)
+                .accessibilityAddTraits(selected ? .isSelected : [])
+            }
+        }
+        .padding(6)
     }
 
     private func stepperButton(_ icon: String, label: String, action: @escaping () -> Void) -> some View {
@@ -452,12 +509,12 @@ struct OnboardingView: View {
 
     private func saveFirstRoutine() {
         var routine = routineStore.activeRoutine ?? SleepRoutine(name: "Minha rotina")
-        // Horário por dia da semana só é trocado se a pessoa mudou o horário aqui.
-        if routine.weekdayAlarms != nil, wakeMinutes != routine.alarmHour * 60 + routine.alarmMinute {
-            routine.weekdayAlarms = nil
-        }
-        routine.alarmHour = wakeMinutes / 60
-        routine.alarmMinute = wakeMinutes % 60
+        FirstNightAnswers(
+            wakeMinutes: wakeMinutes,
+            relaxMinutes: relaxMinutes,
+            light: lampManager.hasLamp ? lightChoice : nil,
+            reminderMinutes: wantsReminder ? reminderMinutes : nil
+        ).apply(to: &routine)
         routineStore.upsert(routine)
         if routineStore.activeRoutineID == nil {
             routineStore.setActive(id: routine.id)
@@ -486,6 +543,12 @@ struct OnboardingView: View {
                     ThemedRow(theme: theme, showsDivider: true, title: "Não Perturbe pelo atalho",
                               subtitle: "Liga ao encostar, desliga ao acordar.",
                               leading: { IconBadge(systemName: "moon", theme: theme) }, accessory: { EmptyView() })
+                    if wantsReminder {
+                        ThemedRow(theme: theme, showsDivider: true,
+                                  title: String(format: "\u{201C}hora de desligar.\u{201D} às %02d:%02d", reminderMinutes / 60, reminderMinutes % 60),
+                                  subtitle: "Um lembrete por noite.",
+                                  leading: { IconBadge(systemName: "bell", theme: theme) }, accessory: { EmptyView() })
+                    }
                 }
             }
             if let error = nfcManager.errorMessage, !rehearsalOK {
@@ -511,5 +574,42 @@ struct OnboardingView: View {
         nfcManager.onRehearsalRecognized = nil
         OnboardingGate.markDone()
         onFinish()
+    }
+}
+
+/// Pílulas lado a lado que quebram linha quando não cabem (as opções da luz são longas).
+struct ChipFlow: Layout {
+    var spacing: CGFloat = 6
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let width = proposal.width ?? .infinity
+        var x: CGFloat = 0, y: CGFloat = 0, rowHeight: CGFloat = 0, widest: CGFloat = 0
+        for view in subviews {
+            let size = view.sizeThatFits(.unspecified)
+            if x > 0, x + size.width > width {
+                y += rowHeight + spacing
+                x = 0
+                rowHeight = 0
+            }
+            x += size.width + spacing
+            rowHeight = max(rowHeight, size.height)
+            widest = max(widest, x - spacing)
+        }
+        return CGSize(width: proposal.width ?? widest, height: y + rowHeight)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        var x = bounds.minX, y = bounds.minY, rowHeight: CGFloat = 0
+        for view in subviews {
+            let size = view.sizeThatFits(.unspecified)
+            if x > bounds.minX, x + size.width > bounds.maxX {
+                y += rowHeight + spacing
+                x = bounds.minX
+                rowHeight = 0
+            }
+            view.place(at: CGPoint(x: x, y: y), proposal: ProposedViewSize(size))
+            x += size.width + spacing
+            rowHeight = max(rowHeight, size.height)
+        }
     }
 }

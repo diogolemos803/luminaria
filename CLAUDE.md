@@ -729,6 +729,23 @@ resultado do "Parar".
 - Só dá pra validar no iPhone: a notificação chegando no horário e sumindo na noite em
   que a luminária foi lida antes.
 
+## Quiz da primeira noite (2026-10-22, item 5 do plano Hatch)
+
+- Passo 5 do onboarding ("sua primeira noite"), no desenho que já estava no protótipo
+  aprovado `design/onboarding_prototipo.html`: **que horas você acorda?** (± 15 min),
+  **quanto tempo pra desacelerar?** (15/30/45/60 min → tempo do apagar devagar da
+  lâmpada), **luz da lâmpada** (só com lâmpada pareada: "apagar devagar e acender de
+  manhã" / "só de manhã" / "não usar a lâmpada") e **lembrete "hora de desligar."**
+  (horário ± 15 min + "com/sem lembrete", padrão 22:00 com lembrete). Sem lâmpada a
+  pergunta da luz some e o texto do desacelerar avisa que vale pra lâmpada, se um dia
+  houver uma. Sem diagnóstico e sem sugerir quanto dormir — o texto diz isso.
+- Conta pura `FirstNightAnswers.apply(to:)` em `SleepRoutine.swift` (testada): sem a
+  pergunta da luz (`light == nil`) não mexe na lâmpada; horário por dia só sai se o
+  horário de acordar mudou; "sem lembrete" apaga o lembrete.
+- `ChipFlow` (`Layout`, iOS 16) em `OnboardingView.swift` pras pílulas quebrarem linha.
+- O resumo do ensaio mostra também o lembrete.
+- Só dá pra validar no iPhone: o tamanho das pílulas longas numa tela pequena (SE).
+
 ## As duas branches
 
 ### `main`
