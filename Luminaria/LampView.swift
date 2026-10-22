@@ -680,18 +680,34 @@ struct LampRoutineSections: View {
                 toggleRow("Apagar devagar", subtitle: "Começa quando a luminária é reconhecida", isOn: $routine.lampSleep.enabled)
                 if routine.lampSleep.enabled {
                     divider
-                    colorRow("Cor", mix: $routine.lampSleep.mix)
-                    sliderRow("Brilho inicial", value: $routine.lampSleep.brightness, range: 0.05...1, mix: routine.lampSleep.mix)
-                    minutesRow("Apaga em", value: $routine.lampSleep.minutes, range: 1...120)
-                    VStack(spacing: 4) {
-                        LampTimelinePreview { t in (routine.lampSleep.mix, routine.lampSleep.brightness * (1 - t)) }
-                        HStack {
-                            Text("ao encostar")
-                            Spacer()
-                            Text("+\(routine.lampSleep.minutes) min · apagada")
+                    // Único ajuste (item 3 do plano Hatch): em quanto tempo apaga. Começa da
+                    // luz que estiver acesa; apagada, continua apagada.
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Apaga em")
+                            .font(.luminaria(.subheadline, weight: .medium))
+                            .foregroundStyle(theme.ink)
+                        HStack(spacing: 8) {
+                            ForEach(LampSleepSettings.minuteChoices, id: \.self) { minutes in
+                                let selected = routine.lampSleep.fadeMinutes == minutes
+                                Button {
+                                    routine.lampSleep.minutes = minutes
+                                } label: {
+                                    Text("\(minutes) min")
+                                        .font(.luminaria(.subheadline, weight: selected ? .bold : .medium))
+                                        .foregroundStyle(selected ? theme.accentForeground : theme.ink)
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.vertical, 9)
+                                        .background(selected ? theme.accent : (theme.chip ?? theme.accentWash),
+                                                    in: Capsule())
+                                }
+                                .buttonStyle(.plain)
+                                .accessibilityAddTraits(selected ? .isSelected : [])
+                            }
                         }
-                        .font(.luminaria(.caption2))
-                        .foregroundStyle(theme.inkMuted)
+                        Text("A luz que estiver acesa vai diminuindo até apagar. Se a lâmpada estiver apagada, ela continua apagada.")
+                            .font(.luminaria(.caption))
+                            .foregroundStyle(theme.inkMuted)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                     .padding(10)
                 }

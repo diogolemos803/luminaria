@@ -691,6 +691,24 @@ resultado do "Parar".
   sistema (AlarmKit) na hora certa; virada de horário de verão não se aplica no Brasil
   hoje, mas a conta usa `Calendar`, não soma de segundos.
 
+## Lâmpada "ao dormir" com um ajuste só (2026-10-22, item 3 do plano Hatch)
+
+- O cartão "Lâmpada ao dormir" do editor de rotina (só aparece com lâmpada pareada, como
+  antes) tem agora **um único ajuste**: "Apaga em" 15/30/45/60 min
+  (`LampSleepSettings.minuteChoices`). Cor e brilho inicial saíram da tela.
+- **Decisão**: o apagar começa da **luz que estiver acesa** quando a luminária é
+  reconhecida (`LampSleepSettings.fadeCommand(current:)`, puro e testado); lâmpada
+  apagada continua apagada — o app não acende uma luz só pra apagar. `mix`/`brightness`
+  continuam no modelo só por compatibilidade do que já foi salvo. Rotinas antigas com
+  1–120 min caem em 15–60 (`fadeMinutes`), sem regravar.
+- `LampManager.beginNight` passou a esperar o STATE da conexão atual
+  (`hasFreshState`, zerado ao desconectar) antes de mandar os comandos da noite — o
+  STATE antigo que fica na tela não serve pra saber se a luz está acesa. Mesmo tempo
+  limite de 12 s (depois disso, o alerta "a luz da manhã não vai acender hoje").
+- Sem mudança de firmware: usa o 0x07 (apagar devagar) da v2 proposta.
+- Só dá pra validar com a placa: o STATE chegando logo depois de conectar (senão cai no
+  tempo limite) e a cor de partida batendo com a luz real.
+
 ## As duas branches
 
 ### `main`

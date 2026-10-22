@@ -231,6 +231,27 @@ final class LampProtocolTests: XCTestCase {
         XCTAssertEqual(c.brightness, 0.6, accuracy: 0.02)
     }
 
+    /// "Ao dormir": apaga a partir da luz acesa; apagada continua apagada; 15–60 min.
+    func testSleepFadeStartsFromCurrentLight() {
+        var s = LampSleepSettings()
+        s.minutes = 30
+        let lit = LampColor(amber: 120, red: 40)
+        XCTAssertEqual(s.fadeCommand(current: lit), .fadeOut(from: lit, minutes: 30))
+        XCTAssertNil(s.fadeCommand(current: .off))
+        XCTAssertNil(s.fadeCommand(current: nil))
+        s.enabled = false
+        XCTAssertNil(s.fadeCommand(current: lit))
+    }
+
+    func testSleepFadeMinutesClampedForOldRoutines() {
+        var s = LampSleepSettings()
+        s.minutes = 5
+        XCTAssertEqual(s.fadeMinutes, 15)
+        s.minutes = 120
+        XCTAssertEqual(s.fadeMinutes, 60)
+        XCTAssertEqual(LampSleepSettings().fadeMinutes, 15)
+    }
+
     func testCommandBytes() {
         XCTAssertEqual(LampCommand.color(LampColor(amber: 10, red: 20)).bytes(), [0x01, 10, 20])
         XCTAssertEqual(LampCommand.off.bytes(), [0x02])

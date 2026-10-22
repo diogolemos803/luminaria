@@ -89,8 +89,13 @@ final class LampManager: ObservableObject {
     private var awaitingResult = false
     private var lastClockSent: Date?
     /// Noite pedida com a lâmpada ainda conectando (ver `beginNight`).
-    private var pendingNight: (commands: [LampCommand], completion: (Bool) -> Void)?
+    /// Noite esperando a lâmpada conectar E mandar o STATE (o apagar devagar começa da
+    /// luz atual, então precisa saber qual é).
+    private var pendingNight: (routine: SleepRoutine, alarmDate: Date?, completion: (Bool) -> Void)?
     private var pendingNightTimeout: DispatchWorkItem?
+    /// STATE recebido nesta conexão (o `state` antigo fica na tela depois de desconectar,
+    /// mas não serve pra decidir de que luz começar a apagar).
+    private var hasFreshState = false
     /// Desarme pedido com a lâmpada longe: manda na próxima conexão.
     private var pendingEndNight = false
     private var lastColorSend = Date.distantPast
@@ -211,11 +216,28 @@ final class LampManager: ObservableObject {
     /// Sem lâmpada pareada, não faz nada.
     func beginNight(routine: SleepRoutine, alarmDate: Date?, completion: @escaping (Bool) -> Void) {
         guard hasLamp else { completion(true); return }
+        pendingEndNight = false
+        isTodayCancelled = false
+        if isConnected, hasFreshState {
+            nightCommands(routine: routine, alarmDate: alarmDate).forEach { send($0) }
+            refreshRoutineSoon()
+            completion(true)
+            return
+        }
+        failPendingNight()
+        pendingNight = (routine, alarmDate, completion)
+        start()
+        let timeout = DispatchWorkItem { [weak self] in self?.failPendingNight() }
+        pendingNightTimeout = timeout
+        DispatchQueue.main.asyncAfter(deadline: .now() + 12, execute: timeout)
+    }
+
+    /// Apagar devagar a partir da luz acesa agora (lâmpada apagada continua apagada) e a
+    /// luz da manhã só pra manhã seguinte.
+    private func nightCommands(routine: SleepRoutine, alarmDate: Date?) -> [LampCommand] {
         var commands: [LampCommand] = []
-        if routine.lampSleep.enabled {
-            let color = LampColor(mix: routine.lampSleep.mix, brightness: max(routine.lampSleep.brightness, 0.01))
-            let minutes = min(max(routine.lampSleep.minutes, LampCommand.fadeRange.lowerBound), LampCommand.fadeRange.upperBound)
-            commands.append(.fadeOut(from: color, minutes: minutes))
+        if let fade = routine.lampSleep.fadeCommand(current: state?.color) {
+            commands.append(fade)
         }
         if routine.lampWake.enabled, let alarmDate {
             commands.append(.writeRoutine(routine.lampWake.lampRoutine(alarmDate: alarmDate)))
@@ -223,20 +245,17 @@ final class LampManager: ObservableObject {
             // Garante que nenhuma luz da manhã antiga fique gravada.
             commands.append(.writeRoutine(.disabled))
         }
-        pendingEndNight = false
-        isTodayCancelled = false
-        if isConnected {
-            commands.forEach { send($0) }
-            refreshRoutineSoon()
-            completion(true)
-            return
-        }
-        failPendingNight()
-        pendingNight = (commands, completion)
-        start()
-        let timeout = DispatchWorkItem { [weak self] in self?.failPendingNight() }
-        pendingNightTimeout = timeout
-        DispatchQueue.main.asyncAfter(deadline: .now() + 12, execute: timeout)
+        return commands
+    }
+
+    private func flushPendingNightIfReady() {
+        guard isConnected, hasFreshState, let pending = pendingNight else { return }
+        pendingNightTimeout?.cancel()
+        pendingNightTimeout = nil
+        pendingNight = nil
+        nightCommands(routine: pending.routine, alarmDate: pending.alarmDate).forEach { send($0) }
+        refreshRoutineSoon()
+        pending.completion(true)
     }
 
     /// Desarme pelo botão redondo: cancela o apagar devagar e a luz da manhã daquela noite.
@@ -296,13 +315,9 @@ final class LampManager: ObservableObject {
     private func didBecomeConnected() {
         sendClockIfNeeded(force: true)
         transport.readRoutine()
-        if let pending = pendingNight {
-            pendingNightTimeout?.cancel()
-            pendingNightTimeout = nil
-            pendingNight = nil
-            pending.commands.forEach { send($0) }
-            refreshRoutineSoon()
-            pending.completion(true)
+        if pendingNight != nil {
+            // Pode ainda não ter STATE; aí espera ele chegar (didReceiveState).
+            flushPendingNightIfReady()
         } else if pendingEndNight {
             sendEndNight()
         }
@@ -317,7 +332,10 @@ extension LampManager: LampTransportDelegate {
         if newLink == .connected, !wasConnected {
             didBecomeConnected()
         }
-        if newLink != .connected { awaitingResult = false }
+        if newLink != .connected {
+            awaitingResult = false
+            hasFreshState = false
+        }
     }
 
     func transport(didPair identifier: UUID) {
@@ -335,11 +353,13 @@ extension LampManager: LampTransportDelegate {
         }
         guard let newState = LampState(bytes: bytes) else { return }
         state = newState
+        hasFreshState = true
         if awaitingResult {
             awaitingResult = false
             if let message = newState.lastResult.message { errorMessage = message }
         }
         if !newState.clockValid, isConnected { sendClockIfNeeded() }
+        flushPendingNightIfReady()
     }
 
     func transport(didReadRoutine bytes: [UInt8]) {

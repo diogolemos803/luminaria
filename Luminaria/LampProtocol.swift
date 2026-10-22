@@ -366,9 +366,24 @@ enum LampCommand: Equatable {
 /// a lâmpada acende nesta cor e apaga devagar em `minutes`.
 struct LampSleepSettings: Codable, Equatable {
     var enabled: Bool = true
+    /// `mix`/`brightness` ficaram só pela compatibilidade do que já foi salvo — desde o
+    /// item 3 do plano Hatch (2026-10-22) o apagar começa da luz que estiver acesa.
     var mix: Double = LampPreset.all[3].color.mix
     var brightness: Double = 0.6
     var minutes: Int = 15
+
+    /// Único ajuste mostrado no editor: em quanto tempo a luz apaga.
+    static let minuteChoices = [15, 30, 45, 60]
+
+    /// `minutes` preso a 15–60 (rotinas antigas podiam ter 1–120).
+    var fadeMinutes: Int { min(max(minutes, 15), 60) }
+
+    /// Comando de apagar devagar a partir da luz atual da lâmpada (`current`, do STATE).
+    /// Lâmpada apagada (ou estado desconhecido) → `nil`: não acende uma luz pra apagar.
+    func fadeCommand(current: LampColor?) -> LampCommand? {
+        guard enabled, let current, !current.isOff else { return nil }
+        return .fadeOut(from: current, minutes: fadeMinutes)
+    }
 }
 
 /// "Lâmpada ao acordar": amanhecer que termina na hora do despertador da rotina, gravado
