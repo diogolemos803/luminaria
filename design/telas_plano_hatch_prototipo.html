@@ -1,0 +1,272 @@
+<title>Telas do plano Hatch</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap">
+<style>
+/* Layout: página escura com os celulares lado a lado (quebram em coluna no estreito) e
+   uma nota curta embaixo de cada um. Dentro do celular, o tema dos menus aprovado
+   (dia = grafite sobre cinza quente; noite = vidro marrom sobre grafite-azulado; âmbar = ação). */
+:root {
+  --page: #1d1f25; --page-ink: #fdf8c7; --page-muted: rgba(253,248,199,.62);
+  --amber: #f2b05e; --amber-ink: #2a2a2a;
+  --font: "DM Sans", system-ui, -apple-system, sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { background: var(--page); color: var(--page-ink); font-family: var(--font); }
+body { padding-block: 28px 56px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 1560px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px; }
+header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 16px; }
+.eyebrow { font-size: 13px; letter-spacing: .18em; text-transform: lowercase; color: var(--page-muted); margin: 0 0 6px; font-weight: 500; }
+h1 { margin: 0; font-weight: 500; font-size: clamp(28px, 4vw, 40px); letter-spacing: -.02em; line-height: 1.1; text-wrap: balance; }
+.lede { margin: 10px 0 0; max-width: 68ch; line-height: 1.5; color: var(--page-muted); font-size: 15px; }
+.seg { display: inline-flex; padding: 4px; border-radius: 999px; background: rgba(253,248,199,.1); gap: 4px; flex-wrap: wrap; }
+.seg button { border: 0; font: inherit; font-size: 14px; padding: 8px 15px; border-radius: 999px; background: transparent; color: var(--page-ink); cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--amber); color: var(--amber-ink); }
+button:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+.stage { display: flex; flex-wrap: wrap; gap: 28px; justify-content: center; align-items: flex-start; }
+.col { display: flex; flex-direction: column; gap: 12px; width: 340px; max-width: 100%; }
+.col h2 { margin: 0; font-size: 13px; letter-spacing: .18em; text-transform: lowercase; color: var(--page-muted); font-weight: 500; }
+.col .why { margin: 0; font-size: 14px; line-height: 1.5; color: var(--page-muted); }
+.col .why b { color: var(--page-ink); font-weight: 500; }
+
+/* ===== celular ===== */
+.ph { --bg:#e9e7e2; --ink:#23252c; --muted:rgba(35,37,44,.58); --card:linear-gradient(160deg,rgba(255,255,255,.82),rgba(250,245,236,.6));
+      --edge:rgba(35,37,44,.08); --chip:rgba(35,37,44,.07); --line:rgba(35,37,44,.1); --shadow:0 18px 40px rgba(35,37,44,.1);
+      --glow:radial-gradient(ellipse 90% 40% at 50% 100%, rgba(242,176,94,.22) 0, rgba(242,176,94,0) 100%);
+      width: 340px; max-width: 100%; height: 720px; border-radius: 46px; border: 8px solid #0d0e11; overflow: hidden;
+      background: var(--glow), var(--bg); color: var(--ink); display: flex; flex-direction: column; box-shadow: 0 30px 70px rgba(0,0,0,.45); }
+.night .ph { --bg:#23252c; --ink:#fdf8c7; --muted:rgba(253,248,199,.6); --card:linear-gradient(160deg,rgba(120,98,76,.42),rgba(52,44,38,.5));
+      --edge:hsla(54,93%,89%,.14); --chip:hsla(54,93%,89%,.13); --line:hsla(54,93%,89%,.16); --shadow:0 24px 50px rgba(0,0,0,.35); }
+.status { height: 38px; flex: none; display: flex; justify-content: space-between; align-items: center; padding: 0 26px; font-size: 14px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.nav { flex: none; display: flex; align-items: center; justify-content: space-between; padding: 2px 16px 0; height: 44px; }
+.rb { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: var(--chip); color: var(--ink); border: 0; }
+.rb svg { width: 15px; height: 15px; }
+.nav .t { font-size: 15px; font-weight: 500; }
+.body { flex: 1; overflow-y: auto; padding: 6px 18px 20px; display: flex; flex-direction: column; gap: 18px; }
+.ttl { margin: 0; font-size: 30px; font-weight: 500; letter-spacing: -.02em; line-height: 1.1; text-transform: lowercase; }
+.sub { margin: 6px 0 0; font-size: 14.5px; line-height: 1.45; color: var(--muted); }
+.lbl { margin: 0 0 8px 6px; font-size: 12px; letter-spacing: .18em; text-transform: lowercase; color: var(--muted); font-weight: 500; }
+.card { background: var(--card); border: 1px solid var(--edge); border-radius: 24px; padding: 6px; box-shadow: var(--shadow); }
+.row { display: flex; align-items: center; gap: 10px; padding: 9px 10px; min-height: 44px; }
+.row + .row, .sep { border-top: 1px solid var(--line); }
+.row .tx { flex: 1; min-width: 0; }
+.row b { display: block; font-size: 15px; font-weight: 500; }
+.row span.s { display: block; font-size: 12.5px; color: var(--muted); margin-top: 2px; line-height: 1.35; }
+.ic { width: 36px; height: 36px; flex: none; border-radius: 50%; display: grid; place-items: center; background: var(--chip); }
+.ic svg { width: 16px; height: 16px; }
+.cap { margin: 0; font-size: 12.5px; line-height: 1.45; color: var(--muted); padding: 2px 10px 8px; }
+.note { margin: 0; font-size: 13px; line-height: 1.45; color: var(--muted); padding: 0 6px; }
+.tm { font-variant-numeric: tabular-nums; font-size: 15px; padding: 6px 11px; border-radius: 9px; background: var(--chip); font-weight: 500; }
+/* chave do iOS */
+.sw { position: relative; width: 50px; height: 30px; flex: none; border-radius: 999px; background: var(--chip); border: 0; cursor: pointer; transition: background .2s; padding: 0; }
+.sw::after { content: ""; position: absolute; top: 2px; left: 2px; width: 26px; height: 26px; border-radius: 50%; background: #fff; box-shadow: 0 2px 4px rgba(0,0,0,.2); transition: transform .2s; }
+.sw[aria-checked="true"] { background: var(--amber); }
+.sw[aria-checked="true"]::after { transform: translateX(20px); }
+/* pílulas */
+.chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 6px; }
+.chips.eq { display: grid; grid-template-columns: repeat(4, 1fr); padding: 10px; gap: 8px; }
+.chips.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); padding: 8px; gap: 8px; }
+.chp { border: 0; padding: 9px 13px; border-radius: 999px; background: var(--chip); color: var(--ink); font: inherit; font-size: 14px; cursor: pointer; }
+.chips.eq .chp, .chips.grid .chp { padding: 10px 4px; font-weight: 500; }
+.chp[aria-pressed="true"] { background: var(--amber); color: var(--amber-ink); font-weight: 700; }
+.stepper { display: flex; align-items: center; justify-content: center; gap: 18px; padding: 10px; }
+.stepper button { width: 42px; height: 42px; border-radius: 50%; border: 0; background: var(--chip); color: var(--ink); font-size: 20px; cursor: pointer; }
+.stepper output { font-size: 44px; font-weight: 500; letter-spacing: -.02em; font-variant-numeric: tabular-nums; min-width: 4ch; text-align: center; }
+.stepper.small output { font-size: 32px; }
+.pill { border: 0; width: 100%; padding: 15px; border-radius: 999px; font: inherit; font-size: 16px; font-weight: 500; background: var(--amber); color: var(--amber-ink); cursor: pointer; }
+.pill:disabled { opacity: .45; cursor: default; }
+.foot { flex: none; padding: 10px 18px 24px; }
+.wave { display: flex; align-items: center; gap: 8px; font-size: 14.5px; font-weight: 500; padding: 0 6px; }
+.wave svg { width: 18px; height: 18px; }
+.tag { font-size: 11px; letter-spacing: .1em; text-transform: lowercase; padding: 3px 8px; border-radius: 999px; background: rgba(242,176,94,.22); color: var(--ink); }
+@media (prefers-reduced-motion: reduce) { .sw, .sw::after { transition: none; } }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="back" viewBox="0 0 24 24"><path d="M14.5 5.5L8 12l6.5 6.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="wave" viewBox="0 0 24 24"><path d="M3 12h2M7 8v8M11 5v14M15 8v8M19 10v4M21 12h0" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+  <symbol id="chev" viewBox="0 0 24 24"><path d="M9.5 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+</svg>
+
+<div class="wrap" id="root">
+  <header>
+    <div>
+      <p class="eyebrow">conferência antes do TestFlight</p>
+      <h1>telas que mudaram nos itens 2 a 6</h1>
+      <p class="lede">Feitas direto no código, sem protótipo antes. Aqui elas aparecem como estão no app agora: mesmos textos, mesmas opções e mesmas regras. Toque nas chaves e nas pílulas.</p>
+    </div>
+    <div class="seg" role="group" aria-label="Modo"><button type="button" id="b-day" aria-pressed="true">dia</button><button type="button" id="b-night" aria-pressed="false">noite</button></div>
+  </header>
+
+  <div class="stage">
+    <!-- 1. editor de rotina -->
+    <div class="col">
+      <h2>1 · editar rotina</h2>
+      <div class="ph">
+        <div class="status"><span>21:58</span><span>●●●</span></div>
+        <div class="nav"><button class="rb" type="button" aria-label="Voltar"><svg><use href="#back"/></svg></button><span class="tag">itens 2, 3 e 4</span></div>
+        <div class="body">
+          <div><h2 class="ttl">editar rotina</h2><p class="sub" id="e-sub">Toca às 07:00 na manhã depois de encostar na luminária.</p></div>
+          <div><p class="lbl">horários</p><div class="card">
+            <div class="row"><span class="tx"><b>Horário diferente por dia</b></span><button class="sw" type="button" role="switch" aria-checked="false" id="perday" aria-label="Horário diferente por dia"></button></div>
+            <div id="single"><div class="row"><span class="tx"><b>Despertador</b></span><span class="tm">07:00</span></div></div>
+            <div id="days" hidden>
+              <p class="cap" style="padding-top:8px">Cada horário vale pra manhã daquele dia.</p>
+            </div>
+            <div class="row"><span class="tx"><b>Desligar Modo Noturno às</b></span><span class="tm">07:30</span></div>
+          </div></div>
+          <div><p class="lbl">lembrete</p><div class="card">
+            <div class="row"><span class="tx"><b>Lembrar de desligar</b><span class="s">Uma notificação: “hora de desligar.”</span></span><button class="sw" type="button" role="switch" aria-checked="true" id="rem" aria-label="Lembrar de desligar"></button></div>
+            <div id="rem-on">
+              <div class="row"><span class="tx"><b>Às</b></span><span class="tm">22:30</span></div>
+              <p class="cap">Só vale pra rotina ativa. Não toca na noite em que você já encostou na luminária.</p>
+            </div>
+          </div></div>
+          <div><p class="lbl">som do despertador</p><div class="card"><div class="row"><span class="tx"><b>Ondas do mar</b><span class="s">Abra um grupo e toque num som pra ouvir e escolher.</span></span></div></div></div>
+          <div><p class="lbl">lâmpada ao dormir</p><div class="card">
+            <div class="row"><span class="tx"><b>Apagar devagar</b><span class="s">Começa quando a luminária é reconhecida</span></span><button class="sw" type="button" role="switch" aria-checked="true" id="fade" aria-label="Apagar devagar"></button></div>
+            <div id="fade-on" class="sep">
+              <p class="cap" style="padding:10px 10px 0;color:var(--ink);font-size:14.5px;font-weight:500">Apaga em</p>
+              <div class="chips eq" data-group="fade"><button class="chp" type="button" aria-pressed="true">15 min</button><button class="chp" type="button" aria-pressed="false">30 min</button><button class="chp" type="button" aria-pressed="false">45 min</button><button class="chp" type="button" aria-pressed="false">60 min</button></div>
+              <p class="cap">A luz que estiver acesa vai diminuindo até apagar. Se a lâmpada estiver apagada, ela continua apagada.</p>
+            </div>
+          </div></div>
+          <p class="note">"Lâmpada ao dormir" e "ao acordar" só aparecem com uma lâmpada pareada.</p>
+        </div>
+      </div>
+      <p class="why"><b>Mudou:</b> a chave de horário por dia (desligada = igual ao antes), o cartão Lembrete, e o "ao dormir" que perdeu cor e brilho e ficou só com o tempo.</p>
+    </div>
+
+    <!-- 2. primeira noite -->
+    <div class="col">
+      <h2>2 · onboarding, primeira noite</h2>
+      <div class="ph">
+        <div class="status"><span>21:58</span><span>●●●</span></div>
+        <div class="nav"><button class="rb" type="button" aria-label="Voltar"><svg><use href="#back"/></svg></button><span class="tag">item 5</span></div>
+        <div class="body">
+          <div><h2 class="ttl">sua primeira noite</h2><p class="sub" id="q-sub">Três perguntas. Dá pra mudar tudo depois em Rotinas.</p></div>
+          <div><p class="lbl">que horas você acorda?</p><div class="card"><div class="stepper"><button type="button" data-step="wake" data-d="-15" aria-label="15 minutos antes">−</button><output id="wake">07:00</output><button type="button" data-step="wake" data-d="15" aria-label="15 minutos depois">+</button></div></div></div>
+          <div><p class="lbl">quanto tempo pra desacelerar?</p><div class="card">
+            <div class="chips" data-group="relax"><button class="chp" type="button" aria-pressed="false">15 min</button><button class="chp" type="button" aria-pressed="true">30 min</button><button class="chp" type="button" aria-pressed="false">45 min</button><button class="chp" type="button" aria-pressed="false">60 min</button></div>
+            <p class="cap" id="relax-cap">Vale pra luz da lâmpada SOVEE, se um dia você parear uma.</p>
+          </div></div>
+          <div id="q-light" hidden><p class="lbl">luz da lâmpada</p><div class="card"><div class="chips" data-group="light"><button class="chp" type="button" aria-pressed="true">apagar devagar e acender de manhã</button><button class="chp" type="button" aria-pressed="false">só de manhã</button><button class="chp" type="button" aria-pressed="false">não usar a lâmpada</button></div></div></div>
+          <div><p class="lbl">lembrete “hora de desligar.”</p><div class="card">
+            <div class="stepper small" id="rem-step"><button type="button" data-step="rem" data-d="-15" aria-label="15 minutos antes">−</button><output id="remt">22:00</output><button type="button" data-step="rem" data-d="15" aria-label="15 minutos depois">+</button></div>
+            <div class="chips" data-group="wants"><button class="chp" type="button" aria-pressed="true">com lembrete</button><button class="chp" type="button" aria-pressed="false">sem lembrete</button></div>
+          </div></div>
+          <p class="note">Você escolhe os horários; o SOVEE não sugere quanto dormir. O despertador só toca nas noites em que você encostar na luminária. Os apps a bloquear você escolhe em Rotinas.</p>
+        </div>
+        <div class="foot"><button class="pill" type="button">criar rotina</button></div>
+      </div>
+      <div class="seg" role="group" aria-label="Lâmpada pareada"><button type="button" id="l-off" aria-pressed="true">sem lâmpada</button><button type="button" id="l-on" aria-pressed="false">com lâmpada pareada</button></div>
+      <p class="why"><b>Decisões minhas:</b> o "desacelerar" vira o tempo da luz apagar; sem lâmpada a pergunta da luz some (fica "três perguntas") e o desacelerar avisa que vale pra lâmpada. O resumo do ensaio, no fim, ganhou a linha do lembrete.</p>
+    </div>
+
+    <!-- 3. sons pra dormir -->
+    <div class="col">
+      <h2>3 · sons pra dormir (experimento)</h2>
+      <div class="ph">
+        <div class="status"><span>23:10</span><span>●●●</span></div>
+        <div class="nav"><button class="rb" type="button" aria-label="Voltar"><svg><use href="#back"/></svg></button><span class="tag">item 6 · tela nova</span></div>
+        <div class="body">
+          <div><h2 class="ttl">sons pra dormir</h2><p class="sub">Teste: ruído branco com timer.</p></div>
+          <div><p class="lbl">timer</p><div class="card">
+            <div class="chips grid" data-group="timer"><button class="chp" type="button" aria-pressed="false">15 min</button><button class="chp" type="button" aria-pressed="true">30 min</button><button class="chp" type="button" aria-pressed="false">60 min</button><button class="chp" type="button" aria-pressed="false">90 min</button><button class="chp" type="button" aria-pressed="false" data-alarm>até o alarme</button></div>
+            <p class="cap" id="no-alarm" hidden>Sem despertador armado agora. Arme a noite encostando na luminária, ou escolha um tempo.</p>
+          </div></div>
+          <p class="wave" id="playing" hidden><svg><use href="#wave"/></svg><span id="play-t">Ruído branco · para às 23:40</span></p>
+          <button class="pill" type="button" id="play">tocar ruído branco</button>
+          <p class="note">Toca com a tela bloqueada e com o Não Perturbe. No fim do timer, diminui em 1 minuto e para. Se o despertador tocar antes, o som para.</p>
+        </div>
+      </div>
+      <div class="seg" role="group" aria-label="Despertador"><button type="button" id="a-off" aria-pressed="true">sem despertador armado</button><button type="button" id="a-on" aria-pressed="false">armado pras 07:00</button></div>
+      <p class="why"><b>Tela nova, sem protótipo.</b> Só ruído branco: os outros sons ficam pra depois do teste no nicho. O botão toca e para; trocar o timer com o som tocando vale na hora.</p>
+    </div>
+
+    <!-- 4. onde liga -->
+    <div class="col">
+      <h2>4 · onde liga o experimento</h2>
+      <div class="ph">
+        <div class="status"><span>23:10</span><span>●●●</span></div>
+        <div class="nav"><span class="t"></span><button class="rb" type="button" aria-label="Fechar"><svg><use href="#x"/></svg></button></div>
+        <div class="body">
+          <p class="note" style="padding:0 4px">Fim da Ajuda, depois do checklist do despertador:</p>
+          <div><p class="lbl">experimentos</p><div class="card">
+            <div class="row"><span class="tx"><b>Sons pra dormir (teste)</b><span class="s">Ruído branco com timer. Aparece no menu quando ligado.</span></span><button class="sw" type="button" role="switch" aria-checked="false" id="exp" aria-label="Sons pra dormir (teste)"></button></div>
+          </div></div>
+          <p class="note" style="padding:8px 4px 0">No menu (Configurações), embaixo de Relatório · Amigos · Ajuda:</p>
+          <div id="menu-card" hidden><div class="card"><div class="row"><span class="ic"><svg><use href="#wave"/></svg></span><span class="tx"><b>Sons pra dormir</b><span class="s">Teste · ruído branco com timer</span></span><svg width="14" height="14" style="color:var(--muted)"><use href="#chev"/></svg></div></div></div>
+          <p class="note" id="menu-off" style="padding:0 4px;font-style:italic">(nada aparece com a chave desligada)</p>
+        </div>
+      </div>
+      <p class="why"><b>Vem desligado.</b> Pra quem não ligar a chave, o app fica exatamente como antes. Pra tirar o experimento são 2 arquivos e 2 linhas.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  function hm(m) { m = ((m % 1440) + 1440) % 1440; return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'); }
+  function sw(id, fn) { var b = document.getElementById(id); b.addEventListener('click', function () { var on = b.getAttribute('aria-checked') !== 'true'; b.setAttribute('aria-checked', String(on)); fn(on); }); }
+  document.querySelectorAll('[data-group]').forEach(function (g) {
+    g.querySelectorAll('.chp').forEach(function (c) { c.addEventListener('click', function () { g.querySelectorAll('.chp').forEach(function (o) { o.setAttribute('aria-pressed', String(o === c)); }); g.dispatchEvent(new CustomEvent('pick', { detail: c })); }); });
+  });
+
+  // 1. editor
+  var names = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
+  var times = ['07:00', '07:00', '07:00', '07:00', '07:00', '09:00', '09:30'];
+  var days = document.getElementById('days');
+  names.forEach(function (n, i) { var r = document.createElement('div'); r.className = 'row'; r.style.minHeight = '38px'; r.style.padding = '5px 10px'; r.innerHTML = '<span class="tx"><b>' + n + '</b></span><span class="tm">' + times[i] + '</span>'; days.appendChild(r); });
+  sw('perday', function (on) {
+    document.getElementById('single').hidden = on; days.hidden = !on;
+    document.getElementById('e-sub').textContent = on ? 'Se ativar hoje, toca às 07:00 da manhã seguinte. Uma noite só, a cada leitura da luminária.' : 'Toca às 07:00 na manhã depois de encostar na luminária.';
+  });
+  sw('rem', function (on) { document.getElementById('rem-on').hidden = !on; });
+  sw('fade', function (on) { document.getElementById('fade-on').hidden = !on; });
+
+  // 2. quiz
+  var wake = 7 * 60, rem = 22 * 60;
+  document.querySelectorAll('[data-step]').forEach(function (b) { b.addEventListener('click', function () {
+    if (b.dataset.step === 'wake') { wake += +b.dataset.d; document.getElementById('wake').textContent = hm(wake); }
+    else { rem += +b.dataset.d; document.getElementById('remt').textContent = hm(rem); }
+  }); });
+  document.querySelector('[data-group="wants"]').addEventListener('pick', function (e) { document.getElementById('rem-step').hidden = e.detail.textContent !== 'com lembrete'; });
+  function lamp(on) {
+    document.getElementById('l-on').setAttribute('aria-pressed', String(on)); document.getElementById('l-off').setAttribute('aria-pressed', String(!on));
+    document.getElementById('q-light').hidden = !on;
+    document.getElementById('q-sub').textContent = (on ? 'Quatro' : 'Três') + ' perguntas. Dá pra mudar tudo depois em Rotinas.';
+    document.getElementById('relax-cap').textContent = on ? 'É o tempo que a luz da lâmpada leva pra apagar depois que você encosta.' : 'Vale pra luz da lâmpada SOVEE, se um dia você parear uma.';
+  }
+  document.getElementById('l-on').addEventListener('click', function () { lamp(true); });
+  document.getElementById('l-off').addEventListener('click', function () { lamp(false); });
+
+  // 3. sons
+  var armed = false, playing = false, choice = 30;
+  var timerGroup = document.querySelector('[data-group="timer"]'), playB = document.getElementById('play');
+  function syncSounds() {
+    var untilAlarm = choice === 0;
+    document.getElementById('no-alarm').hidden = !(untilAlarm && !armed);
+    playB.disabled = !playing && untilAlarm && !armed;
+    playB.textContent = playing ? 'parar' : 'tocar ruído branco';
+    document.getElementById('playing').hidden = !playing;
+    var end = untilAlarm ? '07:00' : hm(23 * 60 + 10 + choice);
+    document.getElementById('play-t').textContent = 'Ruído branco · para às ' + end;
+  }
+  timerGroup.addEventListener('pick', function (e) { choice = e.detail.hasAttribute('data-alarm') ? 0 : parseInt(e.detail.textContent, 10); syncSounds(); });
+  playB.addEventListener('click', function () { playing = !playing; syncSounds(); });
+  function alarm(on) { armed = on; document.getElementById('a-on').setAttribute('aria-pressed', String(on)); document.getElementById('a-off').setAttribute('aria-pressed', String(!on)); syncSounds(); }
+  document.getElementById('a-on').addEventListener('click', function () { alarm(true); });
+  document.getElementById('a-off').addEventListener('click', function () { alarm(false); });
+  syncSounds();
+
+  // 4. experimento
+  sw('exp', function (on) { document.getElementById('menu-card').hidden = !on; document.getElementById('menu-off').hidden = on; });
+
+  // dia / noite
+  var root = document.getElementById('root'), d = document.getElementById('b-day'), n = document.getElementById('b-night');
+  function theme(night) { root.classList.toggle('night', night); d.setAttribute('aria-pressed', String(!night)); n.setAttribute('aria-pressed', String(night)); }
+  d.addEventListener('click', function () { theme(false); }); n.addEventListener('click', function () { theme(true); });
+})();
+</script>
