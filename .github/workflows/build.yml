@@ -37,3 +37,19 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY=""
+
+  tests:
+    name: Testes das funções puras (Packages/SoveeCore)
+    # Pacote Swift separado que compila, por links simbólicos, os arquivos do app sem
+    # dependência de iPhone (rotina e relatório salvos, sequência de noites, protocolo
+    # da lâmpada, horário do despertador). Roda no Mac do runner, sem Simulador — o
+    # Simulador não compila o Screen Time (ver comentário do job de build).
+    runs-on: macos-26
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: swift test
+        working-directory: Packages/SoveeCore
+        run: swift test

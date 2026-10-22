@@ -599,6 +599,25 @@ Pedido do dono: todo texto visível e o código passam a dizer SOVEE. O que mudo
   que aparece no aviso de pareamento do iOS e em Ajustes → Bluetooth (hoje "Zleepy
   Lamp"); ver pendência da lâmpada.
 
+## Testes automáticos (2026-10-22)
+
+`Packages/SoveeCore` — pacote Swift só de testes, **não usado pelo app**. O módulo
+compila os MESMOS arquivos do app por links simbólicos em `Sources/SoveeCore`
+(`LampProtocol`, `SocialModels`/`DetoxStats`, `SleepReportEntry`, `SleepRoutine`,
+`AlarmSchedule`), então não há cópia pra ficar desatualizada. Roda no Mac do runner com
+`swift test` (job `tests` no `build.yml`), sem Simulador — o Simulador não compila o
+Screen Time. Pra isso, `SleepRoutine.swift` só importa `FamilyControls` quando
+`SOVEE_TESTS` não está definido; nos testes, `Sources/TestSupport` tem um
+`FamilyActivitySelection` vazio. Cobertura: decode tolerante de rotina e relatório
+antigos (inclusive motivo de fim desconhecido e sons aposentados), sequência atual e
+recorde de noites, próxima ocorrência do despertador (meia-noite, fim de ano), bytes do
+protocolo da lâmpada (cores com limitador, comandos, ROUTINE e STATE de ida e volta,
+versão desconhecida recusada). **Regra**: arquivo novo de lógica pura entra também como
+link em `Sources/SoveeCore` e ganha teste; arquivo puro não pode importar SwiftUI/UIKit.
+Arquivos separados pra isso: `SleepRoutine.swift` (saiu de `SleepRoutineStore.swift`),
+`SleepReportEntry.swift` (saiu de `SleepReportStore.swift`) e `AlarmSchedule.swift`
+(`nextOccurrence`, saiu do `AlarmManager`).
+
 ## As duas branches
 
 ### `main`
@@ -694,7 +713,7 @@ Fluxo usado pra testar de verdade, todo do Windows:
 
 - **`Luminaria.xcodeproj/project.pbxproj` foi escrito à mão**, linha por linha — não existe
   Xcode/macOS neste ambiente de desenvolvimento (Windows). IDs de objeto seguem o padrão
-  `AAAAAAAAAAAAAAAAAAAAAA` + 2 dígitos hex incrementais (maior em uso: `A7`); qualquer
+  `AAAAAAAAAAAAAAAAAAAAAA` + 2 dígitos hex incrementais (maior em uso: `AD`); qualquer
   novo arquivo precisa de entradas em `PBXBuildFile`, `PBXFileReference`, no grupo, e na
   build phase certa (`Sources` pra `.swift`, `Resources` pra assets/sons). Sempre
   verificar balanço de chaves/parênteses e contagem de referências de cada ID novo
