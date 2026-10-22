@@ -33,6 +33,8 @@ struct ContentView: View {
     /// Tela da lâmpada no lugar da tela do botão (opção C de `design/integracao_prototipo.html`:
     /// a bolinha do canto troca uma pela outra, no lugar, sem empurrar pro lado).
     @State private var showLampScreen = false
+    /// Primeira abertura (ver `OnboardingView`/`OnboardingGate`).
+    @State private var showOnboarding = !OnboardingGate.isDone
     /// A lâmpada não respondeu na hora de encostar na luminária.
     @State private var lampWarning: String?
 
@@ -121,10 +123,14 @@ struct ContentView: View {
             .onAppear {
                 // Reconecta na lâmpada pareada (se houver) — sem lâmpada, não faz nada.
                 lampManager.start()
-                alarmManager.requestNotificationPermission()
-                // Permissão de "Alarmes" (AlarmKit, iOS 26+) — é ela que faz o
-                // despertador tocar no silencioso, com Foco e com o app fechado.
-                alarmManager.requestSystemAlarmPermission()
+                // Na primeira abertura quem pede as permissões é o onboarding, uma de
+                // cada vez e com o porquê; depois dele, o app só confirma o estado.
+                if OnboardingGate.isDone {
+                    alarmManager.requestNotificationPermission()
+                    // Permissão de "Alarmes" (AlarmKit, iOS 26+) — é ela que faz o
+                    // despertador tocar no silencioso, com Foco e com o app fechado.
+                    alarmManager.requestSystemAlarmPermission()
+                }
                 WidgetBridge.publishStats()
                 // perfil e ranking dos amigos em dia pro widget da tela bloqueada
                 Task { await FriendsStore.shared.publishMyStatsQuietly() }
@@ -235,10 +241,26 @@ struct ContentView: View {
                     }
                 }
             }
-            .onOpenURL { _ in
-                // Callback do x-callback-url do Atalhos (luminaria://shortcut-done|shortcut-error).
-                // Nada a fazer além de aceitar a volta ao app; existe só pra não abrir o app
-                // Atalhos por completo ao disparar o Atalho.
+            .onOpenURL { url in
+                // Callback do x-callback-url do Atalhos (luminaria://shortcut-done|shortcut-error):
+                // nada a fazer além de aceitar a volta ao app. A volta do "testar atalhos"
+                // (luminaria://shortcut-test) vai pro `ShortcutTester`.
+                _ = ShortcutTester.shared.handle(url)
+            }
+            .fullScreenCover(isPresented: $showOnboarding) {
+                OnboardingView(
+                    nfcManager: nfcManager,
+                    routineStore: routineStore,
+                    alarmManager: alarmManager,
+                    screenTimeManager: screenTimeManager
+                ) {
+                    showOnboarding = false
+                }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: OnboardingGate.reopenNotification)) { _ in
+                // "rever configuração" da Ajuda: fecha o menu e abre o onboarding por cima.
+                showSettings = false
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { showOnboarding = true }
             }
             .alert("Despertador daqui a muitas horas", isPresented: Binding(
                 get: { longNightWarning != nil },

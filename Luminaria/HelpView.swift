@@ -19,6 +19,30 @@ struct HelpView: View {
                     VStack(alignment: .leading, spacing: 20) {
                         MenuHeader(title: "Ajuda", theme: theme)
 
+                        ThemedCard(theme: theme) {
+                            Button {
+                                NotificationCenter.default.post(name: OnboardingGate.reopenNotification, object: nil)
+                                dismiss()
+                            } label: {
+                                ThemedRow(
+                                    theme: theme,
+                                    title: "Rever configuração",
+                                    subtitle: "Abre de novo o passo a passo da primeira abertura",
+                                    leading: { IconBadge(systemName: "arrow.counterclockwise", theme: theme) },
+                                    accessory: {
+                                        Image(systemName: "chevron.right")
+                                            .font(.caption.weight(.semibold))
+                                            .foregroundStyle(theme.inkMuted.opacity(0.7))
+                                    }
+                                )
+                            }
+                            .buttonStyle(.plain)
+                        }
+
+                        if let diagnostic = ShortcutManager.lastStopDiagnostic {
+                            stopButtonDiagnostic(diagnostic)
+                        }
+
                         Text("Configuração única")
                             .font(.luminaria(.title3, weight: .medium))
                             .foregroundStyle(theme.ink)
@@ -181,6 +205,31 @@ struct HelpView: View {
             .font(.luminaria(.title3, weight: .medium))
             .foregroundStyle(theme.ink)
             .padding(.top, 4)
+    }
+
+    /// Investigação de 2026-10-22: o "Parar" do alarme conseguiu rodar o "Acordar" sozinho?
+    /// Fica aqui até a resposta sair de um teste no iPhone (ver CLAUDE.md).
+    private func stopButtonDiagnostic(_ d: ShortcutManager.StopButtonDiagnostic) -> some View {
+        let when = d.date.formatted(date: .abbreviated, time: .shortened)
+        let result: String
+        if !d.attempted {
+            result = "Não havia Não Perturbe a desligar nessa noite."
+        } else if d.opened {
+            result = "O iPhone aceitou abrir o atalho \"Acordar\". Confira se o Não Perturbe desligou sozinho."
+        } else {
+            result = "O iPhone não deixou abrir o atalho com o app em segundo plano."
+        }
+        return ThemedCard(title: "Teste do botão Parar", theme: theme) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Último \"Parar\": \(when) · app \(d.appState)")
+                    .font(.luminaria(.subheadline, weight: .medium))
+                    .foregroundStyle(theme.ink)
+                Text(result)
+                    .font(.luminaria(.footnote))
+                    .foregroundStyle(theme.inkMuted)
+            }
+            .padding(10)
+        }
     }
 
     private func stepRow(_ number: Int, _ text: String) -> some View {

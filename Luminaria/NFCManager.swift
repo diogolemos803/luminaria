@@ -15,6 +15,10 @@ final class NFCManager: NSObject, ObservableObject {
     /// modo noite automaticamente em vez de deixar o app preso num estado "armado" que
     /// nunca vai disparar nada.
     var onScanEndedWithoutMatch: (() -> Void)?
+    /// Ensaio do onboarding: a leitura acontece de verdade, mas em vez de armar a noite
+    /// (`onRecognizedTap`) só avisa aqui. Nada é armado nem bloqueado.
+    var onRehearsalRecognized: (() -> Void)?
+    private var isRehearsal = false
 
     private var session: NFCNDEFReaderSession?
     private let linkedTagKey = "com.luminaria.linkedTagID"
@@ -26,9 +30,17 @@ final class NFCManager: NSObject, ObservableObject {
         isLinked = linkedTagID != nil
     }
 
+    /// Ensaio do ritual (última tela do onboarding): lê a luminária vinculada sem armar nada.
+    func beginRehearsal() {
+        beginScanning()
+        isRehearsal = session != nil
+        session?.alertMessage = "Encoste na luminária (ensaio — nada é armado)"
+    }
+
     func beginScanning() {
         errorMessage = nil
         recognizedThisSession = false
+        isRehearsal = false
         guard NFCNDEFReaderSession.readingAvailable else {
             errorMessage = "Este iPhone não tem suporte a leitura NFC."
             return
@@ -92,7 +104,12 @@ final class NFCManager: NSObject, ObservableObject {
                     session.alertMessage = "Luminária reconhecida!"
                     session.invalidate()
                     self.statusMessage = "Luminária reconhecida"
-                    self.onRecognizedTap?()
+                    if self.isRehearsal {
+                        self.isRehearsal = false
+                        self.onRehearsalRecognized?()
+                    } else {
+                        self.onRecognizedTap?()
+                    }
                 } else {
                     let tagID = self.identifier(for: tag)
                     UserDefaults.standard.set(tagID, forKey: self.linkedTagKey)
@@ -113,9 +130,11 @@ extension NFCManager: NFCNDEFReaderSessionDelegate {
             // Sessão terminou sem reconhecer a tag vinculada (cancelou, timeout dos
             // ~60s do CoreNFC, ou tag errada) — desarma o modo noite pelo mesmo motivo
             // documentado no app: só fica armado se a leitura realmente for concluída.
-            if !self.recognizedThisSession {
+            // No ensaio nada foi armado, então não há o que desarmar.
+            if !self.recognizedThisSession && !self.isRehearsal {
                 self.onScanEndedWithoutMatch?()
             }
+            self.isRehearsal = false
             if let nfcError = error as? NFCReaderError,
                nfcError.code == .readerSessionInvalidationErrorUserCanceled ||
                nfcError.code == .readerSessionInvalidationErrorFirstNDEFTagRead {

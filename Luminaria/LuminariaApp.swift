@@ -11,6 +11,8 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
         UNUserNotificationCenter.current().delegate = AlarmManager.shared
+        // Antes de qualquer tela: quem já tinha a luminária vinculada não vê o onboarding.
+        OnboardingGate.migrateExistingUser()
         return true
     }
 }

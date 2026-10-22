@@ -183,6 +183,10 @@ struct StopLuminariaAlarmIntent: LiveActivityIntent {
             SystemAlarm.stop(id: id)
         }
         await MainActor.run { luminariaHandleSystemAlarmStopped() }
+        // Investigação (2026-10-22): o "Parar" roda com o app em segundo plano; tenta
+        // rodar o "Acordar" daqui e grava o resultado pra ver na Ajuda. Se funcionar no
+        // iPhone, a automação de segurança da manhã deixa de ser necessária.
+        await ShortcutManager.shared.attemptWakeFromAlarmStop()
         return .result()
     }
 }

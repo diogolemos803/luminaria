@@ -618,6 +618,54 @@ Arquivos separados pra isso: `SleepRoutine.swift` (saiu de `SleepRoutineStore.sw
 `SleepReportEntry.swift` (saiu de `SleepReportStore.swift`) e `AlarmSchedule.swift`
 (`nextOccurrence`, saiu do `AlarmManager`).
 
+## Onboarding e atalhos por link (2026-10-22, item 1 do plano Hatch)
+
+- **`Luminaria/OnboardingView.swift`** — primeira abertura, 6 telas (protótipo
+  `design/onboarding_prototipo.html`): boas-vindas ("hora de desligar.") → vincular a
+  luminária (mesmo `NFCManager.beginScanning`) → instalar os 2 Atalhos → permissões uma
+  por vez com o porquê (notificações; Alarmes só se o AlarmKit existe; Tempo de Uso;
+  calendário opcional com "agora não") → primeira noite (só o horário de acordar por
+  enquanto; tempo de desacelerar, luz e lembrete entram com os itens 3–5) → ensaio do
+  ritual. Tema `ModeTheme.menu(armed: false)`. Apresentado por `ContentView` em
+  `fullScreenCover` enquanto `OnboardingGate.isDone` for falso. **Quem já tinha a
+  luminária vinculada pula** (`OnboardingGate.migrateExistingUser()`, chamado no
+  `AppDelegate`). Na primeira abertura o `ContentView.onAppear` não pede mais notificação
+  e alarme (quem pede é o onboarding, com contexto); depois do onboarding volta ao
+  comportamento antigo. Ajuda → "Rever configuração" reabre (notificação
+  `OnboardingGate.reopenNotification`, que fecha o menu e abre o onboarding). Os logos
+  usados são `LogoAcordado`/`LogoSono` — o dono vai mandar o logo certo depois.
+- **Ensaio** (`NFCManager.beginRehearsal`): lê a tag de verdade, mas chama
+  `onRehearsalRecognized` em vez de `onRecognizedTap` — nada é armado nem bloqueado, e
+  terminar sem leitura não dispara `onScanEndedWithoutMatch`.
+- **Atalhos por link**: `ShortcutManager.sleepShortcutInstallLink`/
+  `wakeShortcutInstallLink` (**placeholders `nil`** — o dono passa os links do iCloud
+  depois; com `nil` o botão mostra "link em breve" e aparece "criar os atalhos à mão",
+  que abre a Ajuda). Os atalhos não têm horário (dormir = Não Perturbe "até desligar";
+  acordar = desliga). Nomes continuam fixos ("Dormir sem celular", "Acordar"; decisão do
+  dono, compatível com quem já criou à mão); o onboarding avisa pra não renomear.
+- **"Testar atalhos"** (`ShortcutTester`): roda "Dormir sem celular" e depois "Acordar"
+  pelo x-callback-url com URLs de volta `luminaria://shortcut-test?run=…&step=…&ok=0|1`
+  (`x-error` e `x-cancel` voltam com `ok=0`) e diz qual atalho faltou; sem resposta em
+  40 s mostra "o Atalhos não respondeu". `ShortcutManager.runURL` agora codifica as URLs
+  de volta por completo (antes `.urlQueryAllowed` deixava `?&=` sem escapar — sem efeito
+  nas URLs antigas, que não tinham parâmetros).
+- **Rede de segurança da manhã**: card recomendado no passo dos atalhos com o horário da
+  rotina, botão de copiar e os 4 passos da automação pessoal "Definir Foco → Desativar"
+  (automação pessoal não instala por link).
+- **Investigação do "Parar" do AlarmKit** (em aberto): `StopLuminariaAlarmIntent` agora
+  chama `ShortcutManager.attemptWakeFromAlarmStop()`, que tenta abrir o "Acordar" com o
+  app em segundo plano e grava `StopButtonDiagnostic` (estado do app, se havia o que
+  desligar, se o iOS aceitou abrir). A Ajuda mostra o último resultado ("Teste do botão
+  Parar"). Não limpa os marcadores de pendência — se não funcionar, o "Acordar" roda ao
+  abrir o app, como antes. Expectativa pela documentação: o iOS recusa abrir URL de outro
+  app em segundo plano; **só o teste no iPhone decide**. Se funcionar (Não Perturbe
+  desligado de verdade), tirar o card da rede de segurança e este diagnóstico.
+
+Só dá pra validar no iPhone: o link do iCloud abrindo a tela "Adicionar atalho"; o
+Atalhos chamando `x-error` quando o nome não existe (se ele só mostrar um aviso, o teste
+cai no "não respondeu"); a leitura do ensaio; o pedido de cada permissão na ordem; o
+resultado do "Parar".
+
 ## As duas branches
 
 ### `main`
@@ -713,7 +761,7 @@ Fluxo usado pra testar de verdade, todo do Windows:
 
 - **`Luminaria.xcodeproj/project.pbxproj` foi escrito à mão**, linha por linha — não existe
   Xcode/macOS neste ambiente de desenvolvimento (Windows). IDs de objeto seguem o padrão
-  `AAAAAAAAAAAAAAAAAAAAAA` + 2 dígitos hex incrementais (maior em uso: `AD`); qualquer
+  `AAAAAAAAAAAAAAAAAAAAAA` + 2 dígitos hex incrementais (maior em uso: `AF`); qualquer
   novo arquivo precisa de entradas em `PBXBuildFile`, `PBXFileReference`, no grupo, e na
   build phase certa (`Sources` pra `.swift`, `Resources` pra assets/sons). Sempre
   verificar balanço de chaves/parênteses e contagem de referências de cada ID novo
