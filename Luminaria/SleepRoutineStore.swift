@@ -22,6 +22,7 @@ private struct SyncableRoutine: Codable {
     var lampSleep: LampSleepSettings?
     var lampWake: LampWakeSettings?
     var weekdayAlarms: [AlarmTime]?
+    var bedtimeReminder: AlarmTime?
 
     init(_ routine: SleepRoutine) {
         id = routine.id
@@ -37,6 +38,7 @@ private struct SyncableRoutine: Codable {
         lampSleep = routine.lampSleep
         lampWake = routine.lampWake
         weekdayAlarms = routine.weekdayAlarms
+        bedtimeReminder = routine.bedtimeReminder
     }
 
     func toRoutine() -> SleepRoutine {
@@ -53,7 +55,8 @@ private struct SyncableRoutine: Codable {
             autoActivateEventKeyword: autoActivateEventKeyword,
             lampSleep: lampSleep ?? LampSleepSettings(),
             lampWake: lampWake ?? LampWakeSettings(),
-            weekdayAlarms: weekdayAlarms?.count == 7 ? weekdayAlarms : nil
+            weekdayAlarms: weekdayAlarms?.count == 7 ? weekdayAlarms : nil,
+            bedtimeReminder: bedtimeReminder
         )
     }
 }
@@ -224,6 +227,7 @@ final class SleepRoutineStore: ObservableObject {
             }
         }
         persist()
+        BedtimeReminder.reschedule(for: activeRoutine)
     }
 
     func remove(id: UUID) {
@@ -233,12 +237,14 @@ final class SleepRoutineStore: ObservableObject {
             activeRoutineID = routines.first?.id
         }
         persist()
+        BedtimeReminder.reschedule(for: activeRoutine)
     }
 
     func setActive(id: UUID) {
         hasUserMadeLocalChanges = true
         activeRoutineID = id
         persist()
+        BedtimeReminder.reschedule(for: activeRoutine)
     }
 
     // MARK: - Rotina automática por calendário

@@ -39,6 +39,7 @@ final class SleepRoutineDecodingTests: XCTestCase {
         XCTAssertEqual(r.lampSleep, LampSleepSettings())
         XCTAssertEqual(r.lampWake, LampWakeSettings())
         XCTAssertNil(r.weekdayAlarms, "rotina antiga vira 'igual todos os dias'")
+        XCTAssertNil(r.bedtimeReminder, "rotina antiga fica sem lembrete")
     }
 
     /// Horário por dia com tamanho errado (corrompido) também vira "igual todos os dias".
@@ -192,6 +193,34 @@ final class AlarmScheduleTests: XCTestCase {
         XCTAssertEqual(r.nextAlarmDate(after: date(2026, 10, 24, 0, 40), calendar: utc), date(2026, 10, 24, 9, 0))
         // Sábado 23h → domingo 9h30.
         XCTAssertEqual(r.nextAlarmDate(after: date(2026, 10, 24, 23), calendar: utc), date(2026, 10, 25, 9, 30))
+    }
+
+    func testReminderNextSevenNights() {
+        let dates = AlarmSchedule.upcomingDaily(hour: 22, minute: 30, after: date(2026, 10, 22, 23), count: 7, calendar: utc)
+        XCTAssertEqual(dates.count, 7)
+        XCTAssertEqual(dates.first, date(2026, 10, 23, 22, 30))
+        XCTAssertEqual(dates.last, date(2026, 10, 29, 22, 30))
+    }
+
+    /// Luminária lida às 21h: o lembrete das 22h30 de hoje sai, o de amanhã fica.
+    func testReminderSkipsTonightWhenNightStarted() {
+        let now = date(2026, 10, 22, 21)
+        let dates = AlarmSchedule.upcomingDaily(hour: 22, minute: 30, after: now, count: 7,
+                                                skipUntil: now.addingTimeInterval(12 * 3600), calendar: utc)
+        XCTAssertEqual(dates.first, date(2026, 10, 23, 22, 30))
+        XCTAssertEqual(dates.count, 7)
+    }
+
+    func testReminderRoundTripAndBadValue() throws {
+        var r = SleepRoutine(name: "L", soundOption: .rain)
+        r.bedtimeReminder = AlarmTime(hour: 22, minute: 15)
+        XCTAssertEqual(try JSONDecoder().decode(SleepRoutine.self, from: JSONEncoder().encode(r)), r)
+        let json = """
+        {"id":"6F1C2A5E-0000-4000-8000-000000000003","name":"X","alarmHour":7,"alarmMinute":0,
+         "nightShiftOffHour":7,"nightShiftOffMinute":30,"soundOption":"birds",
+         "bedtimeReminder":{"hour":27,"minute":0}}
+        """
+        XCTAssertNil(try decode(SleepRoutine.self, json).bedtimeReminder)
     }
 
     func testSameEveryDayMatchesNextOccurrence() {

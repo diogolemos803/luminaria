@@ -132,6 +132,8 @@ struct ContentView: View {
                     alarmManager.requestSystemAlarmPermission()
                 }
                 WidgetBridge.publishStats()
+                // Lembrete "hora de desligar." da rotina ativa (próximos 7 dias).
+                BedtimeReminder.reschedule(for: routineStore.activeRoutine)
                 // perfil e ranking dos amigos em dia pro widget da tela bloqueada
                 Task { await FriendsStore.shared.publishMyStatsQuietly() }
                 screenTimeManager.refreshAuthorizationStatus()
@@ -168,6 +170,8 @@ struct ContentView: View {
                         ShortcutManager.shared.runSleepShortcut()
                         alarmManager.armAlarm(at: routine.nextAlarmDate(), soundFileName: routine.soundOption.fileName)
                         screenTimeManager.applyShield(selection: routine.appSelection)
+                        // A noite começou: o lembrete de hoje não precisa tocar.
+                        BedtimeReminder.reschedule(for: routine, nightStarted: true)
                         // cartão da noite na tela bloqueada (ver WidgetBridge)
                         WidgetBridge.startNightActivity(alarmDate: alarmManager.nextFireDate)
                         // Lâmpada: apaga devagar agora e grava a luz da manhã (só amanhã).
@@ -230,6 +234,7 @@ struct ContentView: View {
                     alarmManager.requestSystemAlarmPermission()
                     // Noite encerrada com o app em segundo plano: desliga o Foco agora.
                     ShortcutManager.shared.runPendingWakeShortcutIfNeeded()
+                    BedtimeReminder.reschedule(for: routineStore.activeRoutine)
                     // Reabrir o app durante uma sessão de bloqueio ativa conta como
                     // "tocou no celular" (ver GrowthEngine.swift) — zera o progresso
                     // de crescimento e alimenta a métrica de maior sequência sem

@@ -19,6 +19,24 @@ enum AlarmSchedule {
         return calendar.date(byAdding: .day, value: 1, to: candidate) ?? candidate
     }
 
+    /// Próximos `count` horários diários `hour:minute` estritamente depois de `date` —
+    /// usado pelo lembrete "hora de desligar." (uma notificação por noite, sem repetir).
+    /// `skipUntil`: horários antes dessa data ficam de fora (noite já começada).
+    static func upcomingDaily(hour: Int, minute: Int, after date: Date, count: Int, skipUntil: Date? = nil, calendar: Calendar = .current) -> [Date] {
+        var result: [Date] = []
+        var cursor = date
+        while result.count < count {
+            let next = nextOccurrence(hour: hour, minute: minute, after: cursor, calendar: calendar)
+            if let skipUntil, next < skipUntil {
+                cursor = next
+                continue
+            }
+            result.append(next)
+            cursor = next
+        }
+        return result
+    }
+
     /// Despertador com horário que pode mudar por dia da semana: o primeiro horário,
     /// estritamente depois de `date`, olhando hoje, amanhã e depois de amanhã — cada dia
     /// com o SEU horário (`time(weekday)`, `weekday` como no `Calendar`: 1 = domingo … 7 =

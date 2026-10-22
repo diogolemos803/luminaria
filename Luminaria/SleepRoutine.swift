@@ -212,6 +212,10 @@ struct SleepRoutine: Identifiable, Codable, Equatable {
     /// o despertador TOCA. Ao armar, vale o horário da manhã seguinte
     /// (`nextAlarmDate`). Rotinas antigas não têm a chave e viram "igual todos os dias".
     var weekdayAlarms: [AlarmTime]?
+    /// Lembrete "hora de desligar." (item 4 do plano Hatch, 2026-10-22): uma notificação
+    /// por noite nesse horário, só da rotina ativa. `nil` = desligado (padrão; rotinas
+    /// antigas não têm a chave). Ver `BedtimeReminder.swift`.
+    var bedtimeReminder: AlarmTime?
 
     /// Horário que toca no dia `weekday` (1 = domingo … 7 = sábado).
     func alarmTime(forWeekday weekday: Int) -> AlarmTime {
@@ -265,7 +269,8 @@ struct SleepRoutine: Identifiable, Codable, Equatable {
         autoActivateEventKeyword: String? = nil,
         lampSleep: LampSleepSettings = LampSleepSettings(),
         lampWake: LampWakeSettings = LampWakeSettings(),
-        weekdayAlarms: [AlarmTime]? = nil
+        weekdayAlarms: [AlarmTime]? = nil,
+        bedtimeReminder: AlarmTime? = nil
     ) {
         self.id = id
         self.name = name
@@ -281,6 +286,7 @@ struct SleepRoutine: Identifiable, Codable, Equatable {
         self.lampSleep = lampSleep
         self.lampWake = lampWake
         self.weekdayAlarms = weekdayAlarms
+        self.bedtimeReminder = bedtimeReminder
     }
 
     private enum CodingKeys: String, CodingKey {
@@ -288,6 +294,7 @@ struct SleepRoutine: Identifiable, Codable, Equatable {
         case autoActivateWeekday, autoActivateWeekend, autoActivateEventKeyword
         case lampSleep, lampWake
         case weekdayAlarms
+        case bedtimeReminder
     }
 
     /// `init(from:)` escrito à mão só pra tratar `appSelection` e os campos de
@@ -327,5 +334,12 @@ struct SleepRoutine: Identifiable, Codable, Equatable {
         // Ausente, ilegível ou sem os 7 dias: "igual todos os dias".
         let perDay = (try? container.decodeIfPresent([AlarmTime].self, forKey: .weekdayAlarms)) ?? nil
         weekdayAlarms = perDay?.count == 7 ? perDay : nil
+        // Ausente ou ilegível: lembrete desligado.
+        let reminder = (try? container.decodeIfPresent(AlarmTime.self, forKey: .bedtimeReminder)) ?? nil
+        if let reminder, (0...23).contains(reminder.hour), (0...59).contains(reminder.minute) {
+            bedtimeReminder = reminder
+        } else {
+            bedtimeReminder = nil
+        }
     }
 }

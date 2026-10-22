@@ -709,6 +709,26 @@ resultado do "Parar".
 - Só dá pra validar com a placa: o STATE chegando logo depois de conectar (senão cai no
   tempo limite) e a cor de partida batendo com a luz real.
 
+## Lembrete "hora de desligar." (2026-10-22, item 4 do plano Hatch)
+
+- `SleepRoutine.bedtimeReminder: AlarmTime?` (`nil` = desligado, padrão; decode
+  tolerante, valor fora de 0–23/0–59 vira `nil`; também no backup do iCloud). Cartão
+  "Lembrete" no editor de rotina: chave "Lembrar de desligar" (liga às 22:30 e pede a
+  permissão de notificação) + horário.
+- `Luminaria/BedtimeReminder.swift` (pbxproj `B0`/`B1`): só a rotina **ativa**; agenda
+  os próximos 7 dias como notificações avulsas (`repeats: false`, IDs
+  `com.luminaria.bedtime.<timestamp>`) com o texto "hora de desligar." — uma por noite,
+  sem segunda chamada, sem escalar, nível `.active` (não `.timeSensitive`: o Foco pode
+  silenciar, de propósito). Avulsas e não repetidas pra poder **pular a noite em que a
+  luminária já foi lida** (remove as das próximas 12 h). Reagendado ao abrir o app, ao
+  voltar pro app, ao salvar/excluir/trocar a rotina ativa (`SleepRoutineStore`) e no
+  reconhecimento da luminária. Conta pura em `AlarmSchedule.upcomingDaily` (testada).
+- Os IDs não colidem com os do despertador (`AlarmManager` só reage aos dele).
+- Limite: se o app não for aberto por mais de 7 dias, os lembretes acabam (reabrir
+  reagenda). Rotina trocada sozinha pelo calendário só reagenda na leitura da luminária.
+- Só dá pra validar no iPhone: a notificação chegando no horário e sumindo na noite em
+  que a luminária foi lida antes.
+
 ## As duas branches
 
 ### `main`
@@ -804,7 +824,7 @@ Fluxo usado pra testar de verdade, todo do Windows:
 
 - **`Luminaria.xcodeproj/project.pbxproj` foi escrito à mão**, linha por linha — não existe
   Xcode/macOS neste ambiente de desenvolvimento (Windows). IDs de objeto seguem o padrão
-  `AAAAAAAAAAAAAAAAAAAAAA` + 2 dígitos hex incrementais (maior em uso: `AF`); qualquer
+  `AAAAAAAAAAAAAAAAAAAAAA` + 2 dígitos hex incrementais (maior em uso: `B1`); qualquer
   novo arquivo precisa de entradas em `PBXBuildFile`, `PBXFileReference`, no grupo, e na
   build phase certa (`Sources` pra `.swift`, `Resources` pra assets/sons). Sempre
   verificar balanço de chaves/parênteses e contagem de referências de cada ID novo

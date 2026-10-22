@@ -210,6 +210,29 @@ struct RoutineEditView: View {
         return "Toca às \(clock) na manhã depois de encostar na luminária."
     }
 
+    private var reminderOn: Binding<Bool> {
+        Binding(
+            get: { routine.bedtimeReminder != nil },
+            set: { on in
+                routine.bedtimeReminder = on ? AlarmTime(hour: 22, minute: 30) : nil
+                if on { AlarmManager.shared.requestNotificationPermission() }
+            }
+        )
+    }
+
+    private var reminderTime: Binding<Date> {
+        Binding(
+            get: {
+                let t = routine.bedtimeReminder ?? AlarmTime(hour: 22, minute: 30)
+                return Self.date(hour: t.hour, minute: t.minute)
+            },
+            set: { newValue in
+                let comps = Calendar.current.dateComponents([.hour, .minute], from: newValue)
+                routine.bedtimeReminder = AlarmTime(hour: comps.hour ?? 22, minute: comps.minute ?? 30)
+            }
+        )
+    }
+
     private var nightShiftOffTime: Binding<Date> {
         Binding(
             get: { Self.date(hour: routine.nightShiftOffHour, minute: routine.nightShiftOffMinute) },
@@ -325,6 +348,50 @@ struct RoutineEditView: View {
                             }
                             .padding(.horizontal, 10)
                             .padding(.vertical, 9)
+                        }
+
+                        // Item 4 do plano Hatch: uma notificação por noite, sem repetir.
+                        ThemedCard(title: "Lembrete", theme: theme) {
+                            HStack {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Lembrar de desligar")
+                                        .font(.luminaria(.subheadline, weight: .medium))
+                                        .foregroundStyle(theme.ink)
+                                    Text("Uma notificação: \u{201C}\(BedtimeReminder.message)\u{201D}")
+                                        .font(.luminaria(.caption))
+                                        .foregroundStyle(theme.inkMuted)
+                                }
+                                Spacer()
+                                Toggle("", isOn: reminderOn)
+                                    .labelsHidden()
+                                    .tint(theme.accent)
+                            }
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 9)
+
+                            if routine.bedtimeReminder != nil {
+                                Rectangle()
+                                    .fill(theme.hairline)
+                                    .frame(height: 1)
+                                    .padding(.leading, 10)
+                                HStack {
+                                    Text("Às")
+                                        .font(.luminaria(.subheadline, weight: .medium))
+                                        .foregroundStyle(theme.ink)
+                                    Spacer()
+                                    DatePicker("", selection: reminderTime, displayedComponents: .hourAndMinute)
+                                        .labelsHidden()
+                                        .tint(theme.accent)
+                                }
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 9)
+                                Text("Só vale pra rotina ativa. Não toca na noite em que você já encostou na luminária.")
+                                    .font(.luminaria(.caption))
+                                    .foregroundStyle(theme.inkMuted)
+                                    .padding(.horizontal, 10)
+                                    .padding(.bottom, 8)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
                         }
 
                         // 21 sons agrupados por categoria, cada grupo RECOLHIDO por padrão
