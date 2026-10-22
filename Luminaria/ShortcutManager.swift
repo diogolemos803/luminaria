@@ -26,7 +26,7 @@ final class ShortcutManager {
     /// definido pelo dono (o botão "instalar" mostra "link em breve"). O app chama cada
     /// atalho pelo NOME exato acima — por isso o onboarding avisa pra não renomear e o
     /// "testar atalhos" (`ShortcutTester`) confere os dois.
-    static let sleepShortcutInstallLink: String? = nil
+    static let sleepShortcutInstallLink: String? = "https://www.icloud.com/shortcuts/8dda4d2564ea44d6977ed15bcea6210d"
     static let wakeShortcutInstallLink: String? = nil
 
     static func installURL(forShortcutNamed name: String) -> URL? {

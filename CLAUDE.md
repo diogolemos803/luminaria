@@ -638,9 +638,12 @@ Arquivos separados pra isso: `SleepRoutine.swift` (saiu de `SleepRoutineStore.sw
   `onRehearsalRecognized` em vez de `onRecognizedTap` — nada é armado nem bloqueado, e
   terminar sem leitura não dispara `onScanEndedWithoutMatch`.
 - **Atalhos por link**: `ShortcutManager.sleepShortcutInstallLink`/
-  `wakeShortcutInstallLink` (**placeholders `nil`** — o dono passa os links do iCloud
-  depois; com `nil` o botão mostra "link em breve" e aparece "criar os atalhos à mão",
-  que abre a Ajuda). Os atalhos não têm horário (dormir = Não Perturbe "até desligar";
+  `wakeShortcutInstallLink` — o de dormir já tem link (2026-10-22,
+  `icloud.com/shortcuts/8dda4d25…`, nome conferido pela API pública do iCloud:
+  `https://www.icloud.com/shortcuts/api/records/<id>` → `fields.name`); o do "Acordar"
+  ainda é `nil` (o botão mostra "link em breve" e aparece "criar os atalhos à mão", que
+  abre a Ajuda). Conferir o nome de todo link novo: o primeiro link mandado veio como
+  "Dormir Sem Celular" (maiúsculas) e foi recusado. Os atalhos não têm horário (dormir = Não Perturbe "até desligar";
   acordar = desliga). Nomes continuam fixos ("Dormir sem celular", "Acordar"; decisão do
   dono, compatível com quem já criou à mão); o onboarding avisa pra não renomear.
 - **"Testar atalhos"** (`ShortcutTester`): roda "Dormir sem celular" e depois "Acordar"
