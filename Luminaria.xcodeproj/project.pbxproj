@@ -50,6 +50,8 @@
 		AAAAAAAAAAAAAAAAAAAAAAAD /* AlarmSchedule.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAAAC /* AlarmSchedule.swift */; };
 		AAAAAAAAAAAAAAAAAAAAAAAF /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAAAE /* OnboardingView.swift */; };
 		AAAAAAAAAAAAAAAAAAAAAAB1 /* BedtimeReminder.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAAB0 /* BedtimeReminder.swift */; };
+		AAAAAAAAAAAAAAAAAAAAAAB5 /* SleepSoundsExperiment.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAAB4 /* SleepSoundsExperiment.swift */; };
+		AAAAAAAAAAAAAAAAAAAAAAB3 /* SleepSoundsTimer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAAB2 /* SleepSoundsTimer.swift */; };
 		AAAAAAAAAAAAAAAAAAAAAAAB /* SleepReportEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAAAA /* SleepReportEntry.swift */; };
 		AAAAAAAAAAAAAAAAAAAAAA42 /* SleepReportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA41 /* SleepReportView.swift */; };
 		AAAAAAAAAAAAAAAAAAAAAA48 /* LuminariaWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA47 /* LuminariaWidgetBundle.swift */; };
@@ -148,6 +150,8 @@
 		AAAAAAAAAAAAAAAAAAAAAAAC /* AlarmSchedule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlarmSchedule.swift; sourceTree = "<group>"; };
 		AAAAAAAAAAAAAAAAAAAAAAAE /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		AAAAAAAAAAAAAAAAAAAAAAB0 /* BedtimeReminder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BedtimeReminder.swift; sourceTree = "<group>"; };
+		AAAAAAAAAAAAAAAAAAAAAAB4 /* SleepSoundsExperiment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepSoundsExperiment.swift; sourceTree = "<group>"; };
+		AAAAAAAAAAAAAAAAAAAAAAB2 /* SleepSoundsTimer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepSoundsTimer.swift; sourceTree = "<group>"; };
 		AAAAAAAAAAAAAAAAAAAAAAAA /* SleepReportEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepReportEntry.swift; sourceTree = "<group>"; };
 		AAAAAAAAAAAAAAAAAAAAAA41 /* SleepReportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepReportView.swift; sourceTree = "<group>"; };
 		AAAAAAAAAAAAAAAAAAAAAA47 /* LuminariaWidgetBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LuminariaWidgetBundle.swift; sourceTree = "<group>"; };
@@ -235,6 +239,8 @@
 				AAAAAAAAAAAAAAAAAAAAAAAC /* AlarmSchedule.swift */,
 				AAAAAAAAAAAAAAAAAAAAAAAE /* OnboardingView.swift */,
 				AAAAAAAAAAAAAAAAAAAAAAB0 /* BedtimeReminder.swift */,
+				AAAAAAAAAAAAAAAAAAAAAAB4 /* SleepSoundsExperiment.swift */,
+				AAAAAAAAAAAAAAAAAAAAAAB2 /* SleepSoundsTimer.swift */,
 				AAAAAAAAAAAAAAAAAAAAAAAA /* SleepReportEntry.swift */,
 				AAAAAAAAAAAAAAAAAAAAAA41 /* SleepReportView.swift */,
 				AAAAAAAAAAAAAAAAAAAAAA5B /* GrowthEngine.swift */,
@@ -447,6 +453,8 @@
 				AAAAAAAAAAAAAAAAAAAAAAAD /* AlarmSchedule.swift in Sources */,
 				AAAAAAAAAAAAAAAAAAAAAAAF /* OnboardingView.swift in Sources */,
 				AAAAAAAAAAAAAAAAAAAAAAB1 /* BedtimeReminder.swift in Sources */,
+				AAAAAAAAAAAAAAAAAAAAAAB5 /* SleepSoundsExperiment.swift in Sources */,
+				AAAAAAAAAAAAAAAAAAAAAAB3 /* SleepSoundsTimer.swift in Sources */,
 				AAAAAAAAAAAAAAAAAAAAAAAB /* SleepReportEntry.swift in Sources */,
 				AAAAAAAAAAAAAAAAAAAAAA42 /* SleepReportView.swift in Sources */,
 				AAAAAAAAAAAAAAAAAAAAAA5C /* GrowthEngine.swift in Sources */,

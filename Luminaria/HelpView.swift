@@ -134,6 +134,9 @@ struct HelpView: View {
                             .foregroundStyle(theme.inkMuted)
 
                         statusChip
+
+                        // Experimento "sons pra dormir" (desligado por padrão).
+                        SleepSoundsExperimentToggle(theme: theme)
                     }
                     .padding(16)
                     .padding(.top, 4)

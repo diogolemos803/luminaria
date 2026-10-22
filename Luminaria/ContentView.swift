@@ -888,6 +888,9 @@ struct SettingsView: View {
                             .buttonStyle(.plain)
                         }
 
+                        // Experimento "sons pra dormir" — só aparece com a chave ligada na Ajuda.
+                        SleepSoundsSettingsCard(theme: theme)
+
                         if !nfcManager.statusMessage.isEmpty {
                             Text(nfcManager.statusMessage)
                                 .font(.luminaria(.footnote, weight: .medium))

@@ -746,6 +746,34 @@ resultado do "Parar".
 - O resumo do ensaio mostra também o lembrete.
 - Só dá pra validar no iPhone: o tamanho das pílulas longas numa tela pequena (SE).
 
+## Sons pra dormir — EXPERIMENTO (2026-10-22, item 6 do plano Hatch)
+
+- **Teste mínimo, atrás de uma chave DESLIGADA por padrão**: Ajuda → "Experimentos" →
+  "Sons pra dormir (teste)" (`SleepSoundsFlag`, `UserDefaults`
+  `com.luminaria.experiment.sleepSounds`). Ligada, aparece o cartão "Sons pra dormir" no
+  menu. Só **ruído branco** + **timer** 15/30/60/90 min ou "até o alarme" (o
+  `nextFireDate` armado; sem despertador armado essa opção fica bloqueada), diminuindo
+  em linha reta no último minuto. Ruído marrom/rosa, chuva e grilos (CC0, AAC) ficam pra
+  depois do teste no nicho.
+- **Módulo removível**: `Luminaria/SleepSoundsTimer.swift` (puro, testado, link em
+  `Packages/SoveeCore`) e `Luminaria/SleepSoundsExperiment.swift` (player + telas).
+  pbxproj `B2`–`B5`. Pra tirar: apagar os 2 arquivos, o link simbólico, as entradas
+  `B2`–`B5` do pbxproj, os testes `SleepSoundTimerTests` e as 2 linhas que citam
+  `SleepSoundsExperimentToggle` (`HelpView`) e `SleepSoundsSettingsCard`
+  (`SettingsView` em `ContentView.swift`).
+- **Sem arquivo de áudio**: ruído gerado na hora por `AVAudioSourceNode` (xorshift),
+  nível fixo baixo (0,12; o volume do iPhone vale por cima). Toca com a tela bloqueada
+  pelo `UIBackgroundModes: audio` que já existia.
+- **Convivência com o despertador**: mesma categoria `.playback` do `AlarmManager`; parar
+  o ruído NUNCA desativa a sessão (derrubaria o loop silencioso do esquema antigo). Para
+  sozinho quando `AlarmManager.isAlarmRinging` liga. O alarme do AlarmKit interrompe o
+  áudio do app; no fim da interrupção o ruído só volta se o alarme não estiver tocando.
+  Ressalva: `AlarmManager.disarmAlarm` desativa a sessão — desarmar com o ruído tocando
+  pode cortar o som (o motor tenta religar na mudança de configuração).
+- Só dá pra validar no iPhone: tocar a noite toda com a tela bloqueada e o Não
+  Perturbe, o alarme do AlarmKit tocando por cima e o ruído não voltando, e o som não
+  "estalar" na diminuição.
+
 ## As duas branches
 
 ### `main`
@@ -841,7 +869,7 @@ Fluxo usado pra testar de verdade, todo do Windows:
 
 - **`Luminaria.xcodeproj/project.pbxproj` foi escrito à mão**, linha por linha — não existe
   Xcode/macOS neste ambiente de desenvolvimento (Windows). IDs de objeto seguem o padrão
-  `AAAAAAAAAAAAAAAAAAAAAA` + 2 dígitos hex incrementais (maior em uso: `B1`); qualquer
+  `AAAAAAAAAAAAAAAAAAAAAA` + 2 dígitos hex incrementais (maior em uso: `B5`); qualquer
   novo arquivo precisa de entradas em `PBXBuildFile`, `PBXFileReference`, no grupo, e na
   build phase certa (`Sources` pra `.swift`, `Resources` pra assets/sons). Sempre
   verificar balanço de chaves/parênteses e contagem de referências de cada ID novo

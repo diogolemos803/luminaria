@@ -370,3 +370,26 @@ final class FirstNightAnswersTests: XCTestCase {
         XCTAssertNil(r.weekdayAlarms)
     }
 }
+
+
+// MARK: - Experimento sons pra dormir (timer)
+
+final class SleepSoundTimerTests: XCTestCase {
+    func testEndDates() {
+        let now = date(2026, 10, 22, 23)
+        XCTAssertEqual(SleepSoundTimer.endDate(for: .minutes(30), now: now, alarmDate: nil), date(2026, 10, 22, 23, 30))
+        let alarm = date(2026, 10, 23, 7)
+        XCTAssertEqual(SleepSoundTimer.endDate(for: .untilAlarm, now: now, alarmDate: alarm), alarm)
+        XCTAssertNil(SleepSoundTimer.endDate(for: .untilAlarm, now: now, alarmDate: nil))
+        XCTAssertNil(SleepSoundTimer.endDate(for: .untilAlarm, now: now, alarmDate: date(2026, 10, 22, 22)))
+    }
+
+    /// Volume cheio até faltar 1 minuto, depois desce em linha reta até 0.
+    func testFadeInLastMinute() {
+        let end = date(2026, 10, 22, 23, 30)
+        XCTAssertEqual(SleepSoundTimer.volume(now: end.addingTimeInterval(-300), end: end), 1)
+        XCTAssertEqual(SleepSoundTimer.volume(now: end.addingTimeInterval(-30), end: end), 0.5, accuracy: 0.001)
+        XCTAssertEqual(SleepSoundTimer.volume(now: end, end: end), 0)
+        XCTAssertEqual(SleepSoundTimer.volume(now: end.addingTimeInterval(10), end: end), 0)
+    }
+}
