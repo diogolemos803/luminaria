@@ -37,7 +37,8 @@ function Layers({ mode, colorIndex, reduced }: { mode: Mode; colorIndex: number;
   );
 }
 
-export default function Experience() {
+/** Primeira dobra da landing: o quarto, com o Day Finisher. `inHero` diz se a pessoa ainda está nela (a marca e o menu fixos mudam de cor fora dela). */
+export default function Experience({ inHero }: { inHero: boolean }) {
   const { t } = useLang();
   const reduced = !!useReducedMotion();
   const [minTime, setMinTime] = useState(false);
@@ -111,12 +112,14 @@ export default function Experience() {
   const c = rooms[mode];
   const hovering = lampActive && !menuOpen;
   const night = mode === "night";
+  const uiNight = night || !inHero; // marca e menu fixos: fora do quarto o fundo é sempre escuro
   const lampColor = lampColors[colorIndex];
 
   const focusMask = "radial-gradient(ellipse 15% 21% at 52% 50%, #000 58%, transparent 100%)";
 
   return (
-    <main className="relative h-full w-full overflow-hidden bg-carvao">
+    <section className="hero relative w-full overflow-hidden bg-carvao" style={{ height: "100dvh" }}>
+      <h1 className="sr-only">{t.meta.home.title}</h1>
       <AnimatePresence>{!ready && <Loading key="loading" reduced={reduced} />}</AnimatePresence>
 
       <motion.div
@@ -231,19 +234,16 @@ export default function Experience() {
 
       {ready && (
         <>
-          <div className={`brand-logo ${night ? "" : "is-day"}`} aria-label="sovee">
+          <div className={`brand-logo ${uiNight ? "" : "is-day"}`} aria-label="sovee">
             <i className="brand-mark" aria-hidden="true" />
             <Wordmark />
           </div>
-          <Link href="/lista" className={`buy-cta ${night ? "" : "is-day"} ${menuOpen ? "is-hidden" : ""} ${hovering ? "card-open" : ""}`} style={{ ["--lc" as string]: lampColor }}>
+          <Link href="/#lista" className={`buy-cta ${night ? "" : "is-day"} ${menuOpen ? "is-hidden" : ""} ${hovering ? "card-open" : ""}`} style={{ ["--lc" as string]: lampColor }}>
             {t.nav.waitlist}
           </Link>
-          <nav className={`home-links ${night ? "" : "is-day"} ${menuOpen ? "is-hidden" : ""}`} aria-label={t.pagesNav}>
-            <a href="https://instagram.com/the.sovee" target="_blank" rel="noopener noreferrer">{t.nav.instagram}</a>
-            <Link href="/lista">{t.nav.waitlist}</Link>
-          </nav>
           <Menu
             mode={mode}
+            tone={uiNight ? "night" : "day"}
             colorIndex={colorIndex}
             auto={auto}
             onPick={(i) => { setPicked(i); setAuto(false); setPaused(true); }}
@@ -255,7 +255,7 @@ export default function Experience() {
             type="button"
             onClick={toggleMode}
             aria-label={night ? t.experience.seeDay : t.experience.seeNight}
-            className="fixed bottom-4 left-4 z-40 flex h-12 w-12 items-center justify-center rounded-full"
+            className="absolute bottom-4 left-4 z-40 flex h-12 w-12 items-center justify-center rounded-full"
             style={{ background: c.card, color: c.text }}
           >
             {night ? (
@@ -269,8 +269,14 @@ export default function Experience() {
               </svg>
             )}
           </button>
+          <button type="button" className={`hero-scroll ${night ? "" : "is-day"} ${menuOpen ? "is-hidden" : ""}`} onClick={() => document.getElementById("como-funciona")?.scrollIntoView({ behavior: "smooth" })}>
+            <span>{t.how.hint}</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M6 9l6 6 6-6" />
+            </svg>
+          </button>
         </>
       )}
-    </main>
+    </section>
   );
 }

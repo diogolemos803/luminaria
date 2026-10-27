@@ -1,5 +1,5 @@
-import Experience from "@/components/Experience";
+import Landing from "@/components/Landing";
 
 export default function Home() {
-  return <Experience />;
+  return <Landing />;
 }

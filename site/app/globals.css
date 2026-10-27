@@ -305,3 +305,16 @@ body {
 
 /* no celular o cartão do Day Finisher ocupa o pé da tela: o botão da lista de espera sai de cena enquanto ele está aberto */
 @media (max-width:700px){.buy-cta.card-open{opacity:0;visibility:hidden;pointer-events:none}}
+
+/* landing em uma rolagem só: quarto, como funciona e lista de espera */
+.hero .hover-card,.hero .buy-cta{position:absolute}
+.hero-scroll{position:absolute;left:50%;bottom:max(18px,env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:20;display:flex;flex-direction:column;align-items:center;gap:2px;border:0;background:transparent;color:#FDF8C7;font:inherit;font-size:13px;cursor:pointer;white-space:nowrap;text-shadow:0 1px 8px rgba(0,0,0,.5);transition:opacity .25s,visibility .25s,color .6s}
+.hero-scroll svg{animation:hero-bob 1.8s ease-in-out infinite}
+.hero-scroll.is-day{color:#444;text-shadow:none}
+.hero-scroll.is-hidden{opacity:0;visibility:hidden}
+@keyframes hero-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(5px)}}
+@media (prefers-reduced-motion:reduce){.hero-scroll svg{animation:none}}
+.landing-end{background:#2A2A2A;color:#FDF8C7}
+.lista-section{min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:96px max(16px,env(safe-area-inset-right,0px)) 48px max(16px,env(safe-area-inset-left,0px))}
+.lista-section .ls{width:100%;max-width:640px;display:flex;flex-direction:column;gap:20px}
+.landing-foot{width:calc(100% - 32px);max-width:1120px;margin:0 auto;padding-bottom:max(40px,env(safe-area-inset-bottom,0px))}

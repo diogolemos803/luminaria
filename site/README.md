@@ -12,10 +12,9 @@ npm run build    # build de produção
 
 ## Páginas
 
-- `/` cena do quarto (noite/dia, luz do âmbar ao vermelho, menu, botão lista de espera)
+- `/` landing em uma rolagem só: o quarto (noite/dia, luz do âmbar ao vermelho, menu), "como funciona" (animação que avança com a rolagem: celular encaixando no nicho, luz do Day Finisher, foguete, meteoro e pouso; cenas geradas dos protótipos em `components/scenes/` e `public/como-funciona/`) e a lista de espera (nome, e-mail e consentimento)
 - `/produto`, `/sobre`, `/ciencia-do-sono` textos em `lib/content/` (pt, en e es)
-- `/como-funciona` animação que avança com a rolagem (celular encaixando no nicho, luz do Day Finisher, foguete, meteoro e pouso); cenas geradas dos protótipos em `components/scenes/` e `public/como-funciona/`
-- `/lista` lista de espera (nome, e-mail e consentimento). `/pre-venda` e `/comprar` redirecionam para ela. Nada no site cobra ou vende.
+- `/como-funciona`, `/lista`, `/pre-venda` e `/comprar` redirecionam (308) para `/#como-funciona` e `/#lista`. Nada no site cobra ou vende.
 - política de privacidade (LGPD): escondida por enquanto em `app/_privacidade-oculta` (a pasta com `_` não vira rota). Para publicar, renomeie para `app/privacidade` e religue os links.
 
 ## Lista de espera

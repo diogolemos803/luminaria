@@ -3,9 +3,11 @@ const nextConfig = {
   reactStrictMode: true,
   async redirects() {
     return [
-      // endereços antigos de compra: agora só existe a lista de espera
-      { source: "/pre-venda", destination: "/lista", permanent: true },
-      { source: "/comprar", destination: "/lista", permanent: true },
+      // as páginas viraram dobras da landing; os endereços antigos levam para elas
+      { source: "/como-funciona", destination: "/#como-funciona", permanent: true },
+      { source: "/lista", destination: "/#lista", permanent: true },
+      { source: "/pre-venda", destination: "/#lista", permanent: true },
+      { source: "/comprar", destination: "/#lista", permanent: true },
       // www.sovee.com.br -> sovee.com.br (endereço principal)
       {
         source: "/:path*",

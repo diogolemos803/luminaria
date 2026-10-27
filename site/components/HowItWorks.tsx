@@ -4,9 +4,6 @@ import Link from "next/link";
 import { useEffect, useRef } from "react";
 import * as launch from "./scenes/launchScene";
 import * as landing from "./scenes/landingScene";
-import LangSwitch from "./LangSwitch";
-import Wordmark from "./Wordmark";
-import FooterNav from "./FooterNav";
 import { useLang } from "./LangProvider";
 
 /* ---------- matemática de rolagem ---------- */
@@ -55,12 +52,12 @@ const LAND_SVG = noBlur(landing.svg, "ld");
 
 type Anim = Animation[];
 
-export default function HowItWorks() {
+/** "Como funciona": animação que avança com a rolagem da landing. O rolador (a landing) vem de fora. */
+export default function HowItWorks({ scroller }: { scroller: React.RefObject<HTMLElement> }) {
   const { lang, t: all } = useLang();
   const t = all.how;
   const tRef = useRef(all);
   tRef.current = all;
-  const scroller = useRef<HTMLElement>(null);
   const track = useRef<HTMLDivElement>(null);
   const stage = useRef<HTMLDivElement>(null);
   const iso = useRef<HTMLDivElement>(null);
@@ -404,29 +401,14 @@ export default function HowItWorks() {
   };
 
   return (
-    <main className="buy hw" ref={scroller}>
+    <section id="como-funciona" className="hw-section" aria-label={t.srLabel}>
       <style>{launch.css}</style>
       <style>{landing.css}</style>
 
-      <header className="hw-top">
-        <Link href="/" className="buy-back" aria-label={all.back}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="M15 5l-7 7 7 7" />
-          </svg>
-          <span>{all.back}</span>
-        </Link>
-        <div className="buy-right">
-          <LangSwitch />
-          <div className="buy-brand" aria-label="sovee">
-            <i className="brand-mark" aria-hidden="true" />
-            <Wordmark />
-          </div>
-        </div>
-      </header>
 
       {/* texto para leitores de tela: a animação abaixo é decorativa */}
-      <section className="sr-only" aria-label={t.srLabel}>
-        <h1>{t.srTitle}</h1>
+      <div className="sr-only">
+        <h2>{t.srTitle}</h2>
         <ol>
           {chapters.map((c, i) => (
             <li key={c.id}>
@@ -435,9 +417,9 @@ export default function HowItWorks() {
           ))}
         </ol>
         <p>{all.tagline}</p>
-        <Link href="/lista">{t.final.buy}</Link>
+        <Link href="/#lista">{t.final.buy}</Link>
         <Link href="/produto">{t.final.product}</Link>
-      </section>
+      </div>
 
       <div className="hw-track" ref={track}>
         <div className="hw-stage" ref={stage} aria-hidden="true">
@@ -590,7 +572,7 @@ export default function HowItWorks() {
               <h2>{all.tagline}</h2>
               <p>{t.final.text}</p>
               <div className="hw-actions">
-                <Link href="/lista" className="buy-btn" tabIndex={-1}>
+                <Link href="/#lista" className="buy-btn" tabIndex={-1}>
                   {t.final.buy}
                 </Link>
                 <Link href="/produto" className="hw-link" tabIndex={-1}>
@@ -625,10 +607,6 @@ export default function HowItWorks() {
         </div>
       </div>
 
-      <footer className="pg-foot hw-foot">
-        <FooterNav nav={all.nav} label={all.pagesNav} />
-        <p>{all.tagline}</p>
-      </footer>
-    </main>
+    </section>
   );
 }
