@@ -265,7 +265,7 @@ struct AlarmWidget: Widget {
         StaticConfiguration(kind: kind, provider: LuminariaTimelineProvider()) { entry in
             LuminariaWidgetView(entry: entry)
         }
-        .configurationDisplayName("SOVEE")
+        .configurationDisplayName("sovee")
         .description("Sua sequência de noites, o próximo planeta, o ranking e o despertador.")
         .supportedFamilies([.accessoryCircular, .accessoryRectangular, .accessoryInline])
     }

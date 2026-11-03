@@ -175,7 +175,7 @@ struct OnboardingView: View {
             Text("hora de desligar.")
                 .font(.soveeDisplay(size: 30, weight: .medium))
                 .foregroundStyle(theme.ink)
-            Text("Encostou o celular na luminária, o SOVEE entra em modo noite: liga o Não Perturbe, bloqueia os apps que você escolher e te acorda de manhã.")
+            Text("encoste o celular na luminária e a noite começa. menos tela, mais descanso, e uma manhã mais calma.")
                 .font(.luminaria(.body))
                 .foregroundStyle(theme.inkMuted)
                 .multilineTextAlignment(.center)
@@ -234,7 +234,7 @@ struct OnboardingView: View {
             }
             HStack(alignment: .top, spacing: 10) {
                 Image(systemName: "exclamationmark.circle")
-                Text("Não renomeie os atalhos. O SOVEE chama cada um pelo nome.")
+                Text("Não renomeie os atalhos. O sovee chama cada um pelo nome.")
             }
             .font(.luminaria(.footnote, weight: .medium))
             .foregroundStyle(theme.ink)
@@ -320,7 +320,7 @@ struct OnboardingView: View {
         let time = String(format: "%02d:%02d", wakeMinutes / 60, wakeMinutes % 60)
         return ThemedCard(title: "recomendado · rede de segurança da manhã", theme: theme) {
             VStack(alignment: .leading, spacing: 10) {
-                Text("Se você parar o despertador sem abrir o SOVEE, o Não Perturbe pode continuar ligado. Uma automação pessoal resolve; o iPhone não deixa instalar por link, então são 4 toques:")
+                Text("Se você parar o despertador sem abrir o sovee, o Não Perturbe pode continuar ligado. Uma automação pessoal resolve; o iPhone não deixa instalar por link, então são 4 toques:")
                     .font(.luminaria(.footnote))
                     .foregroundStyle(theme.inkMuted)
                 HStack {
@@ -360,11 +360,11 @@ struct OnboardingView: View {
     }
 
     private var permissionList: [Permission] {
-        var list = [Permission(icon: "bell", title: "Notificações", why: "Pro despertador em iPhones sem alarme do sistema e pros avisos do SOVEE.", required: true)]
+        var list = [Permission(icon: "bell", title: "Notificações", why: "Pro despertador em iPhones sem alarme do sistema e pros avisos do sovee.", required: true)]
         if SystemAlarm.authorization != .unavailable {
             list.append(Permission(icon: "alarm", title: "Alarmes", why: "O despertador toca como o do iPhone: no silencioso, com o Foco ligado e o app fechado.", required: true))
         }
-        list.append(Permission(icon: "shield.lefthalf.filled", title: "Tempo de Uso", why: "Pra bloquear os apps que você escolher durante a noite. O SOVEE nunca vê quais apps são.", required: true))
+        list.append(Permission(icon: "shield.lefthalf.filled", title: "Tempo de Uso", why: "Pra bloquear os apps que você escolher durante a noite. O sovee nunca vê quais apps são.", required: true))
         list.append(Permission(icon: "calendar", title: "Calendário · opcional", why: "Pra trocar de rotina sozinho em dias com um evento, como \"Viagem\".", required: false))
         return list
     }
@@ -429,7 +429,7 @@ struct OnboardingView: View {
             }
             ThemedCard(title: "quanto tempo pra desacelerar?", theme: theme) {
                 chipRow(FirstNightAnswers.relaxChoices.map { ("\($0) min", $0) }, selection: $relaxMinutes)
-                Text(lampManager.hasLamp ? "É o tempo que a luz da lâmpada leva pra apagar depois que você encosta." : "Vale pra luz da lâmpada SOVEE, se um dia você parear uma.")
+                Text(lampManager.hasLamp ? "É o tempo que a luz da lâmpada leva pra apagar depois que você encosta." : "Vale pra luz da sua luminária sovee, se um dia você parear uma.")
                     .font(.luminaria(.caption))
                     .foregroundStyle(theme.inkMuted)
                     .padding(.horizontal, 10)
@@ -448,7 +448,7 @@ struct OnboardingView: View {
                 }
                 chipRow([("com lembrete", true), ("sem lembrete", false)], selection: $wantsReminder)
             }
-            Text("Você escolhe os horários; o SOVEE não sugere quanto dormir. O despertador só toca nas noites em que você encostar na luminária. Os apps a bloquear você escolhe em Rotinas.")
+            Text("Você escolhe os horários; o sovee não sugere quanto dormir. O despertador só toca nas noites em que você encostar na luminária. Os apps a bloquear você escolhe em Rotinas.")
                 .font(.luminaria(.footnote))
                 .foregroundStyle(theme.inkMuted)
                 .padding(.horizontal, 6)

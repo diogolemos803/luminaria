@@ -66,7 +66,7 @@ struct HelpView: View {
 
                         sectionHeading("Desligar o Foco quando a noite acaba")
 
-                        Text("O iPhone não deixa nenhum app desligar um Foco sozinho. Por isso crie um segundo Atalho, chamado \"\(ShortcutManager.wakeShortcutName)\": o SOVEE roda ele quando você desliga o modo noite, usa o passe de emergência ou para o despertador dentro do app. Se a noite terminar com o app fechado (ex.: \"Parar\" na tela bloqueada), ele roda assim que você abrir o SOVEE.")
+                        Text("O iPhone não deixa nenhum app desligar um Foco sozinho. Por isso crie um segundo Atalho, chamado \"\(ShortcutManager.wakeShortcutName)\": o sovee roda ele quando você desliga o modo noite, usa o passe de emergência ou para o despertador dentro do app. Se a noite terminar com o app fechado (ex.: \"Parar\" na tela bloqueada), ele roda assim que você abrir o sovee.")
                             .font(.luminaria(.subheadline))
                             .foregroundStyle(theme.inkMuted)
 
@@ -80,7 +80,7 @@ struct HelpView: View {
 
                         sectionHeading("Desligar o Modo Noturno de manhã")
 
-                        Text("O despertador é do próprio SOVEE e não depende do Atalho — só arma quando a luminária é reconhecida via NFC com o modo noite ativo. Já o Modo Noturno precisa de uma automação separada, porque o Atalho acima roda uma única vez à noite e não pode \"esperar\" até de manhã. Crie na aba Automação do app Atalhos, usando o mesmo horário configurado na rotina de sono:")
+                        Text("O despertador é do próprio sovee e não depende do Atalho — só arma quando a luminária é reconhecida via NFC com o modo noite ativo. Já o Modo Noturno precisa de uma automação separada, porque o Atalho acima roda uma única vez à noite e não pode \"esperar\" até de manhã. Crie na aba Automação do app Atalhos, usando o mesmo horário configurado na rotina de sono:")
                             .font(.luminaria(.subheadline))
                             .foregroundStyle(theme.inkMuted)
 
@@ -88,41 +88,41 @@ struct HelpView: View {
                             stepRow(1, "Na aba Automação, toque em + e escolha \"Horário do Dia\"")
                             stepRow(2, "Defina o mesmo horário configurado em \"Desligar Modo Noturno às\" na rotina ativa")
                             stepRow(3, "Adicione a ação \"Definir Modo Noturno\" como desligado")
-                            stepRow(4, "Recomendado: adicione também \"Definir Foco\" desligado — garante o Foco desligado de manhã mesmo se você não abrir o SOVEE")
+                            stepRow(4, "Recomendado: adicione também \"Definir Foco\" desligado — garante o Foco desligado de manhã mesmo se você não abrir o sovee")
                             stepRow(5, "Desative \"Perguntar Antes de Executar\"")
                         }
 
                         sectionHeading("Bloqueio de apps e relatório de sono")
 
-                        Text("Enquanto o modo noite estiver ativo e a luminária for reconhecida via NFC, os apps que você escolher em Configurações → Bloqueio de apps ficam bloqueados de verdade pelo próprio iOS — até você desarmar pelo botão OU até o despertador da rotina ativa tocar, o que vier primeiro. Por privacidade, a Apple não deixa o SOVEE saber QUAIS apps foram escolhidos — só quantos. E não existe nenhuma forma, pra nenhum app, de contar quantas notificações ou ligações foram bloqueadas — isso simplesmente não é exposto pela Apple. O relatório mostra só o que dá pra medir de verdade: quantos apps ficaram bloqueados e por quanto tempo.")
+                        Text("Enquanto o modo noite estiver ativo e a luminária for reconhecida via NFC, os apps que você escolher em Configurações → Bloqueio de apps ficam bloqueados de verdade pelo próprio iOS — até você desarmar pelo botão OU até o despertador da rotina ativa tocar, o que vier primeiro. Por privacidade, a Apple não deixa o sovee saber QUAIS apps foram escolhidos — só quantos. E não existe nenhuma forma, pra nenhum app, de contar quantas notificações ou ligações foram bloqueadas — isso simplesmente não é exposto pela Apple. O relatório mostra só o que dá pra medir de verdade: quantos apps ficaram bloqueados e por quanto tempo.")
                             .font(.luminaria(.subheadline))
                             .foregroundStyle(theme.inkMuted)
 
                         sectionHeading("Despertador")
 
-                        Text("No iOS 26 ou mais novo, o despertador toca como um alarme do próprio iPhone: mesmo no modo silencioso, com o Foco ativado e com o app fechado, em tela cheia na tela bloqueada. Toque em \"Parar\" pra desligar, ou em \"Abrir\" pra ver o pouso na Lua. Pra isso o SOVEE precisa da permissão de Alarmes, pedida na primeira vez que o app abre.")
+                        Text("No iOS 26 ou mais novo, o despertador toca como um alarme do próprio iPhone: mesmo no modo silencioso, com o Foco ativado e com o app fechado, em tela cheia na tela bloqueada. Toque em \"Parar\" pra desligar, ou em \"Abrir\" pra ver o pouso na Lua. Pra isso o sovee precisa da permissão de Alarmes, pedida na primeira vez que o app abre.")
                             .font(.luminaria(.subheadline))
                             .foregroundStyle(theme.inkMuted)
 
                         systemAlarmStatusChip
 
                         if alarmManager.systemAlarmAuthorization == .denied {
-                            Text("Pra ativar: Ajustes do iPhone → Apps → SOVEE → ative Alarmes. Depois disso, a próxima leitura da luminária já agenda o alarme do sistema.")
+                            Text("Pra ativar: Ajustes do iPhone → Apps → sovee → ative Alarmes. Depois disso, a próxima leitura da luminária já agenda o alarme do sistema.")
                                 .font(.luminaria(.caption))
                                 .foregroundStyle(theme.inkMuted)
                         }
 
                         sectionHeading("Sem a permissão de Alarmes")
 
-                        Text("Sem essa permissão (ou num iOS anterior ao 26), o despertador depende de notificações: ela toca o som escolhido e tem um botão \"Parar\" (toque longo ou deslize a notificação). Nesse modo o som respeita o modo silencioso, e o Foco que o Atalho ativa (geralmente \"Não Perturbe\") pode filtrar a notificação. O jeito mais confiável é adicionar o SOVEE aos apps sempre permitidos DESSE Foco específico — não adianta liberar em outro:")
+                        Text("Sem essa permissão (ou num iOS anterior ao 26), o despertador depende de notificações: ela toca o som escolhido e tem um botão \"Parar\" (toque longo ou deslize a notificação). Nesse modo o som respeita o modo silencioso, e o Foco que o Atalho ativa (geralmente \"Não Perturbe\") pode filtrar a notificação. O jeito mais confiável é adicionar o sovee aos apps sempre permitidos DESSE Foco específico — não adianta liberar em outro:")
                             .font(.luminaria(.subheadline))
                             .foregroundStyle(theme.inkMuted)
 
                         ThemedCard(theme: theme) {
-                            stepRow(1, "Ajustes → Foco → (o Foco que o Atalho ativa, ex.: Não Perturbe) → Apps → Adicionar Apps Permitidos → SOVEE")
+                            stepRow(1, "Ajustes → Foco → (o Foco que o Atalho ativa, ex.: Não Perturbe) → Apps → Adicionar Apps Permitidos → sovee")
                             stepRow(2, "Na mesma tela, ative \"Notificações Sensíveis ao Tempo\" como reforço")
                             stepRow(3, "Ainda no mesmo Foco, em Pessoas → Adicionar Permitidos, inclua contatos que precisam conseguir ligar mesmo com o modo noite ativo (ex.: filhos, plantão de trabalho)")
-                            stepRow(4, "Ajustes → Notificações → SOVEE: confirme Banners, Sons, \"Mostrar na Tela Bloqueada\" e \"Notificações Sensíveis ao Tempo\" todos ativados")
+                            stepRow(4, "Ajustes → Notificações → sovee: confirme Banners, Sons, \"Mostrar na Tela Bloqueada\" e \"Notificações Sensíveis ao Tempo\" todos ativados")
                         }
 
                         Text("Como reforço extra, o despertador manda uma segunda notificação idêntica cerca de 1 minuto depois da primeira — caso a primeira não toque por algum motivo, a segunda ainda pega o horário certo.")

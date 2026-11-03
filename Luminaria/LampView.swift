@@ -32,9 +32,9 @@ extension LampLink {
         case .bluetoothOff:
             return "O Bluetooth do iPhone está desligado. Ligue na Central de Controle pra falar com a lâmpada."
         case .unauthorized:
-            return "O SOVEE não tem permissão de Bluetooth. Ative em Ajustes → SOVEE → Bluetooth."
+            return "O sovee não tem permissão de Bluetooth. Ative em Ajustes → sovee → Bluetooth."
         case .unsupportedVersion(let version):
-            return "Esta lâmpada usa uma versão do protocolo que o app não conhece (v\(version)). Atualize o app SOVEE pra controlar ela."
+            return "Esta lâmpada usa uma versão do protocolo que o app não conhece (v\(version)). Atualize o app sovee pra controlar ela."
         case .staleBond:
             return "O iPhone ainda guarda um pareamento antigo desta lâmpada. Vá em Ajustes → Bluetooth, toque no ⓘ da \(LampProtocol.settingsName) e em “Esquecer este dispositivo”. Depois pareie de novo."
         case .pairingRejected:
@@ -540,9 +540,9 @@ struct LampPairingContent: View {
     private var statusCard: some View {
         switch lamp.link {
         case .searching:
-            progressRow(title: "Procurando a lâmpada SOVEE…", subtitle: "Deixe o iPhone a menos de 2 metros da lâmpada.")
+            progressRow(title: "Procurando sua luminária sovee…", subtitle: "Deixe o iPhone a menos de 2 metros da lâmpada.")
         case .pairing:
-            progressRow(title: "Lâmpada SOVEE encontrada", subtitle: "Toque em “Parear” no aviso do iPhone.")
+            progressRow(title: "Luminária sovee encontrada", subtitle: "Toque em “Parear” no aviso do iPhone.")
         case .connected where lamp.hasLamp:
             VStack(spacing: 12) {
                 HStack(spacing: 12) {
@@ -601,7 +601,7 @@ struct LampPairingScreen: View {
             theme.stageBackground
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
-                    MenuHeader(title: "Lâmpada", subtitle: "Lâmpada SOVEE, por Bluetooth.", theme: theme)
+                    MenuHeader(title: "Lâmpada", subtitle: "Sua luminária sovee, por Bluetooth.", theme: theme)
                     LampPairingContent(lamp: lamp, theme: theme)
                 }
                 .padding(16)
@@ -637,7 +637,7 @@ struct LampSettingsCard: View {
                     ThemedRow(
                         theme: theme,
                         title: "Adicionar lâmpada",
-                        subtitle: "Lâmpada SOVEE, por Bluetooth",
+                        subtitle: "Sua luminária sovee, por Bluetooth",
                         leading: { IconBadge(systemName: "plus", theme: theme) },
                         accessory: { chevron }
                     )

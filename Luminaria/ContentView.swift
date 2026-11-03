@@ -38,14 +38,14 @@ struct ContentView: View {
     /// A lâmpada não respondeu na hora de encostar na luminária.
     @State private var lampWarning: String?
 
-    /// Alterna entre a tela principal nova (SOVEE) e a antiga (Zleepy Lamp) — pedido
+    /// Alterna entre a tela principal nova (SOVEE) e a antiga (identidade anterior à SOVEE) — pedido
     /// explícito do usuário: "crie uma nova, mas deixe no código uma opção de
     /// retorno". Não é uma preferência do usuário final, é um interruptor de
     /// desenvolvimento — mude pra `false` aqui pra voltar à tela antiga inteira,
     /// sem precisar reverter nenhum commit.
     private static let useSoveeMainScreen = true
 
-    /// Cores da tela principal ANTIGA (Zleepy Lamp) — preservadas exatamente como
+    /// Cores da tela principal ANTIGA (identidade anterior à SOVEE) — preservadas exatamente como
     /// estavam, só usadas por `legacyMainScreen` quando `useSoveeMainScreen == false`.
     private let awakeBackground = Color(red: 0.957, green: 0.953, blue: 0.941)
     private let sleepBackground = Color(red: 0.129, green: 0.141, blue: 0.165)
@@ -310,7 +310,7 @@ struct ContentView: View {
     /// Ajustes de cor pedidos depois de ver o primeiro protótipo: ícone de dia fica
     /// grafite (`SoveeColor.carvao`) direto, não o acento terracota; fundo de dia
     /// ganha um brilho de "nascer do sol" (ver `soveeDayGlow`); acento de noite virou
-    /// azul de luar (`SoveeColor.noiteAzul`, ver `ModeTheme.zleepy`) em vez do sage
+    /// azul de luar (`SoveeColor.noiteAzul`, ver `ModeTheme.night`) em vez do sage
     /// original — a sombra do botão à noite já estava aprovada, não mudou.
     private var soveeMainScreen: some View {
         let theme = ModeTheme.current(armed: isNightModeArmed)
@@ -588,7 +588,7 @@ struct ContentView: View {
         .scaleEffect(x: 1, y: 2.4, anchor: .bottom)
     }
 
-    /// Tela principal ANTIGA (Zleepy Lamp) — preservada byte a byte, sem nenhuma
+    /// Tela principal ANTIGA (identidade anterior à SOVEE) — preservada byte a byte, sem nenhuma
     /// mudança, como opção de retorno rápido (`Self.useSoveeMainScreen = false`).
     private var legacyMainScreen: some View {
         ZStack {
@@ -665,7 +665,7 @@ struct AlarmRingingView: View {
     @ObservedObject var growthTracker: NightSessionActivityTracker = .shared
     @ObservedObject var lampManager: LampManager = .shared
 
-    private let theme = ModeTheme.zleepy
+    private let theme = ModeTheme.night
 
     private var streakDays: Int {
         DetoxStats.currentCleanDayStreak(in: sleepReportStore.entries)

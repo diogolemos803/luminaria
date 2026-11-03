@@ -35,7 +35,7 @@ enum SoveeColor {
 /// modo), só que recalibrado pra paleta SOVEE.
 ///
 /// `.legacyDay`/`.legacyNight` preservam a paleta âmbar/periwinkle da identidade
-/// anterior (Zleepy Lamp) — não usados por padrão em lugar nenhum, existem só como
+/// anterior (identidade anterior à SOVEE) — não usados por padrão em lugar nenhum, existem só como
 /// caminho de volta rápido caso o visual SOVEE não seja aprovado (pedido explícito do
 /// usuário: "crie uma nova, mas deixe no código uma opção de retorno").
 struct ModeTheme {
@@ -51,7 +51,7 @@ struct ModeTheme {
     let dangerWash: Color
 
     // Campos do visual dos menus no estilo do site sovee.com.br (2026-10-20). Têm valor
-    // padrão pra `.living`/`.zleepy` (tela do botão, lâmpada, despertador) continuarem
+    // padrão pra `.living`/`.night` (tela do botão, lâmpada, despertador) continuarem
     // exatamente como estavam — só `.menuDay`/`.menuNight` preenchem.
     /// Cartão de "vidro": gradiente diagonal no lugar da cor chapada de `card`.
     var cardGradient: [Color]? = nil
@@ -81,7 +81,7 @@ struct ModeTheme {
         dangerWash: Color(red: 0.72, green: 0.34, blue: 0.24).opacity(0.10)
     )
 
-    static let zleepy = ModeTheme(
+    static let night = ModeTheme(
         stage: SoveeColor.carvao,
         card: Color(red: 0.32, green: 0.32, blue: 0.32),
         ink: SoveeColor.creme,
@@ -94,7 +94,7 @@ struct ModeTheme {
         dangerWash: Color(red: 0.82, green: 0.50, blue: 0.42).opacity(0.12)
     )
 
-    /// Paleta Zleepy Lamp original — âmbar de luminária acesa / periwinkle de luar.
+    /// Paleta da identidade anterior à SOVEE — âmbar de luminária acesa / periwinkle de luar.
     /// Só existe como caminho de volta; nada usa isso por padrão.
     static let legacyDay = ModeTheme(
         stage: Color(red: 0.957, green: 0.953, blue: 0.941),
@@ -168,7 +168,7 @@ struct ModeTheme {
         isSoveeMenu: true
     )
 
-    static func current(armed: Bool) -> ModeTheme { armed ? .zleepy : .living }
+    static func current(armed: Bool) -> ModeTheme { armed ? .night : .living }
 
     /// Tema das telas de menu. Pra voltar ao visual anterior dos menus, trocar por
     /// `current(armed:)`.

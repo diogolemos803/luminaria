@@ -12,17 +12,22 @@ import Foundation
 /// implementar diferente, só este arquivo muda.
 enum LampProtocol {
     static let version: UInt8 = 2
-    /// Nome da lâmpada nas telas do app.
-    static let displayName = "Lâmpada SOVEE"
-    /// Nomes que a lâmpada anuncia por Bluetooth (o que o iOS mostra no aviso de
-    /// pareamento e em Ajustes → Bluetooth). O app NÃO procura por nome — a busca é pelo
-    /// `serviceUUID` —, então trocar o nome no firmware não quebra nada; esta lista só
-    /// serve pros textos que mandam a pessoa achar a lâmpada nos Ajustes. "Zleepy Lamp" é
-    /// o nome do firmware atual; "SOVEE Lamp" é o nome depois do rebrand (pendente de
-    /// firmware, ver CLAUDE.md).
-    static let advertisedNames = ["SOVEE Lamp", "Zleepy Lamp"]
+    /// Nome da lâmpada nas telas do app (voz da marca: "sovee" sempre minúsculo).
+    static let displayName = "Luminária sovee"
+    /// Nome Bluetooth NOVO, pro firmware gravado depois do rebrand (ainda não gravado).
+    static let advertisedName = "SOVEE Lamp"
+    /// Nome Bluetooth LEGADO — é o que o firmware atual anuncia. Pode sair quando todas as
+    /// lâmpadas tiverem o firmware novo (ver CLAUDE.md, pendência da lâmpada).
+    static let legacyAdvertisedName = "Zleepy Lamp"
+    /// Os dois nomes aceitos. O app NÃO filtra por nome: a busca e o pareamento são pelo
+    /// `serviceUUID`, então tanto a lâmpada atual quanto a do firmware novo são achadas.
+    /// A lista só serve pros textos que mandam a pessoa achar a lâmpada em Ajustes →
+    /// Bluetooth (o nome que o iOS mostra lá vem do firmware).
+    static let advertisedNames = [advertisedName, legacyAdvertisedName]
     /// Como os textos citam o nome que aparece nos Ajustes do iPhone.
     static let settingsName = "\(advertisedNames[0]) (ou \(advertisedNames[1]))"
+    /// Os UUIDs terminam em `7a6c65657079` ("zleepy" em hexadecimal). Ficam assim de
+    /// propósito: estão gravados no firmware, e trocar só no app faria a lâmpada sumir.
     static let serviceUUID = "5a1e0000-4c41-4d50-8000-7a6c65657079"
     /// Escrever, sempre com resposta (`.withResponse`).
     static let commandUUID = "5a1e0001-4c41-4d50-8000-7a6c65657079"

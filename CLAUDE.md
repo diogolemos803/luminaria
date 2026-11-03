@@ -1,4 +1,4 @@
-# Luminária Circadiana NFC
+# sovee — app da luminária (antigo Zleepy / Luminária Circadiana NFC)
 
 App iOS (Swift/SwiftUI) que vincula o iPhone a uma luminária física via NFC. Uma única
 tela com um botão redondo central arma/desarma o "modo noite" (Living mode / Zleepy
@@ -576,28 +576,61 @@ depende de CI num runner macOS na nuvem (GitHub Actions) e de sideload via AltSt
   a chave `LuminariaAppStoreKey` na conta do Codemagic (Team settings → Integrations →
   App Store Connect) pra rodar o primeiro build de verdade.
 
-## Rebrand Zleepy → SOVEE nos textos (2026-10-22)
+## Rebrand Zleepy → sovee (2026-10-22, completado em 2026-11-03)
 
-Pedido do dono: todo texto visível e o código passam a dizer SOVEE. O que mudou:
-- **Nome do app na tela inicial**: `CFBundleDisplayName = SOVEE` no `Info.plist` (antes
-  aparecia "Luminaria", o `PRODUCT_NAME`). Widget também se chama "SOVEE". Os caminhos
-  de Ajustes citados nos textos ("Ajustes → Apps → SOVEE") seguem esse nome.
-  **Não mudou de propósito**: projeto, target, bundle ID (`com.luminaria.app`), nomes de
-  arquivo e tipos `Luminaria*` — trocar isso mexe em assinatura, App ID e TestFlight. O
-  nome do app na App Store ("Zleepy Lamp") é trocado à mão no App Store Connect.
-- "o Luminária" (o app) virou "o SOVEE" em todos os textos. "Luminária reconhecida!" e o
-  cartão "Luminária" continuam: ali "luminária" é o objeto físico com a tag NFC.
-- "Zleepy mode"/"Living mode" (só leitor de tela e a tela antiga `legacyMainScreen`) →
-  "modo noite"/"modo dia". Paletas `.legacyLiving`/`.legacyZleepy` → `.legacyDay`/
-  `.legacyNight`.
-- **Lâmpada**: textos dizem "lâmpada SOVEE". `LampProtocol.deviceName` saiu; agora
-  `displayName` ("Lâmpada SOVEE", só tela) e `advertisedNames = ["SOVEE Lamp",
-  "Zleepy Lamp"]` + `settingsName` ("SOVEE Lamp (ou Zleepy Lamp)"), usados nos textos que
-  mandam achar a lâmpada em Ajustes → Bluetooth. **O app nunca procurou a lâmpada pelo
-  nome** — `scanForPeripherals(withServices: [serviceUUID])` —, então o nome anunciado
-  pode mudar no firmware sem quebrar busca nem pareamento. **Depende do firmware**: o nome
-  que aparece no aviso de pareamento do iOS e em Ajustes → Bluetooth (hoje "Zleepy
-  Lamp"); ver pendência da lâmpada.
+**Por quê**: "Zleepy" foi abandonado por risco de colisão de marca com registros de
+terceiros no Brasil. O nome final é **sovee**, depositado no INPI. Na comunicação é
+**sempre minúsculo** ("sovee"); voz da marca: minúscula, calma, curta, sem exclamação,
+sem emoji, e sem nomear funções técnicas em texto de marca (falar do benefício).
+
+O que está feito:
+- **Nome do app**: `CFBundleDisplayName` e `CFBundleName` = `sovee` no `Info.plist` do
+  app e do widget; widget `configurationDisplayName("sovee")`. Caminhos de Ajustes nos
+  textos ("Ajustes → Apps → sovee") seguem esse nome.
+- **Textos**: todo "SOVEE" visível virou "sovee" (Ajuda, onboarding, bloqueio, amigos,
+  notificação, AlarmKit "Abrir o sovee", erros da lâmpada). Boas-vindas do onboarding
+  reescritas sem citar funções ("encoste o celular na luminária e a noite começa…").
+  "Zleepy mode"/"Living mode" → "modo noite"/"modo dia" (desde 10-22). "o Luminária"
+  como nome do app não existe mais; "luminária" nos textos é o objeto físico.
+- **Lâmpada Bluetooth**: textos de pareamento dizem "sua luminária sovee"
+  (`LampProtocol.displayName = "Luminária sovee"`). Pedido do dono, mesmo a "lâmpada" de
+  Bluetooth sendo um aparelho à parte da tag NFC — se confundir, voltar pra "lâmpada".
+- **Nome Bluetooth**: `LampProtocol.advertisedName = "SOVEE Lamp"` (novo, firmware
+  futuro) e `legacyAdvertisedName = "Zleepy Lamp"` (firmware atual), juntos em
+  `advertisedNames`. O app **nunca filtrou por nome** — busca e pareamento são pelo
+  `serviceUUID` (`didDiscover` não olha o nome) —, então funciona com os dois firmwares.
+  **O legado pode sair quando todas as lâmpadas tiverem o firmware novo**; até lá os
+  textos citam `settingsName` ("SOVEE Lamp (ou Zleepy Lamp)").
+- **Código**: `ModeTheme.zleepy` → `ModeTheme.night`; comentários "Zleepy Lamp" →
+  "identidade anterior à SOVEE". Paletas antigas `.legacyDay`/`.legacyNight` mantidas.
+- **Fora de propósito**: protótipos HTML em `design/` (histórico, ~58 menções); o próprio
+  CLAUDE.md, onde "Zleepy" conta a história do projeto; nomes de tipos/arquivos
+  `Luminaria*`.
+
+**Decisões pendentes (NÃO mudar sem o dono decidir)** — nenhum identificador contém
+"zleepy"; todos usam `luminaria`:
+- **Bundle ID** `com.luminaria.app` (+ `.LuminariaWidgetExtension`): trocar = app novo
+  na App Store (outro App ID), perde avaliações/TestFlight, refazer capabilities (NFC,
+  Family Controls, iCloud, App Groups) e perfis no Codemagic; quem tem o app instalado
+  não recebe atualização, recebe outro app.
+- **App Group** `group.com.luminaria.app`: trocar = widget perde os dados até o app
+  regravar; exige App Group novo nos dois App IDs e perfis novos.
+- **Container iCloud/CloudKit** `iCloud.com.luminaria.app`: trocar = perfis de amigos e
+  ranking somem (banco público novo, vazio) e o backup de rotinas/relatório no iCloud
+  não volta. Container não pode ser apagado depois de criado.
+- **Chaves do `UserDefaults`** (`com.luminaria.*`): trocar sem migração = perde rotinas,
+  relatório, vínculo da luminária, estado do despertador. Não há motivo de marca pra
+  mexer (ninguém vê).
+- **UUIDs do Bluetooth** (terminam em `7a6c65657079`, "zleepy" em hex): gravados no
+  firmware; trocar só no app faz a lâmpada sumir. Se um dia trocar, app e firmware juntos,
+  com o app aceitando os dois por um tempo.
+- **Nome na App Store** ("Zleepy Lamp") — manual, no App Store Connect (ver abaixo).
+- **Firmware** — nome anunciado "SOVEE Lamp" (ver pendência da lâmpada, item 4).
+
+**Manual (fora do código)**: App Store Connect → app → Informações do app → Nome →
+"sovee" (o nome pode estar ocupado na loja; aí algo como "sovee — luminária"); o nome
+curto na tela inicial já vem do `CFBundleDisplayName`. Ícone continua o provisório
+(`AppIcon`, feito a partir do `LogoAcordado`) até existir um definitivo.
 
 ## Testes automáticos (2026-10-22)
 
