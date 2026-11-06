@@ -9,5 +9,9 @@ struct LuminariaWidgetBundle: WidgetBundle {
         // Atividade ao Vivo da noite (tela bloqueada + Dynamic Island) — a extensão tem
         // alvo mínimo iOS 16.2 por causa dela
         NightLiveActivityWidget()
+        // botão "luminária" da Central de Controle / tela bloqueada / Botão de Ação
+        if #available(iOS 18.0, *) {
+            LampControlWidget()
+        }
     }
 }

@@ -144,6 +144,20 @@ final class LampManager: ObservableObject {
         transport.connect(to: lampID)
     }
 
+    /// Siri / Central de Controle: conecta se preciso e espera o primeiro STATE desta
+    /// conexão. `false` = sem lâmpada pareada ou não conectou a tempo.
+    @MainActor
+    func waitUntilReady(timeout: TimeInterval = 8) async -> Bool {
+        guard hasLamp else { return false }
+        start()
+        let deadline = Date().addingTimeInterval(timeout)
+        while !(isConnected && hasFreshState) {
+            if Date() > deadline { return false }
+            try? await Task.sleep(nanoseconds: 100_000_000)
+        }
+        return true
+    }
+
     func startPairing() {
         errorMessage = nil
         link = .searching
@@ -452,6 +466,7 @@ extension LampManager: LampTransportDelegate {
         guard let newState = LampState(bytes: bytes) else { return }
         state = newState
         hasFreshState = true
+        LampControlState.publish(isLit: !newState.color.isOff)
         // A lâmpada parou o cenário sozinha (toque nela, outro celular): a prévia para junto.
         if activeScene != nil, newState.mode != .scene, Date().timeIntervalSince(sceneStart) > 2 {
             activeScene = nil

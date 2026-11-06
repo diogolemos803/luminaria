@@ -73,6 +73,10 @@
 		AAAAAAAAAAAAAAAAAAAAAA91 /* WidgetShared.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA8F /* WidgetShared.swift */; };
 		AAAAAAAAAAAAAAAAAAAAAA93 /* WidgetBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA92 /* WidgetBridge.swift */; };
 		AAAAAAAAAAAAAAAAAAAAAA95 /* NightLiveActivityWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA94 /* NightLiveActivityWidget.swift */; };
+		AAAAAAAAAAAAAAAAAAAAAAB9 /* LampIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAAB8 /* LampIntents.swift */; };
+		AAAAAAAAAAAAAAAAAAAAAABB /* LampControlShared.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAABA /* LampControlShared.swift */; };
+		AAAAAAAAAAAAAAAAAAAAAABC /* LampControlShared.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAABA /* LampControlShared.swift */; };
+		AAAAAAAAAAAAAAAAAAAAAABE /* LampControlWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAABD /* LampControlWidget.swift */; };
 		AAAAAAAAAAAAAAAAAAAAAA97 /* DMSans-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA96 /* DMSans-Regular.ttf */; };
 		AAAAAAAAAAAAAAAAAAAAAA99 /* DMSans-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA98 /* DMSans-Medium.ttf */; };
 		AAAAAAAAAAAAAAAAAAAAAA9B /* DMSans-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = AAAAAAAAAAAAAAAAAAAAAA9A /* DMSans-Bold.ttf */; };
@@ -174,6 +178,9 @@
 		AAAAAAAAAAAAAAAAAAAAAA8F /* WidgetShared.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetShared.swift; sourceTree = "<group>"; };
 		AAAAAAAAAAAAAAAAAAAAAA92 /* WidgetBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetBridge.swift; sourceTree = "<group>"; };
 		AAAAAAAAAAAAAAAAAAAAAA94 /* NightLiveActivityWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NightLiveActivityWidget.swift; sourceTree = "<group>"; };
+		AAAAAAAAAAAAAAAAAAAAAAB8 /* LampIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LampIntents.swift; sourceTree = "<group>"; };
+		AAAAAAAAAAAAAAAAAAAAAABA /* LampControlShared.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LampControlShared.swift; sourceTree = "<group>"; };
+		AAAAAAAAAAAAAAAAAAAAAABD /* LampControlWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LampControlWidget.swift; sourceTree = "<group>"; };
 		AAAAAAAAAAAAAAAAAAAAAA96 /* DMSans-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = Fonts/DMSans-Regular.ttf; sourceTree = "<group>"; };
 		AAAAAAAAAAAAAAAAAAAAAA98 /* DMSans-Medium.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = Fonts/DMSans-Medium.ttf; sourceTree = "<group>"; };
 		AAAAAAAAAAAAAAAAAAAAAA9A /* DMSans-Bold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = Fonts/DMSans-Bold.ttf; sourceTree = "<group>"; };
@@ -254,6 +261,8 @@
 				AAAAAAAAAAAAAAAAAAAAAAA4 /* LampDrawing.swift */,
 				AAAAAAAAAAAAAAAAAAAAAAA6 /* LampView.swift */,
 				AAAAAAAAAAAAAAAAAAAAAA61 /* SystemAlarm.swift */,
+				AAAAAAAAAAAAAAAAAAAAAAB8 /* LampIntents.swift */,
+				AAAAAAAAAAAAAAAAAAAAAABA /* LampControlShared.swift */,
 				AAAAAAAAAAAAAAAAAAAAAA8B /* FriendsStore.swift */,
 				AAAAAAAAAAAAAAAAAAAAAA8D /* FriendsView.swift */,
 				AAAAAAAAAAAAAAAAAAAAAA8F /* WidgetShared.swift */,
@@ -308,6 +317,7 @@
 				AAAAAAAAAAAAAAAAAAAAAA47 /* LuminariaWidgetBundle.swift */,
 				AAAAAAAAAAAAAAAAAAAAAA49 /* AlarmWidget.swift */,
 				AAAAAAAAAAAAAAAAAAAAAA94 /* NightLiveActivityWidget.swift */,
+				AAAAAAAAAAAAAAAAAAAAAABD /* LampControlWidget.swift */,
 				AAAAAAAAAAAAAAAAAAAAAA4B /* Info.plist */,
 				AAAAAAAAAAAAAAAAAAAAAA4C /* LuminariaWidget.entitlements */,
 			);
@@ -469,6 +479,8 @@
 				AAAAAAAAAAAAAAAAAAAAAAA5 /* LampDrawing.swift in Sources */,
 				AAAAAAAAAAAAAAAAAAAAAAA7 /* LampView.swift in Sources */,
 				AAAAAAAAAAAAAAAAAAAAAA62 /* SystemAlarm.swift in Sources */,
+				AAAAAAAAAAAAAAAAAAAAAAB9 /* LampIntents.swift in Sources */,
+				AAAAAAAAAAAAAAAAAAAAAABB /* LampControlShared.swift in Sources */,
 				AAAAAAAAAAAAAAAAAAAAAA8C /* FriendsStore.swift in Sources */,
 				AAAAAAAAAAAAAAAAAAAAAA8E /* FriendsView.swift in Sources */,
 				AAAAAAAAAAAAAAAAAAAAAA90 /* WidgetShared.swift in Sources */,
@@ -486,6 +498,8 @@
 				AAAAAAAAAAAAAAAAAAAAAA5A /* AppTheme.swift in Sources */,
 				AAAAAAAAAAAAAAAAAAAAAA91 /* WidgetShared.swift in Sources */,
 				AAAAAAAAAAAAAAAAAAAAAA95 /* NightLiveActivityWidget.swift in Sources */,
+				AAAAAAAAAAAAAAAAAAAAAABC /* LampControlShared.swift in Sources */,
+				AAAAAAAAAAAAAAAAAAAAAABE /* LampControlWidget.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
