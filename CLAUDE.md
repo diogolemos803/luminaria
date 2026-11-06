@@ -806,7 +806,9 @@ começando pela fogueira.
   determinístico. **Quem anima é a lâmpada** (opcode **0x09** cenário + brilho, STATE modo
   4), como os cenários dinâmicos da Hue: fica fluido com o celular bloqueado. A lâmpada
   simulada e a prévia da tela usam as mesmas fórmulas (a cúpula anima com
-  `TimelineView`). Liga em tela da lâmpada → bolinha "Lâmpada" → "Cenários (teste)"; aí
+  `TimelineView`). Liga em tela da lâmpada → bolinha "Lâmpada" → "Cenários (teste)" (ou Ajuda →
+  Experimentos; o painel passou de 196 pra 220 pt porque essa chave ficava cortada —
+  o dono não conseguia achar os cenários); aí
   aparece a 6ª bolinha (chama) com os 4 cenários e um brilho. Cor manual, desligar e
   encostar na luminária param o cenário. Testes: determinismo, faixa, limitador, sem
   saltos a 50 Hz, fogueira variando.

@@ -126,9 +126,27 @@ final class SleepSoundPlayer: ObservableObject {
 struct SleepSoundsExperimentToggle: View {
     let theme: ModeTheme
     @AppStorage(SleepSoundsFlag.key) private var isEnabled = false
+    @AppStorage(LampScenesFlag.key) private var scenesEnabled = false
 
     var body: some View {
         ThemedCard(title: "Experimentos", theme: theme) {
+            // Mesma chave da aba "Lâmpada" na tela da luminária.
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Cenários da luminária (teste)")
+                        .font(.luminaria(.subheadline, weight: .medium))
+                        .foregroundStyle(theme.ink)
+                    Text("Fogueira, vela, brasa e entardecer. Aparecem na tela da luminária, na bolinha da chama.")
+                        .font(.luminaria(.caption))
+                        .foregroundStyle(theme.inkMuted)
+                }
+                Spacer()
+                Toggle("", isOn: $scenesEnabled)
+                    .labelsHidden()
+                    .tint(theme.accent)
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 9)
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Sons pra dormir (teste)")
@@ -148,6 +166,9 @@ struct SleepSoundsExperimentToggle: View {
         }
         .onChange(of: isEnabled) { on in
             if !on { SleepSoundPlayer.shared.stop() }
+        }
+        .onChange(of: scenesEnabled) { on in
+            if !on, LampManager.shared.activeScene != nil { LampManager.shared.stopScene() }
         }
     }
 }

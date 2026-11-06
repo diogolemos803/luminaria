@@ -316,7 +316,9 @@ struct LampControlView: View {
         }
         .padding(14)
         .frame(maxWidth: .infinity)
-        .frame(height: 196)
+        // 220: a aba "Lâmpada" tem 4 linhas (botões, relógio e as chaves "Lâmpada
+        // simulada" e "Cenários (teste)"); com 196 a última chave ficava cortada.
+        .frame(height: 220)
         .background(theme.card)
         .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
         .disabled(!usable && tool != .lamp)
