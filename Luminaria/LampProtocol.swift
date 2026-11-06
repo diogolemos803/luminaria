@@ -545,6 +545,21 @@ struct LampSleepSettings: Codable, Equatable {
         ))
     }
 
+    /// Plano B pra lâmpada cujo firmware ainda não conhece o 0x08: apagar devagar simples
+    /// (0x07) da mesma luz de partida, na mesma duração — sem espera, sem trocar de cor,
+    /// sem ficar acesa no fim.
+    func simpleFadeFallback(current: LampColor?) -> LampCommand? {
+        guard enabled else { return nil }
+        let start: LampColor
+        if fromCurrentLight {
+            guard let current, !current.isOff else { return nil }
+            start = current
+        } else {
+            start = LampColor(mix: mix, brightness: min(max(brightness, 0.01), 1))
+        }
+        return .fadeOut(from: start, minutes: fadeMinutes)
+    }
+
     /// Mantido pros chamadores antigos.
     func fadeCommand(current: LampColor?) -> LampCommand? { nightCommand(current: current) }
 }

@@ -505,7 +505,9 @@ struct LampControlView: View {
             }
             .font(.system(size: 13, weight: .semibold))
             .foregroundStyle(theme.inkMuted)
-            Text(lamp.activeScene?.subtitle ?? "A lâmpada anima sozinha, mesmo com o celular bloqueado. Toque de novo pra parar.")
+            Text(lamp.activeScene?.subtitle ?? (lamp.lacks(.scene)
+                ? "O firmware desta lâmpada ainda não tem os cenários. Tocar tenta de novo."
+                : "A lâmpada anima sozinha, mesmo com o celular bloqueado. Toque de novo pra parar."))
                 .font(.luminaria(.caption))
                 .foregroundStyle(theme.inkMuted)
                 .lineLimit(2)
@@ -750,6 +752,7 @@ struct LampSettingsCard: View {
 struct LampRoutineSections: View {
     @Binding var routine: SleepRoutine
     let theme: ModeTheme
+    @ObservedObject private var lamp = LampManager.shared
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -802,6 +805,14 @@ struct LampRoutineSections: View {
                         minutesRow("Fica acesa no fim", value: $routine.lampSleep.holdMinutes, range: LampSunset.holdRange)
                     }
                     sleepPreview.padding(10)
+                    if lamp.lacks(.sunset), usesProgrammedFade {
+                        Text("O firmware desta lâmpada ainda não entende esses ajustes. Até atualizar, ela apaga devagar da mesma luz e no mesmo tempo, sem espera e sem mudar de cor.")
+                            .font(.luminaria(.caption))
+                            .foregroundStyle(theme.inkMuted)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .padding(.horizontal, 10)
+                            .padding(.bottom, 10)
+                    }
                 }
             }
 
@@ -847,6 +858,13 @@ struct LampRoutineSections: View {
     }
 
     /// Cor de fim do "ao dormir" pra prévia (sem cor de fim = a do começo).
+    /// Os ajustes pedem o apagar programado (0x08), não o simples (0x07).
+    private var usesProgrammedFade: Bool {
+        let probe = LampColor(mix: sleepStartMix, brightness: 0.8)
+        if case .sunset = routine.lampSleep.nightCommand(current: probe) { return true }
+        return false
+    }
+
     private var sleepEndMix: Double {
         routine.lampSleep.toMix ?? sleepStartMix
     }

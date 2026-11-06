@@ -343,8 +343,8 @@ depende de CI num runner macOS na nuvem (GitHub Actions) e de sideload via AltSt
   âmbar, contorno creme — o usuário não gostou dos bonecos palito) — um martela, um
   solda, um carrega painéis e um orienta o guindaste.
 - **Lâmpada Zleepy por Bluetooth (2026-10-18)** — placa própria (ESP32-C3, BLE, duas fitas
-  de LED âmbar e vermelha, 12 V; firmware escrito em outra conversa, testado só em PC, a
-  placa ainda não foi fabricada). Independente do NFC: a luminária/tag continua armando o
+  de LED âmbar e vermelha, 12 V; firmware escrito em outra conversa; **desde
+  2026-11-06 o dono já usa o app com a placa de verdade**). Independente do NFC: a luminária/tag continua armando o
   modo noite; a lâmpada é um segundo aparelho. Telas aprovadas em
   `design/lampada_prototipo.html` e `design/integracao_prototipo.html` (desenho de
   referência do usuário em `design/referencia_luminaria.png`). Arquivos:
@@ -812,6 +812,15 @@ começando pela fogueira.
   saltos a 50 Hz, fogueira variando.
 - **Firmware**: 0x08 e 0x09 são proposta, como o resto da v2. Texto pra colar na conversa
   do firmware em `firmware/PROTOCOLO_V2_ADENDO_2026-11-06.md` (fórmulas incluídas).
+- **Firmware que ainda não conhece 0x08/0x09** (a placa do dono pode estar assim): o app
+  tenta sempre e confere a resposta (`LampManager.probe`/`checkProbe`). Aceito = STATE no
+  modo esperado (3 apagando / 4 cenário). Recusado = byte 11 "não reconheci"/"tamanho
+  errado" → 0x08 cai calado no apagar simples 0x07 (`LampSleepSettings.
+  simpleFadeFallback`: mesma partida e duração, sem espera nem troca de cor); 0x09 limpa o
+  cenário e avisa. Na noite, a luz da manhã vai primeiro e o apagar por último, pra o byte
+  11 ser o do apagar. Recusas ficam em `missingCommands` (`com.luminaria.lamp.
+  missingCommands`, zerado ao esquecer a lâmpada/trocar pra simulada) só pra tela avisar
+  (editor de rotina e painel de cenários); atualizar o firmware some com o aviso sozinho.
 - Só dá pra validar com a placa: a fluidez real a 50 Hz, se a fogueira "parece fogo" nas
   duas fitas e a espera/rampa do 0x08 pelo relógio da lâmpada. Com a lâmpada simulada dá
   pra ver tudo no app.
@@ -1653,7 +1662,8 @@ visível também no TestFlight** (interruptor "Lâmpada simulada" na tela da lâ
 pareamento) — `#if DEBUG` esconderia, porque o TestFlight é build Release; tirar quando a
 placa chegar.
 
-Só dá pra confirmar com a placa (nada disso foi testado em aparelho):
+Só dá pra confirmar com a placa (a placa já existe e o dono usa desde 2026-11-06; os
+itens abaixo ainda não foram confirmados um por um):
 - PWM, relógio (RTC), sensor de toque e alcance do Bluetooth (bancada, lado do firmware).
 - Pareamento "Just Works" pelo iOS no primeiro acesso a característica protegida
   (`setNotifyValue`/`readValue` do STATE) e a recusa fora da janela (a lâmpada desfaz o

@@ -76,6 +76,12 @@ final class LampManager: ObservableObject {
     @Published private(set) var activeScene: LampScene?
     @Published private(set) var sceneStart = Date.distantPast
     @Published private(set) var sceneBrightness: Double
+    /// Comandos novos (0x08 apagar programado, 0x09 cenário) que o firmware desta lâmpada
+    /// recusou da última vez. O app continua tentando (pega a atualização do firmware
+    /// sozinho) e cai no plano B; isto só serve pra tela avisar.
+    @Published private(set) var missingCommands: Set<UInt8>
+
+    func lacks(_ opcode: LampOpcode) -> Bool { missingCommands.contains(opcode.rawValue) }
 
     var hasLamp: Bool { lampID != nil }
     var isConnected: Bool { link == .connected }
@@ -88,6 +94,10 @@ final class LampManager: ObservableObject {
     private static let mixKey = "com.luminaria.lamp.manualMix"
     private static let brightnessKey = "com.luminaria.lamp.manualBrightness"
     private static let sceneBrightnessKey = "com.luminaria.lamp.sceneBrightness"
+    private static let missingCommandsKey = "com.luminaria.lamp.missingCommands"
+    /// Comando novo esperando a lâmpada dizer se entendeu: aceito quando o STATE entra no
+    /// modo esperado; recusado quando o byte 11 vem "não reconheci"/"tamanho errado".
+    private var probe: (opcode: LampOpcode, expectedMode: LampState.Mode, sentAt: Date, fallback: LampCommand?)?
 
     private var transport: LampTransport
     private var hasStarted = false
@@ -117,6 +127,7 @@ final class LampManager: ObservableObject {
         manualMix = defaults.object(forKey: Self.mixKey) as? Double ?? LampPreset.all[2].color.mix
         manualBrightness = defaults.object(forKey: Self.brightnessKey) as? Double ?? 0.8
         sceneBrightness = defaults.object(forKey: Self.sceneBrightnessKey) as? Double ?? 0.8
+        missingCommands = Set((defaults.array(forKey: Self.missingCommandsKey) as? [Int] ?? []).map { UInt8(clamping: $0) })
         transport = simulated ? SimulatedLampTransport() : BluetoothLampTransport()
         transport.delegate = self
     }
@@ -156,6 +167,7 @@ final class LampManager: ObservableObject {
         errorMessage = nil
         hasStarted = false
         failPendingNight()
+        setMissing([])
     }
 
     /// Troca entre a lâmpada de verdade e a simulada (até a placa chegar).
@@ -165,6 +177,7 @@ final class LampManager: ObservableObject {
         failPendingNight()
         isSimulated = simulated
         UserDefaults.standard.set(simulated, forKey: Self.simulatedKey)
+        setMissing([])
         state = nil
         savedRoutine = nil
         errorMessage = nil
@@ -224,6 +237,7 @@ final class LampManager: ObservableObject {
         guard send(.scene(id: scene.rawValue, brightness: sceneBrightnessByte)) else { return }
         activeScene = scene
         sceneStart = Date()
+        probe = (.scene, .scene, Date(), nil)
     }
 
     /// Escala de brilho do cenário (0,05–1); com um cenário rodando, reenvia na hora.
@@ -262,7 +276,7 @@ final class LampManager: ObservableObject {
         pendingEndNight = false
         isTodayCancelled = false
         if isConnected, hasFreshState {
-            nightCommands(routine: routine, alarmDate: alarmDate).forEach { send($0) }
+            sendNight(routine: routine, alarmDate: alarmDate)
             refreshRoutineSoon()
             completion(true)
             return
@@ -275,20 +289,56 @@ final class LampManager: ObservableObject {
         DispatchQueue.main.asyncAfter(deadline: .now() + 12, execute: timeout)
     }
 
-    /// Apagar devagar a partir da luz acesa agora (lâmpada apagada continua apagada) e a
-    /// luz da manhã só pra manhã seguinte.
-    private func nightCommands(routine: SleepRoutine, alarmDate: Date?) -> [LampCommand] {
-        var commands: [LampCommand] = []
-        if let fade = routine.lampSleep.nightCommand(current: state?.color) {
-            commands.append(fade)
-        }
+    /// Luz da manhã só pra manhã seguinte e o apagar a partir da luz acesa agora (lâmpada
+    /// apagada continua apagada). A luz da manhã vai PRIMEIRO: o comando do apagar é o
+    /// último, então o resultado no STATE é o dele — se o firmware não conhecer o 0x08, o
+    /// app manda o apagar simples (0x07) no lugar.
+    private func sendNight(routine: SleepRoutine, alarmDate: Date?) {
         if routine.lampWake.enabled, let alarmDate {
-            commands.append(.writeRoutine(routine.lampWake.lampRoutine(alarmDate: alarmDate)))
+            send(.writeRoutine(routine.lampWake.lampRoutine(alarmDate: alarmDate)))
         } else {
             // Garante que nenhuma luz da manhã antiga fique gravada.
-            commands.append(.writeRoutine(.disabled))
+            send(.writeRoutine(.disabled))
         }
-        return commands
+        let current = state?.color
+        guard let light = routine.lampSleep.nightCommand(current: current) else { return }
+        guard send(light) else { return }
+        if case .sunset = light {
+            probe = (.sunset, .fading, Date(), routine.lampSleep.simpleFadeFallback(current: current))
+        }
+    }
+
+    /// Confere a resposta a um comando novo (ver `probe`).
+    private func checkProbe(_ newState: LampState) {
+        guard let current = probe else { return }
+        if newState.mode == current.expectedMode {
+            probe = nil
+            var missing = missingCommands
+            missing.remove(current.opcode.rawValue)
+            setMissing(missing)
+        } else if newState.lastResult == .badOpcode || newState.lastResult == .badLength {
+            probe = nil
+            setMissing(missingCommands.union([current.opcode.rawValue]))
+            switch current.opcode {
+            case .sunset:
+                // Plano B calado: a noite segue com o apagar simples.
+                errorMessage = nil
+                if let fallback = current.fallback { send(fallback) }
+            case .scene:
+                activeScene = nil
+                errorMessage = "Esta lâmpada ainda não tem os cenários. Eles chegam numa atualização do firmware."
+            default:
+                break
+            }
+        } else if Date().timeIntervalSince(current.sentAt) > 5 {
+            probe = nil
+        }
+    }
+
+    private func setMissing(_ missing: Set<UInt8>) {
+        guard missing != missingCommands else { return }
+        missingCommands = missing
+        UserDefaults.standard.set(missing.map(Int.init).sorted(), forKey: Self.missingCommandsKey)
     }
 
     private func flushPendingNightIfReady() {
@@ -296,7 +346,7 @@ final class LampManager: ObservableObject {
         pendingNightTimeout?.cancel()
         pendingNightTimeout = nil
         pendingNight = nil
-        nightCommands(routine: pending.routine, alarmDate: pending.alarmDate).forEach { send($0) }
+        sendNight(routine: pending.routine, alarmDate: pending.alarmDate)
         refreshRoutineSoon()
         pending.completion(true)
     }
@@ -382,6 +432,7 @@ extension LampManager: LampTransportDelegate {
         if newLink != .connected {
             awaitingResult = false
             hasFreshState = false
+            probe = nil
         }
     }
 
@@ -409,6 +460,7 @@ extension LampManager: LampTransportDelegate {
             awaitingResult = false
             if let message = newState.lastResult.message { errorMessage = message }
         }
+        checkProbe(newState)
         if !newState.clockValid, isConnected { sendClockIfNeeded() }
         flushPendingNightIfReady()
     }

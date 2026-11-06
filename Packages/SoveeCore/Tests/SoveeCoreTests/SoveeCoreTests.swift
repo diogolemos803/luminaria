@@ -273,6 +273,21 @@ final class LampProtocolTests: XCTestCase {
         XCTAssertNil(s.nightCommand(current: lit))
     }
 
+    /// Firmware sem 0x08: cai no apagar simples, mesma partida e mesma duração.
+    func testSleepFallbackWithoutSunset() {
+        var s = LampSleepSettings()
+        s.startDelayMinutes = 20
+        s.toMix = 1
+        s.minutes = 40
+        let lit = LampColor(amber: 120, red: 40)
+        XCTAssertEqual(s.simpleFadeFallback(current: lit), .fadeOut(from: lit, minutes: 40))
+        XCTAssertNil(s.simpleFadeFallback(current: .off))
+        s.fromCurrentLight = false
+        s.mix = 0
+        s.brightness = 0.5
+        XCTAssertEqual(s.simpleFadeFallback(current: nil), .fadeOut(from: LampColor(mix: 0, brightness: 0.5), minutes: 40))
+    }
+
     /// Com espera, cor de fim ou brilho de fim, vira o apagar programado (0x08).
     func testSleepProgrammedUsesSunset() throws {
         var s = LampSleepSettings()
