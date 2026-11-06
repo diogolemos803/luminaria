@@ -1,0 +1,334 @@
+<title>Ao dormir e cenários</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap">
+<style>
+/* Layout: página escura com os celulares lado a lado (quebram em coluna no estreito) e
+   uma nota curta embaixo de cada um. Dentro do celular, o tema dos menus aprovado
+   (dia = grafite sobre cinza quente; noite = vidro marrom sobre grafite-azulado; âmbar = ação). */
+:root {
+  --page: #1d1f25; --page-ink: #fdf8c7; --page-muted: rgba(253,248,199,.62);
+  --amber: #f2b05e; --amber-ink: #2a2a2a;
+  --font: "DM Sans", system-ui, -apple-system, sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { background: var(--page); color: var(--page-ink); font-family: var(--font); }
+body { padding-block: 28px 56px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 1560px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px; }
+header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 16px; }
+.eyebrow { font-size: 13px; letter-spacing: .18em; text-transform: lowercase; color: var(--page-muted); margin: 0 0 6px; font-weight: 500; }
+h1 { margin: 0; font-weight: 500; font-size: clamp(28px, 4vw, 40px); letter-spacing: -.02em; line-height: 1.1; text-wrap: balance; }
+.lede { margin: 10px 0 0; max-width: 68ch; line-height: 1.5; color: var(--page-muted); font-size: 15px; }
+.seg { display: inline-flex; padding: 4px; border-radius: 999px; background: rgba(253,248,199,.1); gap: 4px; flex-wrap: wrap; }
+.seg button { border: 0; font: inherit; font-size: 14px; padding: 8px 15px; border-radius: 999px; background: transparent; color: var(--page-ink); cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--amber); color: var(--amber-ink); }
+button:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+.stage { display: flex; flex-wrap: wrap; gap: 28px; justify-content: center; align-items: flex-start; }
+.col { display: flex; flex-direction: column; gap: 12px; width: 340px; max-width: 100%; }
+.col > h2 { margin: 0; font-size: 13px; letter-spacing: .18em; text-transform: lowercase; color: var(--page-muted); font-weight: 500; }
+.col .why { margin: 0; font-size: 14px; line-height: 1.5; color: var(--page-muted); }
+.col .why b { color: var(--page-ink); font-weight: 500; }
+
+/* ===== celular ===== */
+.ph { --bg:#e9e7e2; --ink:#23252c; --muted:rgba(35,37,44,.58); --card:linear-gradient(160deg,rgba(255,255,255,.82),rgba(250,245,236,.6));
+      --edge:rgba(35,37,44,.08); --chip:rgba(35,37,44,.07); --line:rgba(35,37,44,.1); --shadow:0 18px 40px rgba(35,37,44,.1);
+      --glow:radial-gradient(ellipse 90% 40% at 50% 100%, rgba(242,176,94,.22) 0, rgba(242,176,94,0) 100%);
+      width: 340px; max-width: 100%; height: 720px; border-radius: 46px; border: 8px solid #0d0e11; overflow: hidden;
+      background: var(--glow), var(--bg); color: var(--ink); display: flex; flex-direction: column; box-shadow: 0 30px 70px rgba(0,0,0,.45); }
+.night .ph { --bg:#23252c; --ink:#fdf8c7; --muted:rgba(253,248,199,.6); --card:linear-gradient(160deg,rgba(120,98,76,.42),rgba(52,44,38,.5));
+      --edge:hsla(54,93%,89%,.14); --chip:hsla(54,93%,89%,.13); --line:hsla(54,93%,89%,.16); --shadow:0 24px 50px rgba(0,0,0,.35); }
+.status { height: 38px; flex: none; display: flex; justify-content: space-between; align-items: center; padding: 0 26px; font-size: 14px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.nav { flex: none; display: flex; align-items: center; justify-content: space-between; padding: 2px 16px 0; height: 44px; }
+.rb { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: var(--chip); color: var(--ink); border: 0; }
+.rb svg { width: 15px; height: 15px; }
+.nav .t { font-size: 15px; font-weight: 500; }
+.body { flex: 1; overflow-y: auto; padding: 6px 18px 20px; display: flex; flex-direction: column; gap: 18px; }
+.ttl { margin: 0; font-size: 30px; font-weight: 500; letter-spacing: -.02em; line-height: 1.1; text-transform: lowercase; }
+.sub { margin: 6px 0 0; font-size: 14.5px; line-height: 1.45; color: var(--muted); }
+.lbl { margin: 0 0 8px 6px; font-size: 12px; letter-spacing: .18em; text-transform: lowercase; color: var(--muted); font-weight: 500; }
+.card { background: var(--card); border: 1px solid var(--edge); border-radius: 24px; padding: 6px; box-shadow: var(--shadow); }
+.row { display: flex; align-items: center; gap: 10px; padding: 9px 10px; min-height: 44px; }
+.row + .row, .sep { border-top: 1px solid var(--line); }
+.row .tx { flex: 1; min-width: 0; }
+.row b { display: block; font-size: 15px; font-weight: 500; }
+.row span.s { display: block; font-size: 12.5px; color: var(--muted); margin-top: 2px; line-height: 1.35; }
+.ic { width: 36px; height: 36px; flex: none; border-radius: 50%; display: grid; place-items: center; background: var(--chip); }
+.ic svg { width: 16px; height: 16px; }
+.cap { margin: 0; font-size: 12.5px; line-height: 1.45; color: var(--muted); padding: 2px 10px 8px; }
+.note { margin: 0; font-size: 13px; line-height: 1.45; color: var(--muted); padding: 0 6px; }
+.tm { font-variant-numeric: tabular-nums; font-size: 15px; padding: 6px 11px; border-radius: 9px; background: var(--chip); font-weight: 500; }
+/* chave do iOS */
+.sw { position: relative; width: 50px; height: 30px; flex: none; border-radius: 999px; background: var(--chip); border: 0; cursor: pointer; transition: background .2s; padding: 0; }
+.sw::after { content: ""; position: absolute; top: 2px; left: 2px; width: 26px; height: 26px; border-radius: 50%; background: #fff; box-shadow: 0 2px 4px rgba(0,0,0,.2); transition: transform .2s; }
+.sw[aria-checked="true"] { background: var(--amber); }
+.sw[aria-checked="true"]::after { transform: translateX(20px); }
+/* pílulas */
+.chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 6px; }
+.chips.eq { display: grid; grid-template-columns: repeat(4, 1fr); padding: 10px; gap: 8px; }
+.chips.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); padding: 8px; gap: 8px; }
+.chp { border: 0; padding: 9px 13px; border-radius: 999px; background: var(--chip); color: var(--ink); font: inherit; font-size: 14px; cursor: pointer; }
+.chips.eq .chp, .chips.grid .chp { padding: 10px 4px; font-weight: 500; }
+.chp[aria-pressed="true"] { background: var(--amber); color: var(--amber-ink); font-weight: 700; }
+.stepper { display: flex; align-items: center; justify-content: center; gap: 18px; padding: 10px; }
+.stepper button { width: 42px; height: 42px; border-radius: 50%; border: 0; background: var(--chip); color: var(--ink); font-size: 20px; cursor: pointer; }
+.stepper output { font-size: 44px; font-weight: 500; letter-spacing: -.02em; font-variant-numeric: tabular-nums; min-width: 4ch; text-align: center; }
+.stepper.small output { font-size: 32px; }
+.pill { border: 0; width: 100%; padding: 15px; border-radius: 999px; font: inherit; font-size: 16px; font-weight: 500; background: var(--amber); color: var(--amber-ink); cursor: pointer; }
+.pill:disabled { opacity: .45; cursor: default; }
+.foot { flex: none; padding: 10px 18px 24px; }
+.wave { display: flex; align-items: center; gap: 8px; font-size: 14.5px; font-weight: 500; padding: 0 6px; }
+.wave svg { width: 18px; height: 18px; }
+.tag { font-size: 11px; letter-spacing: .1em; text-transform: lowercase; padding: 3px 8px; border-radius: 999px; background: rgba(242,176,94,.22); color: var(--ink); }
+.banner { display: flex; gap: 10px; align-items: flex-start; padding: 12px; border-radius: 16px; background: rgba(242,176,94,.16); font-size: 12.5px; line-height: 1.45; }
+.dots5 { display: flex; gap: 6px; }
+.dots5 button { width: 30px; height: 30px; border-radius: 50%; border: 2px solid transparent; padding: 2px; background-clip: content-box; cursor: pointer; }
+.dots5 button[aria-pressed="true"] { border-color: var(--amber); }
+.slider { padding: 4px 10px 10px; }
+.slider .top { display: flex; justify-content: space-between; font-size: 14.5px; font-weight: 500; }
+.slider input { width: 100%; accent-color: var(--amber); }
+.mins { display: flex; align-items: center; gap: 10px; }
+.mins b.v { font-weight: 700; font-variant-numeric: tabular-nums; }
+.mins .st { display: inline-flex; border-radius: 9px; background: var(--chip); }
+.mins .st button { width: 40px; height: 30px; border: 0; background: none; color: var(--ink); font-size: 18px; cursor: pointer; }
+.mins .st button + button { border-left: 1px solid var(--line); }
+.tl { height: 22px; border-radius: 8px; margin: 4px 10px 0; }
+.tlab { position: relative; height: 16px; margin: 4px 10px 10px; font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.tlab span { position: absolute; top: 0; white-space: nowrap; }
+@media (prefers-reduced-motion: reduce) { .sw, .sw::after { transition: none; } }
+
+
+.stage-lamp { position: relative; height: 270px; display: grid; place-items: center; }
+.glow { position: absolute; width: 330px; height: 330px; border-radius: 50%; left: 50%; top: 42%; transform: translate(-50%,-50%); pointer-events: none; }
+.lampsvg { position: relative; width: 210px; height: 210px; }
+.tools { display: flex; justify-content: space-between; padding: 0 2px; }
+.tool { width: 44px; height: 44px; border-radius: 50%; border: 0; display: grid; place-items: center; background: var(--chip); color: var(--ink); font-size: 18px; }
+.tool.on { background: var(--amber); color: var(--amber-ink); }
+.panel { background: var(--card); border: 1px solid var(--edge); border-radius: 22px; padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
+.panel .hd { display: flex; justify-content: space-between; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+.panel .hd b { letter-spacing: 0; text-transform: none; color: var(--ink); font-size: 12px; }
+.scenes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.scene { border: 0; background: none; color: var(--ink); font: inherit; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; padding: 0; }
+.scene i { width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; background: var(--chip); font-style: normal; font-size: 18px; }
+.scene span { font-size: 11.5px; }
+.scene[aria-pressed="true"] i { background: var(--amber); color: var(--amber-ink); }
+.scene[aria-pressed="true"] span { font-weight: 700; }
+.dim { display: flex; gap: 8px; align-items: center; color: var(--muted); font-size: 13px; }
+.dim input, .slider input { flex: 1; accent-color: var(--amber); }
+.readout { text-align: center; font-size: 12.5px; }
+.readout code { display: block; color: var(--muted); font-size: 11px; }
+.dots5 { display: flex; gap: 6px; }
+.dots5 button { width: 28px; height: 28px; border-radius: 50%; border: 2px solid transparent; padding: 2px; background-clip: content-box; cursor: pointer; }
+.dots5 button[aria-pressed="true"] { border-color: var(--amber); }
+.slider { padding: 4px 10px 10px; }
+.slider .top { display: flex; justify-content: space-between; font-size: 14.5px; font-weight: 500; }
+.mins { display: flex; align-items: center; gap: 10px; }
+.mins b.v { font-weight: 700; font-variant-numeric: tabular-nums; }
+.mins .st { display: inline-flex; border-radius: 9px; background: var(--chip); }
+.mins .st button { width: 38px; height: 30px; border: 0; background: none; color: var(--ink); font-size: 18px; cursor: pointer; }
+.mins .st button + button { border-left: 1px solid var(--line); }
+.tl { height: 26px; border-radius: 8px; margin: 4px 10px 0; background: #1e1d1b; }
+.tlab { display: flex; justify-content: space-between; margin: 4px 10px 10px; font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.tlab { position: static; height: auto; display: flex; justify-content: space-between; } .tlab span { position: static; }
+.mins .tx { flex: 1; }
+</style>
+
+<div class="wrap night" id="root">
+  <header>
+    <div>
+      <p class="eyebrow">lâmpada sovee · prévia</p>
+      <h1>ao dormir programável e cenários em teste</h1>
+      <p class="lede">As duas telas como estão no código. A fogueira, a vela, a brasa e o entardecer usam aqui a mesma fórmula que vai pra lâmpada: o que você vê é o movimento que ela deve fazer.</p>
+    </div>
+    <div class="seg" role="group" aria-label="Modo"><button type="button" id="b-day" aria-pressed="false">dia</button><button type="button" id="b-night" aria-pressed="true">noite</button></div>
+  </header>
+
+  <div class="stage">
+    <div class="col">
+      <h2>1 · tela da lâmpada · cenários</h2>
+      <div class="ph">
+        <div class="status"><span>22:40</span><span>●●●</span></div>
+        <div class="body" style="gap:12px">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div><b style="font-size:16px">Luminária sovee</b><div style="font-size:12px;color:var(--muted)">● Conectada · simulada</div></div>
+            <span class="sw" role="switch" aria-checked="true" aria-label="Ligada" style="display:inline-block"></span>
+          </div>
+          <div class="tools" aria-hidden="true">
+            <span class="tool">◍</span><span class="tool">◐</span><span class="tool">☀</span><span class="tool">◒</span><span class="tool on">🔥︎</span><span class="tool">≡</span>
+          </div>
+          <div class="stage-lamp">
+            <div class="glow" id="glow"></div>
+            <svg class="lampsvg" viewBox="0 0 200 200" aria-hidden="true">
+              <ellipse id="dome" cx="100" cy="78" rx="66" ry="52" fill="#333" stroke="var(--ink)" stroke-width="2.5"/>
+              <path d="M100 130 L100 170" stroke="var(--ink)" stroke-width="3" stroke-linecap="round"/>
+              <ellipse cx="100" cy="176" rx="40" ry="10" fill="none" stroke="var(--ink)" stroke-width="2.5"/>
+            </svg>
+          </div>
+          <div class="readout"><b id="r-name">Laranja</b><code id="r-bytes">âmbar 0 · vermelho 0</code></div>
+          <div class="panel">
+            <div class="hd"><span>cenários · teste</span><b id="p-name">Fogueira</b></div>
+            <div class="scenes" id="scenes"></div>
+            <label class="dim"><span aria-hidden="true">☼</span><input type="range" id="dim" min="5" max="100" value="80" aria-label="Brilho do cenário"><span aria-hidden="true">☀</span></label>
+            <p class="cap" id="p-sub" style="padding:0">Chama viva, laranja com estalos</p>
+          </div>
+        </div>
+      </div>
+      <p class="why"><b>Como liga:</b> tela da lâmpada → bolinha "Lâmpada" → chave "Cenários (teste)". Aí aparece a 6ª bolinha (chama). Toque no cenário de novo pra parar. Quem anima é a lâmpada, então segue com o celular bloqueado.</p>
+    </div>
+
+    <div class="col">
+      <h2>2 · editar rotina · lâmpada ao dormir</h2>
+      <div class="ph">
+        <div class="status"><span>21:58</span><span>●●●</span></div>
+        <div class="body">
+          <div><p class="lbl">lâmpada ao dormir</p><div class="card">
+            <div class="row"><span class="tx"><b>Apagar devagar</b><span class="s" id="s-sub"></span></span><button class="sw" type="button" role="switch" aria-checked="true" id="en" aria-label="Apagar devagar"></button></div>
+            <div id="s-on">
+              <div class="row mins"><span class="tx"><b>Começa depois de encostar</b></span><b class="v" id="delay-v"></b><span class="st"><button type="button" data-m="delay" data-d="-5" aria-label="menos 5 minutos">−</button><button type="button" data-m="delay" data-d="5" aria-label="mais 5 minutos">+</button></span></div>
+              <div class="row"><span class="tx"><b>Começar da luz acesa</b><span class="s" id="cur-sub"></span></span><button class="sw" type="button" role="switch" aria-checked="true" id="cur" aria-label="Começar da luz acesa"></button></div>
+              <div id="from-box" hidden>
+                <div class="row"><span class="tx"><b>Começa em</b><span class="s" id="from-n"></span></span><span class="dots5" data-color="from"></span></div>
+                <div class="slider"><div class="top"><span>Brilho no começo</span><span id="fromb-v"></span></div><input id="fromb" type="range" min="5" max="100" value="60" aria-label="Brilho no começo"></div>
+              </div>
+              <div class="row"><span class="tx"><b>Mudar de cor no caminho</b><span class="s" id="chg-sub"></span></span><button class="sw" type="button" role="switch" aria-checked="false" id="chg" aria-label="Mudar de cor no caminho"></button></div>
+              <div id="to-box" hidden>
+                <div class="row"><span class="tx"><b>Termina em</b><span class="s" id="to-n"></span></span><span class="dots5" data-color="to"></span></div>
+              </div>
+              <div class="slider"><div class="top"><span>Brilho no fim (0% = apagada)</span><span id="tob-v"></span></div><input id="tob" type="range" min="0" max="100" value="0" aria-label="Brilho no fim"></div>
+              <div class="row mins"><span class="tx"><b>Leva</b></span><b class="v" id="ramp-v"></b><span class="st"><button type="button" data-m="ramp" data-d="-5" aria-label="menos 5 minutos">−</button><button type="button" data-m="ramp" data-d="5" aria-label="mais 5 minutos">+</button></span></div>
+              <div class="row mins" id="hold-row" hidden><span class="tx"><b>Fica acesa no fim</b></span><b class="v" id="hold-v"></b><span class="st"><button type="button" data-m="hold" data-d="-5" aria-label="menos 5 minutos">−</button><button type="button" data-m="hold" data-d="5" aria-label="mais 5 minutos">+</button></span></div>
+              <div class="tl" id="tl" aria-hidden="true"></div>
+              <div class="tlab"><span>ao encostar</span><span id="tl-end"></span></div>
+              <p class="cap" id="tl-note">A prévia usa a última cor escolhida na tela da lâmpada; na hora vale a luz que estiver acesa.</p>
+            </div>
+          </div></div>
+          <p class="note" id="cmd"></p>
+        </div>
+      </div>
+      <p class="why"><b>Mesmo nível do "ao acordar":</b> espera, cor e brilho de começo (ou a luz acesa), cor e brilho de fim, duração e tempo acesa no fim. Rotinas já salvas abrem como antes: da luz acesa até apagar.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  // ===== mesma conta do app (LampColor.full + LampDisplayColor) =====
+  function full(mix) { var m = Math.min(Math.max(mix, 0), 1), k = 255 / Math.max(1 - m, m), a = k * (1 - m), r = k * m, s = a + r; if (s > 408) { a *= 408 / s; r *= 408 / s; } return [a, r]; }
+  function rgb(mix) { var f = full(mix), r = 255 * f[0] / 255 + 255 * f[1] / 255, g = 176 * f[0] / 255 + 36 * f[1] / 255, b = 28 * f[0] / 255 + 8 * f[1] / 255, p = Math.max(r, g, b, 1); return [r * 255 / p, g * 255 / p, b * 255 / p].map(Math.round); }
+  function css(mix, a) { var c = rgb(mix); return 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + a + ')'; }
+  function name(mix) { var p = [['Amarelo', 0], ['Âmbar quente', 50 / 305], ['Laranja', 102 / 306], ['Laranja-avermelhado', 180 / 280], ['Vermelho', 1]]; var best = p.reduce(function (x, y) { return Math.abs(y[1] - mix) < Math.abs(x[1] - mix) ? y : x; }); return Math.abs(best[1] - mix) < 0.04 ? best[0] : (mix < 0.5 ? 'Entre amarelo e laranja' : 'Entre laranja e vermelho'); }
+  var presets = [['Amarelo', 0], ['Âmbar quente', 50 / 305], ['Laranja', 102 / 306], ['Laranja-avermelhado', 180 / 280], ['Vermelho', 1]];
+
+  // ===== SceneNoise / LampScene (porte exato de LampScenes.swift) =====
+  function hash(i, seed) {
+    var x = (Math.imul(i >>> 0, 0x9E3779B1) + Math.imul(seed >>> 0, 0x85EBCA6B)) >>> 0;
+    x = (x ^ (x >>> 15)) >>> 0; x = Math.imul(x, 0x2C1B3C6D) >>> 0;
+    x = (x ^ (x >>> 12)) >>> 0; x = Math.imul(x, 0x297A2D39) >>> 0;
+    x = (x ^ (x >>> 15)) >>> 0;
+    return x / 4294967295;
+  }
+  function noise(x, seed) { var i = Math.floor(x), f = x - i, u = f * f * (3 - 2 * f), a = hash(i, seed), b = hash(i + 1, seed); return a + (b - a) * u; }
+  function cl(v, lo, hi) { return Math.min(Math.max(v, lo), hi); }
+  var scenes = [
+    { id: 'fogueira', name: 'Fogueira', glyph: '🔥︎', sub: 'Chama viva, laranja com estalos', f: function (t) {
+      var slow = noise(t * 0.23, 11), mid = noise(t * 1.6, 23), fast = noise(t * 8.5, 37);
+      var b = 0.42 + 0.30 * mid + 0.14 * fast + 0.14 * slow;
+      var pop = noise(t * 0.9, 51); if (pop > 0.82) b += (pop - 0.82) * 1.6;
+      var sh = noise(t * 0.7, 67); if (sh < 0.14) b -= (0.14 - sh) * 1.8;
+      b = cl(b, 0.18, 1);
+      return [cl(0.62 - 0.38 * b + 0.06 * (fast - 0.5), 0.12, 0.85), b]; } },
+    { id: 'vela', name: 'Vela', glyph: '🕯︎', sub: 'Amarela, quase parada, tremendo de leve', f: function (t) {
+      var mid = noise(t * 1.9, 71), fast = noise(t * 6.5, 83);
+      return [cl(0.10 + 0.08 * noise(t * 0.4, 97), 0, 0.3), cl(0.78 + 0.12 * (mid - 0.5) + 0.07 * (fast - 0.5), 0.55, 0.95)]; } },
+    { id: 'brasa', name: 'Brasa', glyph: '⬢', sub: 'Vermelha, respirando devagar', f: function (t) {
+      var br = 0.5 + 0.5 * Math.sin(2 * Math.PI * t / 7.5);
+      return [cl(0.82 + 0.12 * (noise(t * 0.3, 113) - 0.5), 0.6, 1), cl(0.22 + 0.30 * br + 0.10 * (noise(t * 0.9, 101) - 0.5), 0.12, 0.7)]; } },
+    { id: 'entardecer', name: 'Entardecer', glyph: '◒', sub: 'Passeia entre amarelo e vermelho, bem lento', f: function (t) {
+      return [cl(0.15 + 0.7 * noise(t * 0.035, 127), 0, 1), cl(0.55 + 0.3 * noise(t * 0.05, 131), 0.3, 0.9)]; } }
+  ];
+
+  // ===== tela 1 =====
+  var box = document.getElementById('scenes'), active = 0, start = performance.now();
+  scenes.forEach(function (s, i) {
+    var b = document.createElement('button'); b.type = 'button'; b.className = 'scene';
+    b.innerHTML = '<i aria-hidden="true">' + s.glyph + '</i><span>' + s.name + '</span>';
+    b.setAttribute('aria-pressed', String(i === active));
+    b.addEventListener('click', function () { active = active === i ? -1 : i; start = performance.now(); sync(); });
+    box.appendChild(b);
+  });
+  var dim = document.getElementById('dim'), glow = document.getElementById('glow'), dome = document.getElementById('dome');
+  function sync() {
+    Array.prototype.forEach.call(box.children, function (b, i) { b.setAttribute('aria-pressed', String(i === active)); });
+    document.getElementById('p-name').textContent = active < 0 ? '' : scenes[active].name;
+    document.getElementById('p-sub').textContent = active < 0 ? 'A lâmpada anima sozinha, mesmo com o celular bloqueado. Toque de novo pra parar.' : scenes[active].sub;
+  }
+  function paint(mix, b) {
+    glow.style.background = 'radial-gradient(circle, ' + css(mix, 0.75 * b) + ' 0%, ' + css(mix, 0.25 * b) + ' 38%, transparent 70%)';
+    dome.setAttribute('fill', css(mix, 0.35 + 0.65 * b));
+    var f = full(mix);
+    document.getElementById('r-name').textContent = name(mix);
+    document.getElementById('r-bytes').textContent = 'âmbar ' + Math.round(f[0] * b) + ' · vermelho ' + Math.round(f[1] * b);
+  }
+  function frame(now) {
+    if (active >= 0) { var s = scenes[active].f((now - start) / 1000); paint(s[0], Math.max(s[1] * dim.value / 100, 0.01)); }
+    else paint(102 / 306, 0.8 * dim.value / 100);
+    requestAnimationFrame(frame);
+  }
+  sync(); requestAnimationFrame(frame);
+
+  // ===== tela 2 =====
+  var st = { en: true, delay: 0, cur: true, mix: 180 / 280, fromb: 0.6, chg: false, toMix: 1, tob: 0, ramp: 15, hold: 0 };
+  var manual = { mix: 102 / 306, b: 0.8 };
+  function sw(id, key) { var el = document.getElementById(id); el.addEventListener('click', function () { st[key] = !st[key]; render(); }); }
+  sw('en', 'en'); sw('cur', 'cur'); sw('chg', 'chg');
+  document.querySelectorAll('[data-color]').forEach(function (boxEl) {
+    var key = boxEl.dataset.color === 'from' ? 'mix' : 'toMix';
+    presets.forEach(function (p) { var b = document.createElement('button'); b.type = 'button'; b.style.backgroundColor = css(p[1], 1); b.setAttribute('aria-label', p[0]); b.dataset.mix = p[1];
+      b.addEventListener('click', function () { st[key] = p[1]; render(); }); boxEl.appendChild(b); });
+  });
+  document.querySelectorAll('[data-m]').forEach(function (b) { b.addEventListener('click', function () {
+    var k = b.dataset.m, lo = k === 'ramp' ? 1 : 0, hi = k === 'hold' ? 240 : 120, v = st[k], d = +b.dataset.d;
+    st[k] = d > 0 ? Math.min(v < 5 ? 5 : v + 5, hi) : Math.max(v - 5, lo); render(); }); });
+  document.getElementById('fromb').addEventListener('input', function (e) { st.fromb = e.target.value / 100; render(); });
+  document.getElementById('tob').addEventListener('input', function (e) { st.tob = e.target.value / 100; render(); });
+  function render() {
+    document.getElementById('en').setAttribute('aria-checked', String(st.en));
+    document.getElementById('cur').setAttribute('aria-checked', String(st.cur));
+    document.getElementById('chg').setAttribute('aria-checked', String(st.chg));
+    document.getElementById('s-on').hidden = !st.en;
+    document.getElementById('from-box').hidden = st.cur;
+    document.getElementById('to-box').hidden = !st.chg;
+    document.getElementById('hold-row').hidden = !(st.tob > 0.001);
+    document.getElementById('tl-note').hidden = !st.cur;
+    document.getElementById('cur-sub').textContent = st.cur ? 'Se a lâmpada estiver apagada, ela continua apagada' : 'A lâmpada acende na cor abaixo e parte dali';
+    document.getElementById('chg-sub').textContent = st.chg ? 'Vai da cor do começo até esta' : 'Fica na mesma cor do começo';
+    document.getElementById('from-n').textContent = name(st.mix);
+    document.getElementById('to-n').textContent = name(st.toMix);
+    document.getElementById('fromb-v').textContent = Math.round(st.fromb * 100) + '%';
+    document.getElementById('tob-v').textContent = Math.round(st.tob * 100) + '%';
+    document.getElementById('delay-v').textContent = st.delay + ' min';
+    document.getElementById('ramp-v').textContent = st.ramp + ' min';
+    document.getElementById('hold-v').textContent = st.hold + ' min';
+    document.querySelectorAll('[data-color="from"] button').forEach(function (b) { b.setAttribute('aria-pressed', String(Math.abs(b.dataset.mix - st.mix) < 0.01)); });
+    document.querySelectorAll('[data-color="to"] button').forEach(function (b) { b.setAttribute('aria-pressed', String(Math.abs(b.dataset.mix - st.toMix) < 0.01)); });
+    var hold = st.tob > 0.001 ? st.hold : 0;
+    var start = st.delay === 0 ? 'Ao encostar' : st.delay + ' min depois de encostar';
+    var end = st.tob > 0.001 ? (hold > 0 ? ', fica ' + hold + ' min e apaga' : ' e apaga') : ' até apagar';
+    document.getElementById('s-sub').textContent = st.en ? start + ' · ' + st.ramp + ' min' + end : 'Desligado nesta rotina';
+    var fromMix = st.cur ? manual.mix : st.mix, fromB = st.cur ? manual.b : st.fromb, toMix = st.chg ? st.toMix : fromMix, toB = st.tob;
+    var total = Math.max(st.delay + st.ramp + hold, 1), stops = [];
+    for (var i = 0; i <= 32; i++) { var m = i / 32 * total, mx, bb;
+      if (m < st.delay) { mx = fromMix; bb = fromB; } else if (m < st.delay + st.ramp) { var k = (m - st.delay) / st.ramp; mx = fromMix + (toMix - fromMix) * k; bb = fromB + (toB - fromB) * k; } else { mx = toMix; bb = toB; }
+      stops.push(css(mx, bb) + ' ' + (i / 32 * 100) + '%'); }
+    document.getElementById('tl').style.background = 'linear-gradient(90deg,' + stops.join(',') + '), #1e1d1b';
+    document.getElementById('tl-end').textContent = '+' + (st.delay + st.ramp + hold) + ' min · apagada';
+    var simple = st.delay === 0 && st.tob < 0.001 && !st.chg;
+    document.getElementById('cmd').textContent = 'Comando que vai pra lâmpada: ' + (simple ? '0x07 apagar devagar (o de antes)' : '0x08 apagar programado (novo)') + '.';
+  }
+  render();
+
+  var root = document.getElementById('root'), d = document.getElementById('b-day'), n = document.getElementById('b-night');
+  function theme(night) { root.classList.toggle('night', night); d.setAttribute('aria-pressed', String(!night)); n.setAttribute('aria-pressed', String(night)); }
+  d.addEventListener('click', function () { theme(false); }); n.addEventListener('click', function () { theme(true); });
+})();
+</script>
