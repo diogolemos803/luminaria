@@ -825,6 +825,35 @@ começando pela fogueira.
   duas fitas e a espera/rampa do 0x08 pelo relógio da lâmpada. Com a lâmpada simulada dá
   pra ver tudo no app.
 
+## Lâmpada pela Siri e pela Central de Controle (2026-11-06)
+
+Pedido do dono. **Só controla a luz** — começar a noite continua exigindo encostar o
+celular na luminária (a Siri não arma o modo noite, de propósito).
+
+- **Siri / Atalhos** (`Luminaria/LampIntents.swift`, pbxproj `B8`/`B9`, iOS 17+):
+  acender, apagar, cor (as 5 prontas, `LampColorOption`), brilho (5–100%, a Siri pergunta
+  o número) e cenário (`LampSceneOption`; só com "Cenários (teste)" ligado). Frases em
+  `SoveeAppShortcuts` ("Acender a luminária no sovee", "Luminária laranja no sovee",
+  "Fogueira na luminária do sovee"…); aparecem sozinhas no app Atalhos e servem pro
+  Botão de Ação. Respostas na voz da marca ("luminária acesa.").
+- **Botão na Central de Controle / tela bloqueada / Botão de Ação** (iOS 18+,
+  `LuminariaWidget/LampControlWidget.swift`, `BD`/`BE`): liga/desliga na última cor. O
+  estado vem do App Group (`LampControlShared.isLitKey`, gravado por
+  `LampControlState.publish` a cada STATE). A intenção `ToggleLampControlIntent`
+  (`Luminaria/LampControlShared.swift`, nos dois alvos: `BA`/`BB`/`BC`) é
+  `LiveActivityIntent` pra rodar no processo do APP; `LampControlBridge` tem a versão real
+  no app e uma vazia na extensão (só pra compilar).
+- **Bluetooth em segundo plano**: `UIBackgroundModes` ganhou `bluetooth-central` (antes
+  evitado; aqui é o que deixa a Siri/o botão conectar sem abrir a tela).
+  `LampManager.waitUntilReady` conecta e espera o primeiro STATE (até 8 s); depois do
+  comando o app espera 0,7 s antes de devolver.
+- **App Casa** ficou de fora: exige HomeKit/Matter no firmware (Matter por Wi-Fi no
+  ESP32-C3 muda a decisão "só Bluetooth"), aviso de acessório não certificado e
+  certificação pra vender. Decisão de produto pra depois.
+- Só dá pra validar no iPhone: a Siri reconhecendo as frases em português; o comando
+  funcionando com o app fechado (se o iOS rodar a intenção na extensão em vez do app, o
+  botão não faz nada — aí trocar pra abrir o app); o botão atualizando acesa/apagada.
+
 ## Sons pra dormir — EXPERIMENTO (2026-10-22, item 6 do plano Hatch)
 
 - **Teste mínimo, atrás de uma chave DESLIGADA por padrão**: Ajuda → "Experimentos" →
@@ -948,7 +977,7 @@ Fluxo usado pra testar de verdade, todo do Windows:
 
 - **`Luminaria.xcodeproj/project.pbxproj` foi escrito à mão**, linha por linha — não existe
   Xcode/macOS neste ambiente de desenvolvimento (Windows). IDs de objeto seguem o padrão
-  `AAAAAAAAAAAAAAAAAAAAAA` + 2 dígitos hex incrementais (maior em uso: `B7`); qualquer
+  `AAAAAAAAAAAAAAAAAAAAAA` + 2 dígitos hex incrementais (maior em uso: `BE`); qualquer
   novo arquivo precisa de entradas em `PBXBuildFile`, `PBXFileReference`, no grupo, e na
   build phase certa (`Sources` pra `.swift`, `Resources` pra assets/sons). Sempre
   verificar balanço de chaves/parênteses e contagem de referências de cada ID novo
