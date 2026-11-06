@@ -260,25 +260,82 @@ final class LampProtocolTests: XCTestCase {
         XCTAssertEqual(c.brightness, 0.6, accuracy: 0.02)
     }
 
-    /// "Ao dormir": apaga a partir da luz acesa; apagada continua apagada; 15–60 min.
-    func testSleepFadeStartsFromCurrentLight() {
+    /// "Ao dormir" padrão (e rotinas antigas): da luz acesa até apagar, mesma cor, sem
+    /// espera → o 0x07 de antes. Apagada continua apagada.
+    func testSleepDefaultStillUsesSimpleFade() {
         var s = LampSleepSettings()
         s.minutes = 30
         let lit = LampColor(amber: 120, red: 40)
-        XCTAssertEqual(s.fadeCommand(current: lit), .fadeOut(from: lit, minutes: 30))
-        XCTAssertNil(s.fadeCommand(current: .off))
-        XCTAssertNil(s.fadeCommand(current: nil))
+        XCTAssertEqual(s.nightCommand(current: lit), .fadeOut(from: lit, minutes: 30))
+        XCTAssertNil(s.nightCommand(current: .off))
+        XCTAssertNil(s.nightCommand(current: nil))
         s.enabled = false
-        XCTAssertNil(s.fadeCommand(current: lit))
+        XCTAssertNil(s.nightCommand(current: lit))
     }
 
-    func testSleepFadeMinutesClampedForOldRoutines() {
+    /// Com espera, cor de fim ou brilho de fim, vira o apagar programado (0x08).
+    func testSleepProgrammedUsesSunset() throws {
         var s = LampSleepSettings()
-        s.minutes = 5
-        XCTAssertEqual(s.fadeMinutes, 15)
-        s.minutes = 120
-        XCTAssertEqual(s.fadeMinutes, 60)
-        XCTAssertEqual(LampSleepSettings().fadeMinutes, 15)
+        s.fromCurrentLight = false
+        s.mix = 0
+        s.brightness = 1
+        s.toMix = 1
+        s.toBrightness = 0.2
+        s.minutes = 40
+        s.startDelayMinutes = 10
+        s.holdMinutes = 20
+        guard case .sunset(let p) = try XCTUnwrap(s.nightCommand(current: nil)) else { return XCTFail("esperava 0x08") }
+        XCTAssertEqual(p.delayMinutes, 10)
+        XCTAssertEqual(p.rampMinutes, 40)
+        XCTAssertEqual(p.holdMinutes, 20)
+        XCTAssertEqual(p.from, LampColor(amber: 255, red: 0))
+        XCTAssertEqual(p.to, LampColor(amber: 0, red: 255))
+        XCTAssertEqual(p.fromBrightness, 255)
+        XCTAssertEqual(p.toBrightness, 51)
+        XCTAssertEqual(LampCommand.sunset(p).bytes(), [0x08, 10, 40, 20, 255, 0, 255, 0, 255, 51])
+        XCTAssertEqual(LampSunset(payload: p.payload), p)
+    }
+
+    /// Termina apagada: o tempo acesa no fim não vale.
+    func testSleepHoldIgnoredWhenEndingOff() throws {
+        var s = LampSleepSettings()
+        s.startDelayMinutes = 5
+        s.holdMinutes = 30
+        guard case .sunset(let p) = try XCTUnwrap(s.nightCommand(current: LampColor(amber: 200, red: 0))) else { return XCTFail() }
+        XCTAssertEqual(p.holdMinutes, 0)
+        XCTAssertEqual(p.delayMinutes, 5)
+    }
+
+    func testSunsetTimeline() {
+        let p = LampSunset(delayMinutes: 1, rampMinutes: 2, holdMinutes: 1,
+                           from: LampColor(amber: 255, red: 0), fromBrightness: 255,
+                           to: LampColor(amber: 0, red: 255), toBrightness: 128)
+        XCTAssertEqual(p.output(elapsed: 30), .waiting)
+        guard case .color(let mid) = p.output(elapsed: 120) else { return XCTFail() }  // meio da rampa
+        XCTAssertEqual(mid.mix, 0.5, accuracy: 0.03)
+        guard case .color(let end) = p.output(elapsed: 200) else { return XCTFail() }  // segurando
+        XCTAssertEqual(end.mix, 1, accuracy: 0.01)
+        XCTAssertEqual(p.output(elapsed: 241), .finished)
+    }
+
+    /// Ajuste de rotina salvo antes (só 4 campos) abre com o comportamento de antes.
+    func testOldSleepSettingsDecode() throws {
+        let s = try decode(LampSleepSettings.self, #"{"enabled":true,"mix":0.6,"brightness":0.6,"minutes":45}"#)
+        XCTAssertEqual(s.minutes, 45)
+        XCTAssertTrue(s.fromCurrentLight)
+        XCTAssertNil(s.toMix)
+        XCTAssertEqual(s.toBrightness, 0)
+        XCTAssertEqual(s.startDelayMinutes, 0)
+        XCTAssertEqual(s.holdMinutes, 0)
+        XCTAssertEqual(try decode(LampSleepSettings.self, "{}"), LampSleepSettings())
+    }
+
+    func testSleepMinutesClamped() {
+        var s = LampSleepSettings()
+        s.minutes = 0
+        XCTAssertEqual(s.fadeMinutes, 1)
+        s.minutes = 500
+        XCTAssertEqual(s.fadeMinutes, 120)
     }
 
     func testCommandBytes() {
@@ -391,5 +448,49 @@ final class SleepSoundTimerTests: XCTestCase {
         XCTAssertEqual(SleepSoundTimer.volume(now: end.addingTimeInterval(-30), end: end), 0.5, accuracy: 0.001)
         XCTAssertEqual(SleepSoundTimer.volume(now: end, end: end), 0)
         XCTAssertEqual(SleepSoundTimer.volume(now: end.addingTimeInterval(10), end: end), 0)
+    }
+}
+
+
+// MARK: - Cenários da lâmpada (teste)
+
+final class LampSceneTests: XCTestCase {
+    /// Mesmo instante → mesma cor (a lâmpada e a prévia precisam bater).
+    func testScenesAreDeterministicAndInRange() {
+        for scene in LampScene.allCases {
+            for i in 0..<600 {
+                let t = Double(i) * 0.137
+                let a = scene.sample(at: t), b = scene.sample(at: t)
+                XCTAssertEqual(a.mix, b.mix)
+                XCTAssertEqual(a.brightness, b.brightness)
+                XCTAssert((0...1).contains(a.mix), "\(scene) mix \(a.mix)")
+                XCTAssert((0.05...1).contains(a.brightness), "\(scene) brilho \(a.brightness)")
+                let c = scene.color(at: t, brightness: 255)
+                XCTAssertLessThanOrEqual(Int(c.amber) + Int(c.red), LampProtocol.powerLimit)
+            }
+        }
+    }
+
+    /// Fluido: sem saltos grandes entre quadros de 20 ms (50 Hz na lâmpada).
+    func testScenesAreSmooth() {
+        for scene in LampScene.allCases {
+            var previous = scene.sample(at: 0)
+            for i in 1..<3000 {
+                let s = scene.sample(at: Double(i) * 0.02)
+                XCTAssertLessThan(abs(s.brightness - previous.brightness), 0.2, "\(scene) em \(Double(i) * 0.02)s")
+                previous = s
+            }
+        }
+    }
+
+    /// A fogueira varia de verdade (não é uma cor parada).
+    func testFireFlickers() {
+        let values = (0..<500).map { LampScene.fogueira.sample(at: Double($0) * 0.05).brightness }
+        XCTAssertGreaterThan(values.max()! - values.min()!, 0.3)
+    }
+
+    func testSceneCommandBytes() {
+        XCTAssertEqual(LampCommand.scene(id: LampScene.fogueira.rawValue, brightness: 200).bytes(), [0x09, 1, 200])
+        XCTAssertEqual(LampCommand.scene(id: 2, brightness: 0).bytes(), [0x09, 2, 1])
     }
 }

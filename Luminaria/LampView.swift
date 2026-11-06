@@ -110,7 +110,7 @@ private struct LampGhostButton: View {
 // MARK: - Tela da lâmpada
 
 private enum LampTool: String, CaseIterable, Identifiable {
-    case presets, mix, brightness, schedule, lamp
+    case presets, mix, brightness, schedule, scenes, lamp
 
     var id: String { rawValue }
 
@@ -120,6 +120,7 @@ private enum LampTool: String, CaseIterable, Identifiable {
         case .mix: return "circle.lefthalf.filled"
         case .brightness: return "sun.max"
         case .schedule: return "sunrise"
+        case .scenes: return "flame.fill"
         case .lamp: return "slider.horizontal.3"
         }
     }
@@ -130,6 +131,7 @@ private enum LampTool: String, CaseIterable, Identifiable {
         case .mix: return "Mistura"
         case .brightness: return "Brilho"
         case .schedule: return "Luz programada"
+        case .scenes: return "Cenários · teste"
         case .lamp: return "Lâmpada"
         }
     }
@@ -144,6 +146,12 @@ struct LampControlView: View {
     let isNight: Bool
     @State private var tool: LampTool = .presets
     @State private var confirmForget = false
+    /// Modo teste dos cenários (fogueira etc.) — ligado em Lâmpada → "Cenários (teste)".
+    @AppStorage(LampScenesFlag.key) private var scenesEnabled = false
+
+    private var tools: [LampTool] {
+        LampTool.allCases.filter { $0 != .scenes || scenesEnabled }
+    }
 
     var body: some View {
         ZStack {
@@ -181,8 +189,7 @@ struct LampControlView: View {
             header
             toolRow
             notices
-            LampIllustration(isOn: shown.on, mix: shown.mix, brightness: shown.brightness,
-                             line: theme.ink, stage: theme.stage, isNight: isNight)
+            illustration
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             readout
             panel
@@ -194,6 +201,21 @@ struct LampControlView: View {
             Button("Cancelar", role: .cancel) {}
         } message: {
             Text("Pra parear de novo depois, apague também em Ajustes → Bluetooth → \(LampProtocol.settingsName) → “Esquecer este dispositivo”.")
+        }
+    }
+
+    /// Com um cenário rodando, a cúpula anima com a mesma fórmula da lâmpada.
+    @ViewBuilder
+    private var illustration: some View {
+        if let scene = lamp.activeScene, usable {
+            TimelineView(.animation) { context in
+                let s = scene.sample(at: context.date.timeIntervalSince(lamp.sceneStart))
+                LampIllustration(isOn: true, mix: s.mix, brightness: max(s.brightness * lamp.sceneBrightness, 0.01),
+                                 line: theme.ink, stage: theme.stage, isNight: isNight)
+            }
+        } else {
+            LampIllustration(isOn: shown.on, mix: shown.mix, brightness: shown.brightness,
+                             line: theme.ink, stage: theme.stage, isNight: isNight)
         }
     }
 
@@ -226,7 +248,7 @@ struct LampControlView: View {
 
     private var toolRow: some View {
         HStack(spacing: 0) {
-            ForEach(LampTool.allCases) { item in
+            ForEach(tools) { item in
                 let isOn = tool == item
                 let enabled = usable || item == .lamp
                 Button {
@@ -244,7 +266,7 @@ struct LampControlView: View {
                 .opacity(enabled ? 1 : 0.35)
                 .accessibilityLabel(item.title)
                 .accessibilityAddTraits(isOn ? .isSelected : [])
-                if item != LampTool.allCases.last { Spacer(minLength: 0) }
+                if item != tools.last { Spacer(minLength: 0) }
             }
         }
     }
@@ -305,6 +327,7 @@ struct LampControlView: View {
         switch tool {
         case .mix: return LampPreset.name(forMix: lamp.manualMix)
         case .brightness: return "\(Int((lamp.manualBrightness * 100).rounded()))%"
+        case .scenes: return lamp.activeScene?.name ?? ""
         default: return ""
         }
     }
@@ -316,6 +339,7 @@ struct LampControlView: View {
         case .mix: mixPane
         case .brightness: brightnessPane
         case .schedule: schedulePane
+        case .scenes: scenesPane
         case .lamp: lampPane
         }
     }
@@ -440,18 +464,69 @@ struct LampControlView: View {
         }
     }
 
+    private var scenesPane: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 6) {
+                ForEach(LampScene.allCases) { scene in
+                    let selected = lamp.activeScene == scene
+                    Button {
+                        if selected { lamp.stopScene() } else { lamp.startScene(scene) }
+                    } label: {
+                        VStack(spacing: 4) {
+                            Image(systemName: scene.symbol)
+                                .font(.system(size: 17, weight: .semibold))
+                                .frame(width: 42, height: 42)
+                                .foregroundStyle(selected ? theme.accentForeground : theme.ink)
+                                .background(selected ? theme.accent : (theme.chip ?? theme.accentWash), in: Circle())
+                            Text(scene.name)
+                                .font(.luminaria(.caption2, weight: selected ? .bold : .medium))
+                                .foregroundStyle(theme.ink)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.8)
+                        }
+                        .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(scene.name)
+                    .accessibilityAddTraits(selected ? .isSelected : [])
+                }
+            }
+            HStack(spacing: 8) {
+                Image(systemName: "sun.min")
+                Slider(value: Binding(
+                    get: { lamp.sceneBrightness },
+                    set: { lamp.setSceneBrightness($0, send: false) }
+                ), in: 0.05...1) { editing in
+                    if !editing { lamp.setSceneBrightness(lamp.sceneBrightness) }
+                }
+                .tint(theme.accent)
+                .accessibilityLabel("Brilho do cenário")
+                Image(systemName: "sun.max")
+            }
+            .font(.system(size: 13, weight: .semibold))
+            .foregroundStyle(theme.inkMuted)
+            Text(lamp.activeScene?.subtitle ?? "A lâmpada anima sozinha, mesmo com o celular bloqueado. Toque de novo pra parar.")
+                .font(.luminaria(.caption))
+                .foregroundStyle(theme.inkMuted)
+                .lineLimit(2)
+        }
+    }
+
     private var lampPane: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 8) {
                 LampGhostButton(title: "Identificar", theme: theme) { lamp.identify() }
+                    .accessibilityHint("Faz a lâmpada piscar 3 vezes")
                     .disabled(!usable)
                     .opacity(usable ? 1 : 0.45)
                 LampGhostButton(title: "Esquecer", isDanger: true, theme: theme) { confirmForget = true }
             }
-            Text("“Identificar” faz a lâmpada piscar 3 vezes.\nRelógio da lâmpada: \(clockText)")
+            // Uma linha só: o painel tem altura fixa e ganhou a chave dos cenários.
+            Text("Relógio da lâmpada: \(clockText)")
                 .font(.luminaria(.caption))
                 .foregroundStyle(theme.inkMuted)
-                .fixedSize(horizontal: false, vertical: true)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
             HStack {
                 Text("Lâmpada simulada")
                     .font(.luminaria(.subheadline, weight: .medium))
@@ -460,6 +535,21 @@ struct LampControlView: View {
                 Toggle("", isOn: Binding(get: { lamp.isSimulated }, set: { lamp.setSimulated($0) }))
                     .labelsHidden()
                     .tint(theme.accent)
+            }
+            HStack {
+                Text("Cenários (teste)")
+                    .font(.luminaria(.subheadline, weight: .medium))
+                    .foregroundStyle(theme.ink)
+                Spacer()
+                Toggle("", isOn: Binding(
+                    get: { scenesEnabled },
+                    set: { on in
+                        scenesEnabled = on
+                        if !on, lamp.activeScene != nil { lamp.stopScene() }
+                    }
+                ))
+                .labelsHidden()
+                .tint(theme.accent)
             }
         }
     }
@@ -676,40 +766,42 @@ struct LampRoutineSections: View {
             .background(theme.accentWash)
             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
 
+            // Mesmo nível de ajuste da luz da manhã (2026-11-06, pedido do dono).
             ThemedCard(title: "Lâmpada ao dormir", theme: theme) {
-                toggleRow("Apagar devagar", subtitle: "Começa quando a luminária é reconhecida", isOn: $routine.lampSleep.enabled)
+                toggleRow("Apagar devagar", subtitle: sleepSubtitle, isOn: $routine.lampSleep.enabled)
                 if routine.lampSleep.enabled {
                     divider
-                    // Único ajuste (item 3 do plano Hatch): em quanto tempo apaga. Começa da
-                    // luz que estiver acesa; apagada, continua apagada.
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Apaga em")
-                            .font(.luminaria(.subheadline, weight: .medium))
-                            .foregroundStyle(theme.ink)
-                        HStack(spacing: 8) {
-                            ForEach(LampSleepSettings.minuteChoices, id: \.self) { minutes in
-                                let selected = routine.lampSleep.fadeMinutes == minutes
-                                Button {
-                                    routine.lampSleep.minutes = minutes
-                                } label: {
-                                    Text("\(minutes) min")
-                                        .font(.luminaria(.subheadline, weight: selected ? .bold : .medium))
-                                        .foregroundStyle(selected ? theme.accentForeground : theme.ink)
-                                        .frame(maxWidth: .infinity)
-                                        .padding(.vertical, 9)
-                                        .background(selected ? theme.accent : (theme.chip ?? theme.accentWash),
-                                                    in: Capsule())
-                                }
-                                .buttonStyle(.plain)
-                                .accessibilityAddTraits(selected ? .isSelected : [])
-                            }
-                        }
-                        Text("A luz que estiver acesa vai diminuindo até apagar. Se a lâmpada estiver apagada, ela continua apagada.")
-                            .font(.luminaria(.caption))
-                            .foregroundStyle(theme.inkMuted)
-                            .fixedSize(horizontal: false, vertical: true)
+                    minutesRow("Começa depois de encostar", value: $routine.lampSleep.startDelayMinutes, range: LampSunset.delayRange)
+                    divider
+                    toggleRow("Começar da luz acesa",
+                              subtitle: routine.lampSleep.fromCurrentLight
+                                ? "Se a lâmpada estiver apagada, ela continua apagada"
+                                : "A lâmpada acende na cor abaixo e parte dali",
+                              isOn: $routine.lampSleep.fromCurrentLight)
+                    if !routine.lampSleep.fromCurrentLight {
+                        colorRow("Começa em", mix: $routine.lampSleep.mix)
+                        sliderRow("Brilho no começo", value: $routine.lampSleep.brightness, range: 0.05...1, mix: routine.lampSleep.mix)
                     }
-                    .padding(10)
+                    divider
+                    toggleRow("Mudar de cor no caminho",
+                              subtitle: routine.lampSleep.toMix == nil ? "Fica na mesma cor do começo" : "Vai da cor do começo até esta",
+                              isOn: Binding(
+                                get: { routine.lampSleep.toMix != nil },
+                                set: { routine.lampSleep.toMix = $0 ? LampPreset.all[4].color.mix : nil }
+                              ))
+                    if routine.lampSleep.toMix != nil {
+                        colorRow("Termina em", mix: Binding(
+                            get: { routine.lampSleep.toMix ?? 1 },
+                            set: { routine.lampSleep.toMix = $0 }
+                        ))
+                    }
+                    sliderRow("Brilho no fim (0% = apagada)", value: $routine.lampSleep.toBrightness, range: 0...1, mix: sleepEndMix)
+                    divider
+                    minutesRow("Leva", value: $routine.lampSleep.minutes, range: LampSunset.rampRange)
+                    if routine.lampSleep.toBrightness > 0.001 {
+                        minutesRow("Fica acesa no fim", value: $routine.lampSleep.holdMinutes, range: LampSunset.holdRange)
+                    }
+                    sleepPreview.padding(10)
                 }
             }
 
@@ -752,6 +844,65 @@ struct LampRoutineSections: View {
         let start = clock(alarmMinutes - routine.lampWake.minutesBefore)
         let end = clock(alarmMinutes + routine.lampWake.holdMinutes)
         return "\(start) até \(end), com despertador às \(clock(alarmMinutes))"
+    }
+
+    /// Cor de fim do "ao dormir" pra prévia (sem cor de fim = a do começo).
+    private var sleepEndMix: Double {
+        routine.lampSleep.toMix ?? sleepStartMix
+    }
+
+    /// Começando "da luz acesa" a cor real só se sabe na hora; a prévia usa a última cor
+    /// escolhida à mão na tela da lâmpada.
+    private var sleepStartMix: Double {
+        routine.lampSleep.fromCurrentLight ? LampManager.shared.manualMix : routine.lampSleep.mix
+    }
+
+    private var sleepStartBrightness: Double {
+        routine.lampSleep.fromCurrentLight ? LampManager.shared.manualBrightness : routine.lampSleep.brightness
+    }
+
+    private var sleepSubtitle: String {
+        let s = routine.lampSleep
+        guard s.enabled else { return "Desligado nesta rotina" }
+        let start = s.clampedDelay == 0 ? "Ao encostar" : "\(s.clampedDelay) min depois de encostar"
+        let end = s.toBrightness > 0.001
+            ? (s.clampedHold > 0 ? ", fica \(s.clampedHold) min e apaga" : " e apaga")
+            : " até apagar"
+        return "\(start) · \(s.fadeMinutes) min\(end)"
+    }
+
+    private var sleepPreview: some View {
+        let s = routine.lampSleep
+        let delay = Double(s.clampedDelay), ramp = Double(s.fadeMinutes)
+        let hold = s.toBrightness > 0.001 ? Double(s.clampedHold) : 0
+        let total = max(delay + ramp + hold, 1)
+        let fromMix = sleepStartMix, fromB = sleepStartBrightness
+        let toMix = sleepEndMix, toB = s.toBrightness
+        return VStack(spacing: 4) {
+            LampTimelinePreview { t in
+                let m = t * total
+                if m < delay { return (fromMix, fromB) }
+                if m < delay + ramp {
+                    let k = (m - delay) / ramp
+                    return (fromMix + (toMix - fromMix) * k, fromB + (toB - fromB) * k)
+                }
+                return (toMix, toB)
+            }
+            HStack {
+                Text("ao encostar")
+                Spacer()
+                Text("+\(s.clampedDelay + s.fadeMinutes + Int(hold)) min · apagada")
+            }
+            .font(.luminaria(.caption2))
+            .foregroundStyle(theme.inkMuted)
+            .monospacedDigit()
+            if s.fromCurrentLight {
+                Text("A prévia usa a última cor escolhida na tela da lâmpada; na hora vale a luz que estiver acesa.")
+                    .font(.luminaria(.caption2))
+                    .foregroundStyle(theme.inkMuted)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
     }
 
     private var wakePreview: some View {

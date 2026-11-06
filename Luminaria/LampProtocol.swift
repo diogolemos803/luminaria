@@ -48,6 +48,13 @@ enum LampOpcode: UInt8 {
     case identify = 0x06
     /// v2: acende nesta cor e apaga linearmente em N minutos.
     case fadeOut = 0x07
+    /// v2 (proposta de 2026-11-06): apagar programado — o "ao dormir" com o mesmo nível de
+    /// ajuste da luz da manhã (espera, cor/brilho de começo e de fim, duração, tempo acesa no
+    /// fim). Ver `LampSunset`.
+    case sunset = 0x08
+    /// v2 (proposta de 2026-11-06, TESTE): cenário animado gerado pela própria lâmpada
+    /// (fogueira, vela…). Ver `LampScene` em `LampScenes.swift`.
+    case scene = 0x09
 }
 
 /// Uma cor da lâmpada = quanto de cada fita (0–255). Só existe o espectro amarelo →
@@ -143,8 +150,10 @@ struct LampState: Equatable {
         case off = 0
         case manual = 1
         case routine = 2
-        /// v2: apagando devagar (opcode 0x07).
+        /// v2: apagando devagar (opcode 0x07 ou 0x08).
         case fading = 3
+        /// v2 (teste): rodando um cenário (opcode 0x09).
+        case scene = 4
     }
 
     enum CommandResult: UInt8 {
@@ -328,6 +337,83 @@ struct LampRoutine: Equatable {
     }
 }
 
+/// Apagar programado (comando 0x08, 9 bytes depois do opcode): espera, rampa, mantém,
+/// de_âmbar, de_vermelho, de_brilho, para_âmbar, para_vermelho, para_brilho.
+///
+/// Mesma matemática da luz da manhã, contada a partir do instante do comando:
+/// 1. **Espera** `delayMinutes` (0–120) sem mexer na luz que estiver;
+/// 2. **Rampa** de `rampMinutes` (1–120): mistura e brilho vão em linha reta de `from` a
+///    `to` (cores sempre no brilho máximo, brilho em byte separado, limitador depois);
+/// 3. **Mantém** `to` por `holdMinutes` (0–240) e **apaga**. Com `toBrightness = 0` a luz
+///    já termina apagada.
+/// Toque, 0x01, 0x02, 0x07 e 0x09 cancelam. STATE modo 3 durante a espera e a rampa.
+struct LampSunset: Equatable {
+    static let byteCount = 9
+    static let delayRange = 0...120
+    static let rampRange = 1...120
+    static let holdRange = 0...240
+
+    var delayMinutes: Int
+    var rampMinutes: Int
+    var holdMinutes: Int
+    var from: LampColor
+    var fromBrightness: UInt8
+    var to: LampColor
+    var toBrightness: UInt8
+
+    var isValid: Bool {
+        Self.delayRange.contains(delayMinutes) && Self.rampRange.contains(rampMinutes)
+            && Self.holdRange.contains(holdMinutes)
+    }
+
+    var payload: [UInt8] {
+        [UInt8(clamping: delayMinutes), UInt8(clamping: rampMinutes), UInt8(clamping: holdMinutes),
+         from.amber, from.red, fromBrightness, to.amber, to.red, toBrightness]
+    }
+
+    init(delayMinutes: Int, rampMinutes: Int, holdMinutes: Int,
+         from: LampColor, fromBrightness: UInt8, to: LampColor, toBrightness: UInt8) {
+        self.delayMinutes = delayMinutes
+        self.rampMinutes = rampMinutes
+        self.holdMinutes = holdMinutes
+        self.from = from
+        self.fromBrightness = fromBrightness
+        self.to = to
+        self.toBrightness = toBrightness
+    }
+
+    init?(payload b: [UInt8]) {
+        guard b.count >= Self.byteCount else { return nil }
+        self.init(delayMinutes: Int(b[0]), rampMinutes: Int(b[1]), holdMinutes: Int(b[2]),
+                  from: LampColor(amber: b[3], red: b[4]), fromBrightness: b[5],
+                  to: LampColor(amber: b[6], red: b[7]), toBrightness: b[8])
+    }
+
+    enum Output: Equatable {
+        /// Ainda na espera: a luz continua como está.
+        case waiting
+        case color(LampColor)
+        /// Terminou: apagada.
+        case finished
+    }
+
+    /// O que a lâmpada mostra `elapsed` segundos depois do comando (antes do limitador).
+    func output(elapsed: TimeInterval) -> Output {
+        let delay = Double(delayMinutes) * 60
+        let ramp = Double(max(rampMinutes, 1)) * 60
+        let hold = Double(holdMinutes) * 60
+        if elapsed < delay { return .waiting }
+        let t = elapsed - delay
+        let fromB = Double(fromBrightness) / 255, toB = Double(toBrightness) / 255
+        if t < ramp {
+            let k = t / ramp
+            return .color(LampColor(mix: from.mix + (to.mix - from.mix) * k, brightness: fromB + (toB - fromB) * k))
+        }
+        if toBrightness == 0 || t >= ramp + hold { return .finished }
+        return .color(LampColor(mix: to.mix, brightness: toB))
+    }
+}
+
 enum LampCommand: Equatable {
     case color(LampColor)
     case off
@@ -336,6 +422,9 @@ enum LampCommand: Equatable {
     case cancelToday
     case identify
     case fadeOut(from: LampColor, minutes: Int)
+    case sunset(LampSunset)
+    /// Cenário animado (teste); `brightness` 1–255 escala o cenário inteiro.
+    case scene(id: UInt8, brightness: UInt8)
 
     static let fadeRange = 1...120
 
@@ -361,34 +450,103 @@ enum LampCommand: Equatable {
             return [LampOpcode.identify.rawValue]
         case .fadeOut(let from, let minutes):
             return [LampOpcode.fadeOut.rawValue, from.amber, from.red, UInt8(clamping: minutes)]
+        case .sunset(let sunset):
+            return [LampOpcode.sunset.rawValue] + sunset.payload
+        case .scene(let id, let brightness):
+            return [LampOpcode.scene.rawValue, id, max(brightness, 1)]
         }
     }
 }
 
 // MARK: - Ajustes da lâmpada por rotina de sono
 
-/// "Lâmpada ao dormir": quando a luminária (NFC) é reconhecida com o modo noite armado,
-/// a lâmpada acende nesta cor e apaga devagar em `minutes`.
+/// "Lâmpada ao dormir": quando a luminária (NFC) é reconhecida com o modo noite armado, a
+/// lâmpada é programada pra apagar — com o mesmo nível de ajuste da luz da manhã
+/// (2026-11-06, pedido do dono): espera depois de encostar, cor e brilho de começo (ou "a
+/// luz que estiver acesa"), cor e brilho de fim (0% = apagada), duração e tempo acesa no
+/// fim. Decode tolerante: rotinas salvas antes só tinham `enabled/mix/brightness/minutes`
+/// e viram "da luz acesa até apagar, na mesma cor" — o comportamento de antes.
 struct LampSleepSettings: Codable, Equatable {
     var enabled: Bool = true
-    /// `mix`/`brightness` ficaram só pela compatibilidade do que já foi salvo — desde o
-    /// item 3 do plano Hatch (2026-10-22) o apagar começa da luz que estiver acesa.
+    /// Minutos entre encostar na luminária e começar a mudar a luz (0 = na hora).
+    var startDelayMinutes: Int = 0
+    /// Começa da luz que estiver acesa (lâmpada apagada continua apagada). Desligado, a
+    /// lâmpada acende em `mix`/`brightness` e parte dali.
+    var fromCurrentLight: Bool = true
+    /// Cor e brilho de começo (só valem com `fromCurrentLight` desligado).
     var mix: Double = LampPreset.all[3].color.mix
     var brightness: Double = 0.6
+    /// Cor de fim; `nil` = a mesma cor do começo.
+    var toMix: Double?
+    /// Brilho de fim; 0 = apagada.
+    var toBrightness: Double = 0
+    /// Duração da mudança, em minutos.
     var minutes: Int = 15
+    /// Quanto tempo fica acesa no fim antes de apagar (só com `toBrightness > 0`).
+    var holdMinutes: Int = 0
 
-    /// Único ajuste mostrado no editor: em quanto tempo a luz apaga.
+    /// Opções do "tempo pra desacelerar" no quiz do onboarding.
     static let minuteChoices = [15, 30, 45, 60]
 
-    /// `minutes` preso a 15–60 (rotinas antigas podiam ter 1–120).
-    var fadeMinutes: Int { min(max(minutes, 15), 60) }
+    init() {}
 
-    /// Comando de apagar devagar a partir da luz atual da lâmpada (`current`, do STATE).
-    /// Lâmpada apagada (ou estado desconhecido) → `nil`: não acende uma luz pra apagar.
-    func fadeCommand(current: LampColor?) -> LampCommand? {
-        guard enabled, let current, !current.isOff else { return nil }
-        return .fadeOut(from: current, minutes: fadeMinutes)
+    private enum CodingKeys: String, CodingKey {
+        case enabled, startDelayMinutes, fromCurrentLight, mix, brightness, toMix, toBrightness, minutes, holdMinutes
     }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        enabled = ((try? c.decodeIfPresent(Bool.self, forKey: .enabled)) ?? nil) ?? true
+        startDelayMinutes = ((try? c.decodeIfPresent(Int.self, forKey: .startDelayMinutes)) ?? nil) ?? 0
+        fromCurrentLight = ((try? c.decodeIfPresent(Bool.self, forKey: .fromCurrentLight)) ?? nil) ?? true
+        mix = ((try? c.decodeIfPresent(Double.self, forKey: .mix)) ?? nil) ?? LampPreset.all[3].color.mix
+        brightness = ((try? c.decodeIfPresent(Double.self, forKey: .brightness)) ?? nil) ?? 0.6
+        toMix = (try? c.decodeIfPresent(Double.self, forKey: .toMix)) ?? nil
+        toBrightness = ((try? c.decodeIfPresent(Double.self, forKey: .toBrightness)) ?? nil) ?? 0
+        minutes = ((try? c.decodeIfPresent(Int.self, forKey: .minutes)) ?? nil) ?? 15
+        holdMinutes = ((try? c.decodeIfPresent(Int.self, forKey: .holdMinutes)) ?? nil) ?? 0
+    }
+
+    /// Duração presa a 1–120 min.
+    var fadeMinutes: Int { min(max(minutes, LampSunset.rampRange.lowerBound), LampSunset.rampRange.upperBound) }
+    var clampedDelay: Int { min(max(startDelayMinutes, 0), LampSunset.delayRange.upperBound) }
+    var clampedHold: Int { min(max(holdMinutes, 0), LampSunset.holdRange.upperBound) }
+
+    /// Comando da noite. `current` = luz atual da lâmpada (do STATE). Começando "da luz
+    /// acesa" com a lâmpada apagada (ou sem saber) → `nil`: não acende uma luz pra apagar.
+    /// Quando a configuração é só "apagar a luz acesa, na mesma cor, sem espera" manda o
+    /// 0x07 de antes; o resto vai no 0x08.
+    func nightCommand(current: LampColor?) -> LampCommand? {
+        guard enabled else { return nil }
+        let fromFull: LampColor
+        let fromB: Double
+        if fromCurrentLight {
+            guard let current, !current.isOff else { return nil }
+            fromFull = current.atFullBrightness
+            fromB = current.brightness
+        } else {
+            fromFull = LampColor(mix: mix, brightness: 1)
+            fromB = min(max(brightness, 0.01), 1)
+        }
+        let endMix = toMix ?? fromFull.mix
+        let endB = min(max(toBrightness, 0), 1)
+        if clampedDelay == 0, endB == 0, abs(endMix - fromFull.mix) < 0.01 {
+            let start = fromCurrentLight ? current! : LampColor(mix: fromFull.mix, brightness: fromB)
+            return .fadeOut(from: start, minutes: fadeMinutes)
+        }
+        return .sunset(LampSunset(
+            delayMinutes: clampedDelay,
+            rampMinutes: fadeMinutes,
+            holdMinutes: endB > 0 ? clampedHold : 0,
+            from: fromFull,
+            fromBrightness: UInt8(clamping: Int((fromB * 255).rounded())),
+            to: LampColor(mix: endMix, brightness: 1),
+            toBrightness: UInt8(clamping: Int((endB * 255).rounded()))
+        ))
+    }
+
+    /// Mantido pros chamadores antigos.
+    func fadeCommand(current: LampColor?) -> LampCommand? { nightCommand(current: current) }
 }
 
 /// "Lâmpada ao acordar": amanhecer que termina na hora do despertador da rotina, gravado

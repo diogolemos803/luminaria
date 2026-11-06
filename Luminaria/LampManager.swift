@@ -71,6 +71,11 @@ final class LampManager: ObservableObject {
     /// Última vez que a pessoa mexeu na cor/brilho: enquanto mexe, a tela mostra o valor do
     /// controle na hora em vez de esperar a resposta da lâmpada (senão a cor anda aos saltos).
     @Published private(set) var lastManualEdit = Date.distantPast
+    /// Cenário rodando (teste, ver `LampScenes.swift`) e quando começou — a tela anima a
+    /// prévia com a mesma fórmula da lâmpada a partir desse instante.
+    @Published private(set) var activeScene: LampScene?
+    @Published private(set) var sceneStart = Date.distantPast
+    @Published private(set) var sceneBrightness: Double
 
     var hasLamp: Bool { lampID != nil }
     var isConnected: Bool { link == .connected }
@@ -82,6 +87,7 @@ final class LampManager: ObservableObject {
     private static let simulatedKey = "com.luminaria.lamp.isSimulated"
     private static let mixKey = "com.luminaria.lamp.manualMix"
     private static let brightnessKey = "com.luminaria.lamp.manualBrightness"
+    private static let sceneBrightnessKey = "com.luminaria.lamp.sceneBrightness"
 
     private var transport: LampTransport
     private var hasStarted = false
@@ -110,6 +116,7 @@ final class LampManager: ObservableObject {
         lampID = (defaults.string(forKey: simulated ? Self.simulatedIDKey : Self.realIDKey)).flatMap(UUID.init(uuidString:))
         manualMix = defaults.object(forKey: Self.mixKey) as? Double ?? LampPreset.all[2].color.mix
         manualBrightness = defaults.object(forKey: Self.brightnessKey) as? Double ?? 0.8
+        sceneBrightness = defaults.object(forKey: Self.sceneBrightnessKey) as? Double ?? 0.8
         transport = simulated ? SimulatedLampTransport() : BluetoothLampTransport()
         transport.delegate = self
     }
@@ -174,6 +181,7 @@ final class LampManager: ObservableObject {
     /// Cor escolhida na tela (mistura + brilho). Enquanto a pessoa arrasta o controle, manda
     /// no máximo ~16 comandos por segundo, sempre terminando no valor final.
     func setManual(mix: Double, brightness: Double) {
+        activeScene = nil
         manualMix = mix
         manualBrightness = brightness
         lastManualEdit = Date()
@@ -199,8 +207,42 @@ final class LampManager: ObservableObject {
         send(.color(LampColor(mix: manualMix, brightness: max(manualBrightness, 0.01))))
     }
 
-    func turnOn() { sendManualColor() }
-    func turnOff() { send(.off) }
+    func turnOn() {
+        activeScene = nil
+        sendManualColor()
+    }
+
+    func turnOff() {
+        activeScene = nil
+        send(.off)
+    }
+
+    // MARK: - Cenários (teste)
+
+    /// Começa um cenário animado (a lâmpada anima sozinha; o celular só manda o comando).
+    func startScene(_ scene: LampScene) {
+        guard send(.scene(id: scene.rawValue, brightness: sceneBrightnessByte)) else { return }
+        activeScene = scene
+        sceneStart = Date()
+    }
+
+    /// Escala de brilho do cenário (0,05–1); com um cenário rodando, reenvia na hora.
+    /// `send: false` enquanto o dedo arrasta (só a prévia muda); manda ao soltar.
+    func setSceneBrightness(_ value: Double, send shouldSend: Bool = true) {
+        sceneBrightness = min(max(value, 0.05), 1)
+        UserDefaults.standard.set(sceneBrightness, forKey: Self.sceneBrightnessKey)
+        if shouldSend, let activeScene {
+            send(.scene(id: activeScene.rawValue, brightness: sceneBrightnessByte))
+        }
+    }
+
+    /// Para o cenário e volta pra cor escolhida à mão.
+    func stopScene() {
+        activeScene = nil
+        sendManualColor()
+    }
+
+    private var sceneBrightnessByte: UInt8 { UInt8(clamping: Int((sceneBrightness * 255).rounded())) }
     func identify() { send(.identify) }
 
     func cancelToday() {
@@ -216,6 +258,7 @@ final class LampManager: ObservableObject {
     /// Sem lâmpada pareada, não faz nada.
     func beginNight(routine: SleepRoutine, alarmDate: Date?, completion: @escaping (Bool) -> Void) {
         guard hasLamp else { completion(true); return }
+        activeScene = nil
         pendingEndNight = false
         isTodayCancelled = false
         if isConnected, hasFreshState {
@@ -236,7 +279,7 @@ final class LampManager: ObservableObject {
     /// luz da manhã só pra manhã seguinte.
     private func nightCommands(routine: SleepRoutine, alarmDate: Date?) -> [LampCommand] {
         var commands: [LampCommand] = []
-        if let fade = routine.lampSleep.fadeCommand(current: state?.color) {
+        if let fade = routine.lampSleep.nightCommand(current: state?.color) {
             commands.append(fade)
         }
         if routine.lampWake.enabled, let alarmDate {
@@ -271,7 +314,11 @@ final class LampManager: ObservableObject {
 
     private func sendEndNight() {
         pendingEndNight = false
-        if state?.mode == .fading { send(.off) }
+        // Cancela o apagar programado deixando a luz como está agora (0x01 com a cor atual
+        // interrompe a espera, a rampa e o tempo acesa no fim).
+        if state?.mode == .fading, let color = state?.color {
+            send(color.isOff ? .off : .color(color))
+        }
         send(.cancelToday)
         send(.writeRoutine(.disabled))
         refreshRoutineSoon()
@@ -354,6 +401,10 @@ extension LampManager: LampTransportDelegate {
         guard let newState = LampState(bytes: bytes) else { return }
         state = newState
         hasFreshState = true
+        // A lâmpada parou o cenário sozinha (toque nela, outro celular): a prévia para junto.
+        if activeScene != nil, newState.mode != .scene, Date().timeIntervalSince(sceneStart) > 2 {
+            activeScene = nil
+        }
         if awaitingResult {
             awaitingResult = false
             if let message = newState.lastResult.message { errorMessage = message }
@@ -617,6 +668,11 @@ final class SimulatedLampTransport: LampTransport {
     private var routine = LampRoutine.disabled
     private var lastResult = LampState.CommandResult.ok
     private var fade: (from: LampColor, start: Date, minutes: Int)?
+    /// Apagar programado (0x08) em andamento.
+    private var sunset: (program: LampSunset, start: Date)?
+    /// Cenário (0x09) rodando.
+    private var scene: (scene: LampScene, brightness: UInt8, start: Date)?
+    private var sceneTimer: Timer?
     private var dismissedAlarm: Date?
     private var blinkUntil: Date?
 
@@ -642,6 +698,7 @@ final class SimulatedLampTransport: LampTransport {
 
     func disconnect() {
         cancelWork()
+        stopScene()
         connected = false
         timer?.invalidate()
         timer = nil
@@ -710,12 +767,18 @@ final class SimulatedLampTransport: LampTransport {
         let expected: [LampOpcode: Int] = [
             .color: 3, .off: 1, .setClock: 7, .writeRoutine: 1 + LampRoutine.byteCount,
             .cancelToday: 1, .identify: 1, .fadeOut: 4,
+            .sunset: 1 + LampSunset.byteCount, .scene: 3,
         ]
         guard bytes.count == expected[opcode] else {
             lastResult = .badLength
             return
         }
         lastResult = .ok
+        // Qualquer comando de luz encerra o apagar programado e o cenário.
+        if ([.color, .off, .fadeOut, .sunset, .scene] as [LampOpcode]).contains(opcode) {
+            sunset = nil
+            stopScene()
+        }
         switch opcode {
         case .color:
             dismissRunningRoutine()
@@ -764,7 +827,33 @@ final class SimulatedLampTransport: LampTransport {
             fade = (from, Date(), Int(bytes[3]))
             color = from
             mode = .fading
+        case .sunset:
+            guard let program = LampSunset(payload: Array(bytes.dropFirst())), program.isValid else {
+                lastResult = .outOfRange
+                return
+            }
+            dismissRunningRoutine()
+            fade = nil
+            sunset = (program, Date())
+            mode = .fading
+        case .scene:
+            guard let s = LampScene(rawValue: bytes[1]), bytes[2] > 0 else {
+                lastResult = .outOfRange
+                return
+            }
+            dismissRunningRoutine()
+            fade = nil
+            scene = (s, bytes[2], Date())
+            mode = .scene
+            // A lâmpada de verdade anima a ~50 Hz; aqui 10 Hz basta pra tela acompanhar.
+            sceneTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in self?.tick() }
         }
+    }
+
+    private func stopScene() {
+        scene = nil
+        sceneTimer?.invalidate()
+        sceneTimer = nil
     }
 
     /// Janela [despertador − rampa, despertador + mantém] que contém agora (relógio da lâmpada).
@@ -799,7 +888,22 @@ final class SimulatedLampTransport: LampTransport {
         guard connected else { return }
         let now = Date()
 
-        if let fade {
+        if let scene {
+            color = limited(scene.scene.color(at: now.timeIntervalSince(scene.start), brightness: scene.brightness))
+            mode = .scene
+        } else if let sunset {
+            switch sunset.program.output(elapsed: now.timeIntervalSince(sunset.start)) {
+            case .waiting:
+                mode = .fading
+            case .color(let c):
+                color = limited(c)
+                mode = .fading
+            case .finished:
+                self.sunset = nil
+                color = .off
+                mode = .off
+            }
+        } else if let fade {
             let t = now.timeIntervalSince(fade.start) / (Double(fade.minutes) * 60)
             if t >= 1 {
                 self.fade = nil

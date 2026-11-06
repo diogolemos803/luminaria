@@ -782,6 +782,40 @@ resultado do "Parar".
 - O resumo do ensaio mostra também o lembrete.
 - Só dá pra validar no iPhone: o tamanho das pílulas longas numa tela pequena (SE).
 
+## Lâmpada: "ao dormir" programável e cenários em teste (2026-11-06)
+
+Pedido do dono: o "ao dormir" com **o mesmo nível de ajuste da luz da manhã** (substitui o
+"um ajuste só" do item 3) e um **modo teste de cenários** como os da Philips Hue,
+começando pela fogueira.
+
+- **`LampSleepSettings`** ganhou `startDelayMinutes` (0–120, "Começa depois de
+  encostar"), `fromCurrentLight` ("Começar da luz acesa", padrão ligado; desligado acende
+  em `mix`/`brightness`), `toMix` (`nil` = mesma cor; "Mudar de cor no caminho"),
+  `toBrightness` (0 = apagada, padrão), `minutes` (duração 1–120, "Leva") e `holdMinutes`
+  (0–240, "Fica acesa no fim", só com brilho de fim > 0). `init(from:)` tolerante:
+  ajuste antigo vira "da luz acesa até apagar, mesma cor, sem espera" — igual a antes.
+  `nightCommand(current:)` (puro, testado): configuração simples → **0x07** de antes;
+  qualquer espera/cor/brilho de fim → **0x08** novo (`LampSunset`, mesma matemática da
+  rotina da manhã: espera → rampa → mantém → apaga). Editor: cartão "Lâmpada ao dormir"
+  espelha o "ao acordar", com prévia da linha do tempo (começando da luz acesa, a prévia
+  usa a última cor manual).
+- **Desarmar com o apagar em andamento** agora congela a luz como está (manda 0x01 com a
+  cor do STATE) em vez de apagar — cancela também a espera do 0x08.
+- **Cenários (teste)**: `Luminaria/LampScenes.swift` (puro, link em `Packages/SoveeCore`,
+  pbxproj `B6`/`B7`) — fogueira, vela, brasa, entardecer como funções do tempo com ruído
+  determinístico. **Quem anima é a lâmpada** (opcode **0x09** cenário + brilho, STATE modo
+  4), como os cenários dinâmicos da Hue: fica fluido com o celular bloqueado. A lâmpada
+  simulada e a prévia da tela usam as mesmas fórmulas (a cúpula anima com
+  `TimelineView`). Liga em tela da lâmpada → bolinha "Lâmpada" → "Cenários (teste)"; aí
+  aparece a 6ª bolinha (chama) com os 4 cenários e um brilho. Cor manual, desligar e
+  encostar na luminária param o cenário. Testes: determinismo, faixa, limitador, sem
+  saltos a 50 Hz, fogueira variando.
+- **Firmware**: 0x08 e 0x09 são proposta, como o resto da v2. Texto pra colar na conversa
+  do firmware em `firmware/PROTOCOLO_V2_ADENDO_2026-11-06.md` (fórmulas incluídas).
+- Só dá pra validar com a placa: a fluidez real a 50 Hz, se a fogueira "parece fogo" nas
+  duas fitas e a espera/rampa do 0x08 pelo relógio da lâmpada. Com a lâmpada simulada dá
+  pra ver tudo no app.
+
 ## Sons pra dormir — EXPERIMENTO (2026-10-22, item 6 do plano Hatch)
 
 - **Teste mínimo, atrás de uma chave DESLIGADA por padrão**: Ajuda → "Experimentos" →
@@ -905,7 +939,7 @@ Fluxo usado pra testar de verdade, todo do Windows:
 
 - **`Luminaria.xcodeproj/project.pbxproj` foi escrito à mão**, linha por linha — não existe
   Xcode/macOS neste ambiente de desenvolvimento (Windows). IDs de objeto seguem o padrão
-  `AAAAAAAAAAAAAAAAAAAAAA` + 2 dígitos hex incrementais (maior em uso: `B5`); qualquer
+  `AAAAAAAAAAAAAAAAAAAAAA` + 2 dígitos hex incrementais (maior em uso: `B7`); qualquer
   novo arquivo precisa de entradas em `PBXBuildFile`, `PBXFileReference`, no grupo, e na
   build phase certa (`Sources` pra `.swift`, `Resources` pra assets/sons). Sempre
   verificar balanço de chaves/parênteses e contagem de referências de cada ID novo
@@ -1603,6 +1637,8 @@ não conhece". Mudanças da v2 em relação à v1 que o usuário mandou:
    para_âmbar, para_vermelho, para_brilho`; cores no brilho máximo, saída = cor
    interpolada × brilho interpolado, limitador depois. Byte 0 do STATE = 2.
 Se o firmware fizer diferente, só `LampProtocol.swift` (e o simulado) mudam.
+3b. **Adendo de 2026-11-06**: 0x08 apagar programado e 0x09 cenários (teste), STATE modo 4
+   — ver `firmware/PROTOCOLO_V2_ADENDO_2026-11-06.md`.
 4. **Nome anunciado por Bluetooth no rebrand** (pedido em 2026-10-22): trocar "Zleepy
    Lamp" por "SOVEE Lamp" no firmware. O app já aceita os dois (busca por UUID; os textos
    citam `LampProtocol.settingsName`). Celulares já pareados podem continuar mostrando o
